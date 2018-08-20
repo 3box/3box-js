@@ -1,0 +1,38 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/muport-core-js
+    docker:
+      - image: circleci/node:10
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - dependencies-cache-{{ checksum "package.json" }}
+
+      - run:
+          name: install-serverless-and dependencies
+          command: |
+            sudo npm i -g  codecov node-gyp
+            npm i
+
+      - run:
+          name: test
+          command: npm test && codecov
+
+      - run:
+          name: code-coverage
+          command: bash <(curl -s https://codecov.io/bash)
+
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build

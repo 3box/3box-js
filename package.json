@@ -1,0 +1,42 @@
+{
+  "name": "3box",
+  "version": "0.0.1",
+  "description": "Interact with user data",
+  "main": "lib/3box.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "jest --coverage",
+    "build": "babel src --out-dir lib",
+    "build:dist": "browserify -s 3Box ./src/3box.js -o ./dist/3box.js",
+    "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md src/3box.js >> README.md"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uport-project/3box-js.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/uport-project/3box-js/issues"
+  },
+  "homepage": "https://github.com/uport-project/3box-js#readme",
+  "dependencies": {
+    "babel-runtime": "^6.26.0",
+    "bip39": "^2.5.0",
+    "muport-core": "^0.3.1",
+    "store": "^2.0.12",
+    "xmlhttprequest": "^1.8.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.6.1",
+    "chai": "^4.1.2",
+    "ganache-cli": "^6.1.0",
+    "jest": "^22.4.2",
+    "jsdoc-to-markdown": "^4.0.1"
+  }
+}
