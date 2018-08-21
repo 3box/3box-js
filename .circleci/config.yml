@@ -1,7 +1,7 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/muport-core-js
+    working_directory: ~/3box-js
     docker:
       - image: circleci/node:10
     steps:
