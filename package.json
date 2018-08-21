@@ -25,7 +25,9 @@
   "dependencies": {
     "babel-runtime": "^6.26.0",
     "bip39": "^2.5.0",
+    "ipfs-api": "^24.0.0",
     "muport-core": "^0.3.1",
+    "orbit-db": "^0.19.9",
     "store": "^2.0.12",
     "xmlhttprequest": "^1.8.0"
   },
