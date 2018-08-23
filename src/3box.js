@@ -1,7 +1,7 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
 const store = require('store')
-const ipfsAPI = require('IpfsApi')
+const ipfsAPI = require('ipfs-api')
 
 const ProfileStore = require('./profileStore')
 const PrivateStore = require('./privateStore')
@@ -98,7 +98,7 @@ class ThreeBox {
   }
 
   async _linkProfile () {
-    const address = // TODO get address from muportDID
+    const address = "";// TODO get address from muportDID
     const consentSignature = await utils.getLinkConsent(address, this.muportDID.getDid(), this.web3provider)
 
     // TODO - send consentSignature to root-hash-tracker to link profile with ethereum address
