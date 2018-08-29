@@ -66,7 +66,7 @@ class PrivateStore {
    */
   async _sync (hash) {
     // if hash === null; create a new orbitdb instance.
-    const orbitdb = new OrbitDB(ipfs)
+    const orbitdb = new OrbitDB(this.ipfs)
     //TODO - sync the OrbitDB key-value store
   }
 

@@ -30,7 +30,7 @@ class ThreeBox {
     /**
      * @property {ProfileStore} profileStore        access the profile store of the users threeBox
      */
-    this.profileStore = new ProfileStore(this.ipfs, this._publishUpdate.bind(this, 'profile'))
+    this.profileStore = new ProfileStore(this.ipfs, this._publishUpdate.bind(this, 'profile'), this._linkProfile.bind(this) )
     /**
      * @property {PrivateStore} privateStore        access the private store of the users threeBox
      */
@@ -88,17 +88,21 @@ class ThreeBox {
 
   async _sync () {
     // sync hash with root-hash-tracker and sync stores
-    const rootObject = // sync root ipld object
+    const rootObject = "";// sync root ipld object
     this.profileStore._sync(rootObject.profile)
     this.privateStore._sync(rootObject.datastore)
   }
 
   async _publishUpdate (store, hash) {
+    console.log("publishUpdate ("+store+"):"+hash);
     // TODO - generate root ipld object publish its hash to RHT (root-hash-tracker)
   }
 
   async _linkProfile () {
-    const address = "";// TODO get address from muportDID
+    const address = this.muportDID.document.managementKey;
+    const did=this.muportDID.getDid();
+    console.log("3box._linkProfile: "+address +"->"+did)
+
     const consentSignature = await utils.getLinkConsent(address, this.muportDID.getDid(), this.web3provider)
 
     // TODO - send consentSignature to root-hash-tracker to link profile with ethereum address

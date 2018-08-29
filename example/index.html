@@ -1,0 +1,37 @@
+<!doctype html>
+
+<html>
+  <head>
+    <title>3box demo</title>
+    <script type="text/javascript" src="../dist/3box.js"></script>
+  </head>
+
+  <body>
+
+    <button id="bopen">Open 3box</button>
+    <br />
+    <div id="controlls" style="display: none">
+      <input type="text" id="prkey" placeholder="Profile Key">
+      <input type="text" id="prvalue" placeholder="Profile Value">
+      <button id="setProfile">Set Profile Data</button>
+    </div>
+  </body>
+
+  <script type="text/javascript">
+    bopen.addEventListener('click', event => {
+        ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider).then(_3box => {
+          console.log(_3box);
+          controlls.style.display = 'inline'
+          
+          setProfile.addEventListener('click', () => {
+            _3box.profileStore.set(prkey.value, prvalue.value).then(() => {
+              prkey.value = null
+              prvalue.value = null
+            })
+          })
+
+      })
+    })
+  </script>
+
+</html>

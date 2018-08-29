@@ -9,7 +9,7 @@
   "scripts": {
     "test": "jest --coverage",
     "build": "babel src --out-dir lib",
-    "build:dist": "browserify -s 3Box ./src/3box.js -o ./dist/3box.js",
+    "build:dist": "browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md src/3box.js >> README.md"
   },
   "repository": {

@@ -2,7 +2,7 @@ const XMLHttpRequest = (typeof window !== 'undefined') ? window.XMLHttpRequest :
 
 module.exports = {
   openBoxConsent: (fromAddress, web3provider) => {
-    var text = 'Open 3box' // TODO - put real consent text here
+    var text = 'Please give consent to access 3box' // TODO - put real consent text here
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'

@@ -32,6 +32,7 @@ class ProfileStore {
    * @return    {Boolean}                           true if successful
    */
   async set (key, value) {
+    console.log("profileStore.set:"+key+"->"+value);
     if (!this.profile) {
       this.linkProfile()
       this.profile = {}
@@ -54,9 +55,14 @@ class ProfileStore {
   }
 
   async _uploadProfile () {
-    const multihash = // TODO upload to ipfs
+    //TODO: change to ipfs-mini.addJSON
 
-    this.updateRoot(multihash)
+    const profile = JSON.stringify(this.profile)
+    console.log("_uploadProfile:"+profile)
+    const ipfsRes=await this.ipfs.add(new Buffer(profile));
+    const multihash = ipfsRes[0].hash;
+    await this.updateRoot(multihash)
+
     // TODO - error handling
     return true
   }
