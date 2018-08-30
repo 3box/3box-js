@@ -7,6 +7,8 @@ const ProfileStore = require('./profileStore')
 const PrivateStore = require('./privateStore')
 const utils = require('./utils')
 
+//TODO: Put real 3box-hash-server instance here ;)
+const HASH_SERVER_URL = 'https://api.uport.me/3box-hash';
 
 class ThreeBox {
 
@@ -17,9 +19,10 @@ class ThreeBox {
    * @param     {Web3Provider}  web3provider                A Web3 provider
    * @return    {ThreeBox}                                  self
    */
-  constructor (muportDID, opts = {}) {
+  constructor (muportDID, web3provider, opts = {}) {
     this.muportDID = muportDID
-    this.rootHash = null
+    this.web3provider = web3provider
+    this.rootObject = null
     if (store.get(this.muportDID.getDid())) {
       this.localCache = JSON.parse(store.get(this.muportDID.getDid()))
     } else {
@@ -87,25 +90,94 @@ class ThreeBox {
   }
 
   async _sync () {
-    // sync hash with root-hash-tracker and sync stores
-    const rootObject = "";// sync root ipld object
-    this.profileStore._sync(rootObject.profile)
-    this.privateStore._sync(rootObject.datastore)
+
+    var rootHash;    
+    try{
+      const address = this.muportDID.getDidDocument().managementKey;
+      //read root ipld object from 3box-hash-server
+      const rootHashRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash/'+address, 'GET')).data;
+      console.log(rootHashRes)
+      rootHash = rootHashRes.hash
+    }catch(err){
+      console.error(err)
+    }
+      
+    //rootHash = 'QmeWkxbpY34yp13gen5L2wRkV8Vd1nDbP1kuoJVkuztyku' //TEST ONLY
+    console.log(typeof rootHash);
+
+    if(rootHash != undefined){
+      //Get root ipld object from IPFS
+      const ipfsRes=await this.ipfs.cat(rootHash);
+      const rootObject = JSON.parse(ipfsRes.toString('utf8'));
+      console.log(rootObject);
+      this.rootObject = rootObject;
+    }else{
+      this.rootObject = {} 
+    } 
+
+
+    //Sync profile and privateStore
+    //TODO: both can run in parallel.
+    await this.profileStore._sync(this.rootObject.profile)
+    await this.privateStore._sync(this.rootObject.datastore)
   }
 
   async _publishUpdate (store, hash) {
     console.log("publishUpdate ("+store+"):"+hash);
-    // TODO - generate root ipld object publish its hash to RHT (root-hash-tracker)
+    //Update rootObject
+    this.rootObject[store]=hash;
+    console.log(this.rootObject);
+
+    //Store rootObject on IPFS
+    //QUESTION: Shoudn't we store the rootObject directly in 3box-hash-server
+    const rootObjectStr = JSON.stringify(this.rootObject)
+    const ipfsRes=await this.ipfs.add(new Buffer(rootObjectStr));
+    const rootHash = ipfsRes[0].hash;
+    console.log("rootHash: "+rootHash)
+
+    //Sign rootHash
+    const hashToken = await this.muportDID.signJWT({hash: rootHash});
+    console.log("hashToken: "+hashToken);
+
+    //TODO: Store hash on 3box-hash-server
+    //servRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash', 'POST', {hash_token: hashToken})).data;
+    //console.log(servRes)
+
+    //TODO: Verify servRes.hash == rootHash;
   }
 
   async _linkProfile () {
-    const address = this.muportDID.document.managementKey;
-    const did=this.muportDID.getDid();
-    console.log("3box._linkProfile: "+address +"->"+did)
+    if(!store.get("lastConsent")){
 
-    const consentSignature = await utils.getLinkConsent(address, this.muportDID.getDid(), this.web3provider)
+      const address = this.muportDID.getDidDocument().managementKey;
+      const did=this.muportDID.getDid();
+      console.log("3box._linkProfile: "+address +"->"+did)
+  
+      const consentSignature = await utils.getLinkConsent(address, did, this.web3provider)
+    
+      const linkData={
+        consent_signature: consentSignature,
+        linked_did: did
+      }
+      console.log(linkData);
+      
+      
+      //TODO: send consentSignature to root-hash-tracker to link profile with ethereum address
+      //linkRes= (await utils.httpRequest(HASH_SERVER_URL+'/link', 'POST', linkData)).data;
+  
+      //TOOD: check if did == linkRes.did and address == linkRes.address;
+  
+      //Store lastConsent into localstorage
+      const lastConsent={
+        address: address,
+        did: did,
+        signature: consentSignature
+      }
+      store.set("lastConsent",lastConsent)
 
-    // TODO - send consentSignature to root-hash-tracker to link profile with ethereum address
+    }
+
+
   }
 
   _clearCache () {

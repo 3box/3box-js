@@ -14,24 +14,44 @@
       <input type="text" id="prkey" placeholder="Profile Key">
       <input type="text" id="prvalue" placeholder="Profile Value">
       <button id="setProfile">Set Profile Data</button>
+    <br />
+    <p>
+      Profile:<br/>
+      <span id="profileData"></span>
+    </p>
     </div>
-  </body>
+</body>
 
   <script type="text/javascript">
     bopen.addEventListener('click', event => {
         ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider).then(_3box => {
           console.log(_3box);
+          
+          profileData.innerHTML = '';
+          Object.entries(_3box.profileStore.profile).map(kv => {
+            profileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+          });
+          
           controlls.style.display = 'inline'
           
           setProfile.addEventListener('click', () => {
             _3box.profileStore.set(prkey.value, prvalue.value).then(() => {
               prkey.value = null
               prvalue.value = null
+              
+              profileData.innerHTML = '';
+              Object.entries(_3box.profileStore.profile).map(kv => {
+                profileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+              });
+
             })
           })
-
       })
     })
+
+    function _updateProfileData(profile){
+      
+    }
   </script>
 
 </html>

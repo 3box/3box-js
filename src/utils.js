@@ -2,11 +2,11 @@ const XMLHttpRequest = (typeof window !== 'undefined') ? window.XMLHttpRequest :
 
 module.exports = {
   openBoxConsent: (fromAddress, web3provider) => {
-    const dappName = 'This dApp'
-    const text = dappName+" wants to access your 3Box, to:\n"+
+    const text = "This dApp wants to access your 3Box, to:\n"+
             "* store public and private data about you\n"+
             "* read public and private data about you\n"+
-            "* remove private data about you";
+            "* remove private data about you\n\n"+
+            "You are always in control of your data. Create your public profile at https://my.3Box.io";
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
@@ -24,7 +24,25 @@ module.exports = {
   },
 
   getLinkConsent: (fromAddress, toDID, web3provider) => {
-    // TODO - erc712 signature, return a Promise
+    const text = "I consent to link my address: \n"+
+      fromAddress+"\n"+
+      "to my public profile\n\n"+
+      "Disclaimer: public data is public forever and can not be unassociated from this profile. "+
+      "Even if updates, the original entries will persist."
+    var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
+    var params = [msg, fromAddress]
+    var method = 'personal_sign'
+    return new Promise((resolve, reject) => {
+      web3provider.sendAsync({
+        method,
+        params,
+        fromAddress,
+      }, function (err, result) {
+        if (err) reject(err)
+        if (result.error) reject(result.error)
+        resolve(result.result)
+      })
+    })
   },
 
   httpRequest: (url, method, payload) => {

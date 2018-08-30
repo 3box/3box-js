@@ -12,6 +12,7 @@ class ProfileStore {
     this.ipfs = ipfs
     this.updateRoot = updateRoot
     this.linkProfile = linkProfile
+    this.profile = null;
   }
 
   /**
@@ -73,7 +74,16 @@ class ProfileStore {
    * @param     {String}    hash                        The hash of the profile object
    */
   async _sync (hash) {
-    // TODO - download profile from ipfs
+    if(hash != undefined){
+      //download profile from ipfs
+      const ipfsRes=await this.ipfs.cat(hash);
+      const profile = JSON.parse(ipfsRes.toString('utf8'));
+      console.log(profile);
+      
+      this.profile = profile;
+    }else{
+      this.profile = {};
+    }
   }
 }
 
