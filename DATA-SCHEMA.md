@@ -1,4 +1,4 @@
-# 3box JS: Data Schema Specification
+# 3Box JS: Data Schema Specification
 The implementation of this can be found at [`3box-js`](https://github.com/uport-project/3box-js).
 
 ## Data Model Overview
