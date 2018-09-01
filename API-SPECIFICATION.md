@@ -1,5 +1,5 @@
 # 3Box JS API Specification
-The implementation of this can be found at ['3box-js'](https://github.com/uport-project/3box-js)
+The implementation of this can be found at [`3box-js`](https://github.com/uport-project/3box-js)
 
 ## API Description
 
