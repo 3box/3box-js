@@ -1,7 +1,7 @@
-# 3box-js data structure specification
-The implementation of this can be found at [3box-js](https://github.com/uport-project/3box-js)
+# 3box JS: Data Schema Specification
+The implementation of this can be found at [`3box-js`](https://github.com/uport-project/3box-js).
 
-## Data structure for users data stores
+## Data Model Overview
 Each user has its own separate ipfs data structure in 3box. This data structure consists of thee parts; the public profile, the private data store, and a root object that points to the latest versions of these. As long as the user has access to the hash of the root object it can retrieve the entire data store from the ipfs network.
 
 ### Root object
