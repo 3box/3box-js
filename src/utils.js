@@ -40,7 +40,11 @@ module.exports = {
       }, function (err, result) {
         if (err) reject(err)
         if (result.error) reject(result.error)
-        resolve(result.result)
+        const out={
+          msg: msg,
+          sig: result.result
+        }
+        resolve(out)
       })
     })
   },

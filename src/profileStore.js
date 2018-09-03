@@ -11,7 +11,6 @@ class ProfileStore {
   constructor(ipfs, updateRoot, linkProfile) {
     this.ipfs = ipfs
     this.updateRoot = updateRoot
-    this.linkProfile = linkProfile
     this.profile = null;
   }
 
@@ -34,8 +33,8 @@ class ProfileStore {
    */
   async set (key, value) {
     console.log("profileStore.set:"+key+"->"+value);
+    console.log(this.profile);
     if (!this.profile) {
-      this.linkProfile()
       this.profile = {}
     }
     this.profile[key] = value

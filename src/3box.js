@@ -7,8 +7,8 @@ const ProfileStore = require('./profileStore')
 const PrivateStore = require('./privateStore')
 const utils = require('./utils')
 
-//TODO: Put real 3box-hash-server instance here ;)
-const HASH_SERVER_URL = 'https://api.uport.me/3box-hash';
+//TODO: Put production 3box-hash-server instance here ;)
+const HASH_SERVER_URL = 'https://api.uport.space/hash-server';
 
 class ThreeBox {
 
@@ -33,7 +33,7 @@ class ThreeBox {
     /**
      * @property {ProfileStore} profileStore        access the profile store of the users threeBox
      */
-    this.profileStore = new ProfileStore(this.ipfs, this._publishUpdate.bind(this, 'profile'), this._linkProfile.bind(this) )
+    this.profileStore = new ProfileStore(this.ipfs, this._publishUpdate.bind(this, 'profile'))
     /**
      * @property {PrivateStore} privateStore        access the private store of the users threeBox
      */
@@ -124,8 +124,14 @@ class ThreeBox {
 
   async _publishUpdate (store, hash) {
     console.log("publishUpdate ("+store+"):"+hash);
+
+    if(store=='profile'){
+      await this._linkProfile();
+    }
+
+
     //Update rootObject
-    this.rootObject[store]=hash;
+    this.rootObject[store]={"/": hash};
     console.log(this.rootObject);
 
     //Store rootObject on IPFS
@@ -139,9 +145,9 @@ class ThreeBox {
     const hashToken = await this.muportDID.signJWT({hash: rootHash});
     console.log("hashToken: "+hashToken);
 
-    //TODO: Store hash on 3box-hash-server
-    //servRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash', 'POST', {hash_token: hashToken})).data;
-    //console.log(servRes)
+    //Store hash on 3box-hash-server
+    const servRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash', 'POST', {hash_token: hashToken})).data;
+    console.log(servRes)
 
     //TODO: Verify servRes.hash == rootHash;
   }
@@ -153,28 +159,32 @@ class ThreeBox {
       const did=this.muportDID.getDid();
       console.log("3box._linkProfile: "+address +"->"+did)
   
-      const consentSignature = await utils.getLinkConsent(address, did, this.web3provider)
+      const consent = await utils.getLinkConsent(address, did, this.web3provider)
     
       const linkData={
-        consent_signature: consentSignature,
+        consent_msg: consent.msg,
+        consent_signature: consent.sig,
         linked_did: did
       }
       console.log(linkData);
       
       
-      //TODO: send consentSignature to root-hash-tracker to link profile with ethereum address
-      //linkRes= (await utils.httpRequest(HASH_SERVER_URL+'/link', 'POST', linkData)).data;
+      //Send consentSignature to root-hash-tracker to link profile with ethereum address
+      const linkRes= (await utils.httpRequest(HASH_SERVER_URL+'/link', 'POST', linkData)).data;
   
       //TOOD: check if did == linkRes.did and address == linkRes.address;
-  
+      console.log(linkRes);
+
       //Store lastConsent into localstorage
       const lastConsent={
         address: address,
         did: did,
-        signature: consentSignature
+        consent: consent
       }
       store.set("lastConsent",lastConsent)
 
+    }else{
+      console.log("profile linked");
     }
 
 
