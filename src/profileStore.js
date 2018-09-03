@@ -22,6 +22,7 @@ class ProfileStore {
    * @return    {String}                            the value associated with the key
    */
   async get (key) {
+    if (!this.profile) throw new Error('This user has no public profile yet')
     return this.profile[key]
   }
 
@@ -76,10 +77,9 @@ class ProfileStore {
   async _sync (hash) {
     if(hash != undefined){
       //download profile from ipfs
-      const ipfsRes=await this.ipfs.cat(hash);
+      const ipfsRes = await this.ipfs.cat(hash);
       const profile = JSON.parse(ipfsRes.toString('utf8'));
       console.log(profile);
-      
       this.profile = profile;
     }else{
       this.profile = {};
