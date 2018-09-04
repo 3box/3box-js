@@ -16,7 +16,7 @@
     "type": "git",
     "url": "git+https://github.com/uport-project/3box-js.git"
   },
-  "author": "",
+  "author": "uPort <team@uport.me>",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/uport-project/3box-js/issues"
