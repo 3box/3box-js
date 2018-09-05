@@ -1,4 +1,5 @@
 const OrbitDB = require('orbit-db')
+const Multihash = require('multihashes')
 
 class PrivateStore {
   /**
@@ -25,8 +26,7 @@ class PrivateStore {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
     const encryptedEntry = await this.db.get(this._genDbKey(key))
-
-    return this._decryptEntry(encryptedEntry)
+    return encryptedEntry ? this._decryptEntry(encryptedEntry) : null
   }
 
   /**
@@ -39,12 +39,13 @@ class PrivateStore {
   async set (key, value) {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
-    const encryptedValue = this._encryptEntry(value)
+    if (value != null) {
+      value = this._encryptEntry(value)
+    }
     const dbKey = this._genDbKey(key)
 
     // TODO - error handling
-    const multihash = await this.db.put(dbKey, encryptedValue)
-
+    const multihash = await this.db.put(dbKey, value)
     this.updateRoot(multihash)
     return true
   }
@@ -65,30 +66,38 @@ class PrivateStore {
    * @param     {String}    hash                        The hash of the private store OrbitDB
    */
   async _sync (hash) {
-    // if hash === null; create a new orbitdb instance.
-    const orbitdb = new OrbitDB(this.ipfs)
-    //TODO - sync the OrbitDB key-value store
+    if (!this.db) {
+      const orbitdb = new OrbitDB(this.ipfs)
+      this.db = await orbitdb.keyvalue('3box.datastore', {
+        replicate: false,
+        write: ['*']
+      })
+    }
+    if (hash) {
+      await this.db.sync([{hash: hash}])
+      // sync orbitdb to hash
+    }
+  }
+
+  async close () {
+    this.db.close()
   }
 
   _genDbKey (key) {
-    // return someHashFunction(key + this.salt)
+    this.salt = '123412341234'
+    const dataBuf = Buffer.from(this.salt + key, 'utf8')
+    return Multihash.encode(dataBuf, 'sha3-256').toString('hex')
   }
 
   _encryptEntry (entry) {
-    // TODO - use muport to encrypt entry
+    const encrypted = this.muportDID.symEncrypt(entry)
+    return encrypted.nonce + '.' + encrypted.ciphertext
   }
 
   _decryptEntry (entry) {
-    // TODO - use muport to decrypt entry
+    let [nonce, ciphertext] = entry.split('.')
+    return this.muportDID.symDecrypt(ciphertext, nonce)
   }
 }
-
-// some sample code for  creating a log store
-//orbitdb.log('hello', {replicate: false}).then(db => {
-  //db.add('asdfasdf').then(h => {
-    //const eve = db.get(h)
-    //console.log(eve)
-  //})
-//}).catch(console.log)
 
 module.exports = PrivateStore

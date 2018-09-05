@@ -12,6 +12,13 @@
     "build:dist": "browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md src/*.js >> README.md"
   },
+  "jest" : {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "node_modules",
+      "<rootDir>/src/__tests__/testUtils.js"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/uport-project/3box-js.git"
@@ -36,7 +43,6 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
-    "chai": "^4.1.2",
     "ganache-cli": "^6.1.0",
     "ipfs": "^0.31.7",
     "ipfsd-ctl": "^0.39.1",
