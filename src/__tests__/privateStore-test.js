@@ -47,6 +47,8 @@ describe('PrivateStore', () => {
     expect(privateStore.db).toBeDefined()
 
     // Check if salt was initiated correctly
+    const encryptedSalt = privateStore.db.get('3BOX_SALT')
+    expect(encryptedSalt).toBeDefined()
   })
 
   it('should set values correctly', async () => {

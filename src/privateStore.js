@@ -1,5 +1,8 @@
 const OrbitDB = require('orbit-db')
 const Multihash = require('multihashes')
+const nacl = require('tweetnacl')
+
+const SALT_KEY = '3BOX_SALT'
 
 class PrivateStore {
   /**
@@ -24,6 +27,7 @@ class PrivateStore {
    */
   async get (key) {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
+    if (key === SALT_KEY) throw new Error('Invalid key')
 
     const encryptedEntry = await this.db.get(this._genDbKey(key))
     return encryptedEntry ? this._decryptEntry(encryptedEntry) : null
@@ -38,6 +42,7 @@ class PrivateStore {
    */
   async set (key, value) {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
+    if (key === SALT_KEY) throw new Error('Invalid key')
 
     if (value != null) {
       value = this._encryptEntry(value)
@@ -76,6 +81,12 @@ class PrivateStore {
     if (hash) {
       await this.db.sync([{hash: hash}])
       // sync orbitdb to hash
+      const encryptedSalt = await this.db.get(SALT_KEY)
+      this.salt = this._decryptEntry(encryptedSalt)
+    } else {
+      this.salt = Buffer.from(nacl.randomBytes(16)).toString('hex')
+      const encryptedSalt = this._encryptEntry(this.salt)
+      await this.db.put(SALT_KEY, encryptedSalt)
     }
   }
 
@@ -84,7 +95,6 @@ class PrivateStore {
   }
 
   _genDbKey (key) {
-    this.salt = '123412341234'
     const dataBuf = Buffer.from(this.salt + key, 'utf8')
     return Multihash.encode(dataBuf, 'sha3-256').toString('hex')
   }
