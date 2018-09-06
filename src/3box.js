@@ -17,6 +17,8 @@ class ThreeBox {
    *
    * @param     {MuPort}        muportDID                   A MuPort DID instance
    * @param     {Web3Provider}  web3provider                A Web3 provider
+   * @param     {Object}        opts                        Optional parameters
+   * @param     {IPFS}          opts.ipfs                   A custom ipfs instance
    * @return    {ThreeBox}                                  self
    */
   constructor (muportDID, web3provider, opts = {}) {
@@ -47,6 +49,7 @@ class ThreeBox {
    * @return    {Object}                         the threeBox instance for the given address
    */
   static async getProfile (address) {
+    throw new Error ('Not implemented yet. Use threeBox.profileStore')
     // TODO - get the hash associated with the address from the root-hash-tracker and get the profile object
     // should be simple getting: <multi-hash>/profile from ipfs.
     return {}
@@ -59,14 +62,18 @@ class ThreeBox {
    * @return    {Object}                         the threeBox instance for the given address
    */
   static async getActivity (address) {
+    throw new Error ('Not implemented yet.')
     return {}
   }
 
   /**
    * Opens the user space associated with the given address
    *
-   * @param     {String}    address                 an ethereum address
-   * @return    {ThreeBox}                         the threeBox instance for the given address
+   * @param     {String}        address                 an ethereum address
+   * @param     {Web3Provider}  web3provider            A Web3 provider
+   * @param     {Object}        opts                    Optional parameters
+   * @param     {IPFS}          opts.ipfs               A custom ipfs instance
+   * @return    {ThreeBox}                              the threeBox instance for the given address
    */
   static async openBox (address, web3provider, opts = {}) {
     console.log('user', address)
@@ -84,14 +91,13 @@ class ThreeBox {
       store.set('serializedMuDID_' + address, muportDID.serializeState())
     }
     console.log('3box opened with', muportDID.getDid())
-    let threeBox = new ThreeBox(muportDID, web3provider)
+    let threeBox = new ThreeBox(muportDID, web3provider, opts)
     await threeBox._sync()
     return threeBox
   }
 
   async _sync () {
-
-    var rootHash;    
+    var rootHash;
     try{
       const address = this.muportDID.getDidDocument().managementKey;
       //read root ipld object from 3box-hash-server
@@ -101,7 +107,7 @@ class ThreeBox {
     }catch(err){
       console.error(err)
     }
-      
+
     //rootHash = 'QmeWkxbpY34yp13gen5L2wRkV8Vd1nDbP1kuoJVkuztyku' //TEST ONLY
     console.log(typeof rootHash);
 
@@ -112,8 +118,8 @@ class ThreeBox {
       console.log(rootObject);
       this.rootObject = rootObject;
     }else{
-      this.rootObject = {} 
-    } 
+      this.rootObject = {}
+    }
 
 
     //Sync profile and privateStore
@@ -158,20 +164,20 @@ class ThreeBox {
       const address = this.muportDID.getDidDocument().managementKey;
       const did=this.muportDID.getDid();
       console.log("3box._linkProfile: "+address +"->"+did)
-  
+
       const consent = await utils.getLinkConsent(address, did, this.web3provider)
-    
       const linkData={
+
         consent_msg: consent.msg,
         consent_signature: consent.sig,
         linked_did: did
       }
       console.log(linkData);
-      
-      
+
+
       //Send consentSignature to root-hash-tracker to link profile with ethereum address
       const linkRes= (await utils.httpRequest(HASH_SERVER_URL+'/link', 'POST', linkData)).data;
-  
+
       //TOOD: check if did == linkRes.did and address == linkRes.address;
       console.log(linkRes);
 

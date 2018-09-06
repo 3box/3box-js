@@ -27,9 +27,9 @@ ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
 <dl>
 <dt><a href="#ThreeBox">ThreeBox</a></dt>
 <dd></dd>
-<dt><a href="#ProfileStore">ProfileStore</a></dt>
-<dd></dd>
 <dt><a href="#PrivateStore">PrivateStore</a></dt>
+<dd></dd>
+<dt><a href="#ProfileStore">ProfileStore</a></dt>
 <dd></dd>
 </dl>
 
@@ -39,18 +39,18 @@ ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
 **Kind**: global class  
 
 * [ThreeBox](#ThreeBox)
-    * [new ThreeBox(muportDID)](#new_ThreeBox_new)
+    * [new ThreeBox(muportDID, web3provider, opts)](#new_ThreeBox_new)
     * _instance_
         * [.profileStore](#ThreeBox+profileStore)
         * [.privateStore](#ThreeBox+privateStore)
     * _static_
         * [.getProfile(address)](#ThreeBox.getProfile) ⇒ <code>Object</code>
         * [.getActivity(address)](#ThreeBox.getActivity) ⇒ <code>Object</code>
-        * [.openBox(address)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
+        * [.openBox(address, web3provider, opts)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
 
 <a name="new_ThreeBox_new"></a>
 
-### new ThreeBox(muportDID)
+### new ThreeBox(muportDID, web3provider, opts)
 Instantiates a threeBox
 
 **Returns**: [<code>ThreeBox</code>](#ThreeBox) - self  
@@ -58,6 +58,9 @@ Instantiates a threeBox
 | Param | Type | Description |
 | --- | --- | --- |
 | muportDID | <code>MuPort</code> | A MuPort DID instance |
+| web3provider | <code>Web3Provider</code> | A Web3 provider |
+| opts | <code>Object</code> | Optional parameters |
+| opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
 
 <a name="ThreeBox+profileStore"></a>
 
@@ -105,7 +108,7 @@ Get the public activity of the given address
 
 <a name="ThreeBox.openBox"></a>
 
-### ThreeBox.openBox(address) ⇒ [<code>ThreeBox</code>](#ThreeBox)
+### ThreeBox.openBox(address, web3provider, opts) ⇒ [<code>ThreeBox</code>](#ThreeBox)
 Opens the user space associated with the given address
 
 **Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
@@ -114,6 +117,82 @@ Opens the user space associated with the given address
 | Param | Type | Description |
 | --- | --- | --- |
 | address | <code>String</code> | an ethereum address |
+| web3provider | <code>Web3Provider</code> | A Web3 provider |
+| opts | <code>Object</code> | Optional parameters |
+| opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
+
+<a name="PrivateStore"></a>
+
+## PrivateStore
+**Kind**: global class  
+
+* [PrivateStore](#PrivateStore)
+    * [new PrivateStore(muportDID, ipfs, updateRoot)](#new_PrivateStore_new)
+    * [.get(key)](#PrivateStore+get) ⇒ <code>String</code>
+    * [.set(key, value)](#PrivateStore+set) ⇒ <code>Boolean</code>
+    * [.remove(key)](#PrivateStore+remove) ⇒ <code>Boolean</code>
+    * [._sync(hash)](#PrivateStore+_sync)
+
+<a name="new_PrivateStore_new"></a>
+
+### new PrivateStore(muportDID, ipfs, updateRoot)
+Instantiates a PrivateStore
+
+**Returns**: [<code>PrivateStore</code>](#PrivateStore) - self  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| muportDID | <code>MuPort</code> | A MuPort DID instance |
+| ipfs | <code>IPFS</code> | An instance of the ipfs api |
+| updateRoot | <code>function</code> | A callback function that is called when the store has been updated |
+
+<a name="PrivateStore+get"></a>
+
+### privateStore.get(key) ⇒ <code>String</code>
+Get the value of the given key
+
+**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
+**Returns**: <code>String</code> - the value associated with the key  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>String</code> | the key |
+
+<a name="PrivateStore+set"></a>
+
+### privateStore.set(key, value) ⇒ <code>Boolean</code>
+Set a value for the given key
+
+**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
+**Returns**: <code>Boolean</code> - true if successful  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>String</code> | the key |
+| value | <code>String</code> | the value |
+
+<a name="PrivateStore+remove"></a>
+
+### privateStore.remove(key) ⇒ <code>Boolean</code>
+Remove the value for the given key
+
+**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
+**Returns**: <code>Boolean</code> - true if successful  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>String</code> | the key |
+
+<a name="PrivateStore+_sync"></a>
+
+### privateStore._sync(hash)
+Sync the private store with the given ipfs hash
+
+**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| hash | <code>String</code> | The hash of the private store OrbitDB |
 
 <a name="ProfileStore"></a>
 
@@ -121,21 +200,24 @@ Opens the user space associated with the given address
 **Kind**: global class  
 
 * [ProfileStore](#ProfileStore)
-    * [new ProfileStore(muportDID)](#new_ProfileStore_new)
+    * [new ProfileStore(ipfs, updateRoot, linkProfile)](#new_ProfileStore_new)
     * [.get(key)](#ProfileStore+get) ⇒ <code>String</code>
     * [.set(key, value)](#ProfileStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#ProfileStore+remove) ⇒ <code>Boolean</code>
+    * [._sync(hash)](#ProfileStore+_sync)
 
 <a name="new_ProfileStore_new"></a>
 
-### new ProfileStore(muportDID)
+### new ProfileStore(ipfs, updateRoot, linkProfile)
 Instantiates a ProfileStore
 
 **Returns**: [<code>ProfileStore</code>](#ProfileStore) - self  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| muportDID | <code>MuPort</code> | A MuPort DID instance |
+| ipfs | <code>IPFS</code> | An instance of the ipfs api |
+| updateRoot | <code>function</code> | A callback function that is called when the store has been updated |
+| linkProfile | <code>function</code> | A callback function that is called if the profile is not made public yet |
 
 <a name="ProfileStore+get"></a>
 
@@ -174,62 +256,14 @@ Remove the value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
-<a name="PrivateStore"></a>
+<a name="ProfileStore+_sync"></a>
 
-## PrivateStore
-**Kind**: global class  
+### profileStore._sync(hash)
+Sync the profile store with the given ipfs hash
 
-* [PrivateStore](#PrivateStore)
-    * [new PrivateStore(muportDID)](#new_PrivateStore_new)
-    * [.get(key)](#PrivateStore+get) ⇒ <code>String</code>
-    * [.set(key, value)](#PrivateStore+set) ⇒ <code>Boolean</code>
-    * [.remove(key)](#PrivateStore+remove) ⇒ <code>Boolean</code>
-
-<a name="new_PrivateStore_new"></a>
-
-### new PrivateStore(muportDID)
-Instantiates a PrivateStore
-
-**Returns**: [<code>PrivateStore</code>](#PrivateStore) - self  
+**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| muportDID | <code>MuPort</code> | A MuPort DID instance |
-
-<a name="PrivateStore+get"></a>
-
-### privateStore.get(key) ⇒ <code>String</code>
-Get the value of the given key
-
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
-**Returns**: <code>String</code> - the value associated with the key  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>String</code> | the key |
-
-<a name="PrivateStore+set"></a>
-
-### privateStore.set(key, value) ⇒ <code>Boolean</code>
-Set a value for the given key
-
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
-**Returns**: <code>Boolean</code> - true if successful  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>String</code> | the key |
-| value | <code>String</code> | the value |
-
-<a name="PrivateStore+remove"></a>
-
-### privateStore.remove(key) ⇒ <code>Boolean</code>
-Remove the value for the given key
-
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
-**Returns**: <code>Boolean</code> - true if successful  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>String</code> | the key |
+| hash | <code>String</code> | The hash of the profile object |
 
