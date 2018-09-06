@@ -1,4 +1,3 @@
-const assert = require('chai').assert
 const IPFSFactory = require('ipfsd-ctl')
 const ProfileStore = require('../profileStore')
 
