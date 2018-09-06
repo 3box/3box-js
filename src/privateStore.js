@@ -1,4 +1,5 @@
 const OrbitDB = require('orbit-db')
+const Log = require('ipfs-log')
 const Multihash = require('multihashes')
 const nacl = require('tweetnacl')
 
@@ -79,15 +80,24 @@ class PrivateStore {
       })
     }
     if (hash) {
-      await this.db.sync([{hash: hash}])
       // sync orbitdb to hash
-      const encryptedSalt = await this.db.get(SALT_KEY)
-      this.salt = this._decryptEntry(encryptedSalt)
-    } else {
-      this.salt = Buffer.from(nacl.randomBytes(16)).toString('hex')
-      const encryptedSalt = this._encryptEntry(this.salt)
-      await this.db.put(SALT_KEY, encryptedSalt)
+      let log = await Log.fromEntryHash(this.ipfs, hash)
+
+      return new Promise((resolve, reject) => {
+        this.db.events.on('replicated', async (address, logLength) => {
+          // get the key salt of the db
+          const encryptedSalt = await this.db.get(SALT_KEY)
+          this.salt = this._decryptEntry(encryptedSalt)
+          resolve()
+        })
+        this.db.sync(log.values)
+      })
     }
+    // This is the first time the store is used.
+    // Generate a random salt and save in the db.
+    this.salt = Buffer.from(nacl.randomBytes(16)).toString('hex')
+    const encryptedSalt = this._encryptEntry(this.salt)
+    await this.db.put(SALT_KEY, encryptedSalt)
   }
 
   async close () {

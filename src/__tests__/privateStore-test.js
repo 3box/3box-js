@@ -86,19 +86,16 @@ describe('PrivateStore', () => {
     expect(await privateStore.get('key2')).toBeNull()
   })
 
-  //it('should sync an old orbitdb instance correctly', async () => {
-    //let privateStore2 = new PrivateStore(muportDIDMock, ipfsd.api, updateRoot)
-    //console.log(latestRoot)
-    ////console.log(await ipfsd.api.object.get(latestRoot))
-    //await privateStore2._sync(latestRoot)
+  it('should sync an old orbitdb instance correctly', async () => {
+    let privateStore2 = new PrivateStore(muportDIDMock, ipfsd.api, updateRoot)
+    await privateStore2._sync(latestRoot)
 
+    expect(await privateStore2.get('key1')).toEqual('value1')
+    expect(await privateStore2.get('key2')).toBeNull()
+    expect(await privateStore2.get('key3')).toBeNull()
 
-    //expect(await privateStore2.get('key1')).toEqual('value1')
-    //expect(await privateStore2.get('key2')).toBeNull()
-    //expect(await privateStore2.get('key3')).toBeNull()
-
-    //await privateStore2.close()
-  //})
+    await privateStore2.close()
+  })
 
   afterAll(async (done) => {
     await privateStore.close()
