@@ -91,17 +91,17 @@ class ThreeBox {
 
   async _sync () {
 
-    var rootHash;    
+    var rootHash;
     try{
-      const address = this.muportDID.getDidDocument().managementKey;
+      const did = this.muportDID.getDid()
       //read root ipld object from 3box-hash-server
-      const rootHashRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash/'+address, 'GET')).data;
+      const rootHashRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + did, 'GET')).data;
       console.log(rootHashRes)
       rootHash = rootHashRes.hash
     }catch(err){
       console.error(err)
     }
-      
+
     //rootHash = 'QmeWkxbpY34yp13gen5L2wRkV8Vd1nDbP1kuoJVkuztyku' //TEST ONLY
     console.log(typeof rootHash);
 
@@ -112,8 +112,8 @@ class ThreeBox {
       console.log(rootObject);
       this.rootObject = rootObject;
     }else{
-      this.rootObject = {} 
-    } 
+      this.rootObject = {}
+    }
 
 
     //Sync profile and privateStore
@@ -158,20 +158,20 @@ class ThreeBox {
       const address = this.muportDID.getDidDocument().managementKey;
       const did=this.muportDID.getDid();
       console.log("3box._linkProfile: "+address +"->"+did)
-  
+
       const consent = await utils.getLinkConsent(address, did, this.web3provider)
-    
+
       const linkData={
         consent_msg: consent.msg,
         consent_signature: consent.sig,
         linked_did: did
       }
       console.log(linkData);
-      
-      
+
+
       //Send consentSignature to root-hash-tracker to link profile with ethereum address
       const linkRes= (await utils.httpRequest(HASH_SERVER_URL+'/link', 'POST', linkData)).data;
-  
+
       //TOOD: check if did == linkRes.did and address == linkRes.address;
       console.log(linkRes);
 
