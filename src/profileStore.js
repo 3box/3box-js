@@ -1,4 +1,3 @@
-
 class ProfileStore {
   /**
    * Instantiates a ProfileStore
@@ -9,8 +8,8 @@ class ProfileStore {
    * @return    {ProfileStore}                          self
    */
   constructor(ipfs, updateRoot, linkProfile) {
-    this.ipfs = ipfs
-    this.updateRoot = updateRoot
+    this.ipfs = ipfs;
+    this.updateRoot = updateRoot;
     this.profile = null;
   }
 
@@ -20,9 +19,9 @@ class ProfileStore {
    * @param     {String}    key                     the key
    * @return    {String}                            the value associated with the key
    */
-  async get (key) {
-    if (!this.profile) throw new Error('This user has no public profile yet')
-    return this.profile[key]
+  async get(key) {
+    if (!this.profile) throw new Error("This user has no public profile yet");
+    return this.profile[key];
   }
 
   /**
@@ -32,15 +31,15 @@ class ProfileStore {
    * @param     {String}    value                   the value
    * @return    {Boolean}                           true if successful
    */
-  async set (key, value) {
-    console.log("profileStore.set:"+key+"->"+value);
+  async set(key, value) {
+    console.log("profileStore.set:" + key + "->" + value);
     console.log(this.profile);
     if (!this.profile) {
-      this.profile = {}
+      this.profile = {};
     }
-    this.profile[key] = value
+    this.profile[key] = value;
 
-    return this._uploadProfile()
+    return this._uploadProfile();
   }
 
   /**
@@ -49,23 +48,41 @@ class ProfileStore {
    * @param     {String}    key                     the key
    * @return    {Boolean}                           true if successful
    */
-  async remove (key) {
-    delete this.profile[key]
+  async remove(key) {
+    delete this.profile[key];
 
-    return this._uploadProfile()
+    return this._uploadProfile();
   }
 
-  async _uploadProfile () {
+  /**
+   * Upload the instanced profile to IPFS
+   *
+   * @return    {Boolean}                           true if successful
+   */
+  async _uploadProfile() {
     //TODO: change to ipfs-mini.addJSON
 
-    const profile = JSON.stringify(this.profile)
-    console.log("_uploadProfile:"+profile)
-    const ipfsRes=await this.ipfs.add(new Buffer(profile));
-    const multihash = ipfsRes[0].hash;
-    await this.updateRoot(multihash)
+    const profile = JSON.stringify(this.profile);
+    console.log("_uploadProfile:" + profile);
 
-    // TODO - error handling
-    return true
+    let ipfsRes;
+    let multihash;
+
+    try {
+      ipfsRes = await this.ipfs.add(new Buffer(profile));
+      multihash = ipfsRes[0].hash;
+    } catch (e) {
+      console.error("Error when uploading profile to ipfs", e);
+      return false;
+    }
+
+    try {
+      await this.updateRoot(multihash);
+      return true;
+    } catch (e) {
+      console.error("Error when updating root", e);
+      return false;
+    }
   }
 
   /**
@@ -73,17 +90,17 @@ class ProfileStore {
    *
    * @param     {String}    hash                        The hash of the profile object
    */
-  async _sync (hash) {
-    if(hash != undefined){
+  async _sync(hash) {
+    if (hash !== undefined) {
       //download profile from ipfs
       const ipfsRes = await this.ipfs.cat(hash);
-      const profile = JSON.parse(ipfsRes.toString('utf8'));
+      const profile = JSON.parse(ipfsRes.toString("utf8"));
       console.log(profile);
       this.profile = profile;
-    }else{
+    } else {
       this.profile = {};
     }
   }
 }
 
-module.exports = ProfileStore
+module.exports = ProfileStore;
