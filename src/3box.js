@@ -99,9 +99,9 @@ class ThreeBox {
   async _sync () {
     var rootHash;
     try{
-      const address = this.muportDID.getDidDocument().managementKey;
+      const did = this.muportDID.getDid()
       //read root ipld object from 3box-hash-server
-      const rootHashRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash/'+address, 'GET')).data;
+      const rootHashRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + did, 'GET')).data;
       console.log(rootHashRes)
       rootHash = rootHashRes.hash
     }catch(err){
