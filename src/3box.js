@@ -56,17 +56,6 @@ class ThreeBox {
   }
 
   /**
-   * Get the public activity of the given address
-   *
-   * @param     {String}    address                 an ethereum address
-   * @return    {Object}                         the threeBox instance for the given address
-   */
-  static async getActivity (address) {
-    throw new Error ('Not implemented yet.')
-    return {}
-  }
-
-  /**
    * Opens the user space associated with the given address
    *
    * @param     {String}        address                 an ethereum address
