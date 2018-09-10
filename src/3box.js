@@ -1,7 +1,8 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
-const store = require('store')
+const localstorage = require('store')
 const ipfsAPI = require('ipfs-api')
+const DAGNode = require('ipld-dag-pb').DAGNode
 
 const ProfileStore = require('./profileStore')
 const PrivateStore = require('./privateStore')
@@ -25,8 +26,8 @@ class ThreeBox {
     this.muportDID = muportDID
     this.web3provider = web3provider
     this.rootObject = null
-    if (store.get(this.muportDID.getDid())) {
-      this.localCache = JSON.parse(store.get(this.muportDID.getDid()))
+    if (localstorage.get(this.muportDID.getDid())) {
+      this.localCache = JSON.parse(localstorage.get(this.muportDID.getDid()))
     } else {
       this.localCache = {}
     }
@@ -67,7 +68,7 @@ class ThreeBox {
   static async openBox (address, web3provider, opts = {}) {
     console.log('user', address)
     let muportDID
-    let serializedMuDID = store.get('serializedMuDID_' + address)
+    let serializedMuDID = localstorage.get('serializedMuDID_' + address)
     if (serializedMuDID) {
       muportDID = new MuPort(serializedMuDID)
     } else {
@@ -77,7 +78,7 @@ class ThreeBox {
         externalMgmtKey: address,
         mnemonic
       })
-      store.set('serializedMuDID_' + address, muportDID.serializeState())
+      localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
     console.log('3box opened with', muportDID.getDid())
     let threeBox = new ThreeBox(muportDID, web3provider, opts)
@@ -86,55 +87,55 @@ class ThreeBox {
   }
 
   async _sync () {
-    var rootHash;
+    let rootHash;
     try{
       const did = this.muportDID.getDid()
       //read root ipld object from 3box-hash-server
-      const rootHashRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + did, 'GET')).data;
-      console.log(rootHashRes)
-      rootHash = rootHashRes.hash
+      rootHash = (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + did, 'GET')).data.hash;
     }catch(err){
       console.error(err)
     }
 
-    //rootHash = 'QmeWkxbpY34yp13gen5L2wRkV8Vd1nDbP1kuoJVkuztyku' //TEST ONLY
-    console.log(typeof rootHash);
-
-    if(rootHash != undefined){
+    if (rootHash) {
       //Get root ipld object from IPFS
-      const ipfsRes=await this.ipfs.cat(rootHash);
-      const rootObject = JSON.parse(ipfsRes.toString('utf8'));
-      console.log(rootObject);
-      this.rootObject = rootObject;
-    }else{
-      this.rootObject = {}
+      this.rootDAGNode = await this.ipfs.object.get(rootHash)
+      if (!this.rootDAGNode.links.length) {
+        // We got some random object from ipfs, create a real root object
+        this.rootDAGNode = await createDAGNode('', [])
+      }
+    } else {
+      this.rootDAGNode = await createDAGNode('', [])
     }
-
+    // start with an empty DAGNode if one was not created
+    console.log('rootDAGNode', this.rootDAGNode)
 
     //Sync profile and privateStore
     //TODO: both can run in parallel.
-    await this.profileStore._sync(this.rootObject.profile)
-    await this.privateStore._sync(this.rootObject.datastore)
+    let profileLink = this.rootDAGNode.links.filter(link => link.name === 'profile')[0]
+    await this.profileStore._sync(profileLink ? profileLink.toJSON().multihash : null)
+    let datastoreLink = this.rootDAGNode.links.filter(link => link.name === 'profile')[0]
+    await this.privateStore._sync(datastoreLink ? datastoreLink.toJSON().multihash : null)
   }
 
-  async _publishUpdate (store, hash) {
-    console.log("publishUpdate ("+store+"):"+hash);
-
-    if(store=='profile'){
+  async _publishUpdate (storeName, hash) {
+    console.log("publishUpdate ("+storeName+"):"+hash);
+    if (storeName === 'profile') {
       await this._linkProfile();
     }
 
-
     //Update rootObject
-    this.rootObject[store]={"/": hash};
-    console.log(this.rootObject);
+    this.rootDAGNode = await updateDAGNodeLink(this.rootDAGNode, storeName, hash)
 
     //Store rootObject on IPFS
-    //QUESTION: Shoudn't we store the rootObject directly in 3box-hash-server
-    const rootObjectStr = JSON.stringify(this.rootObject)
-    const ipfsRes=await this.ipfs.add(new Buffer(rootObjectStr));
-    const rootHash = ipfsRes[0].hash;
+    const rootHash = this.rootDAGNode.toJSON().multihash
     console.log("rootHash: "+rootHash)
+    try {
+      const ipfsRes = await this.ipfs.object.put(this.rootDAGNode)
+      console.log(ipfsRes)
+    } catch (e) {
+      // TODO - handle any errors here
+      console.error(e)
+    }
 
     //Sign rootHash
     const hashToken = await this.muportDID.signJWT({hash: rootHash});
@@ -145,10 +146,11 @@ class ThreeBox {
     console.log(servRes)
 
     //TODO: Verify servRes.hash == rootHash;
+    return true
   }
 
   async _linkProfile () {
-    if(!store.get("lastConsent")){
+    if(!localstorage.get("lastConsent")){
 
       const address = this.muportDID.getDidDocument().managementKey;
       const did=this.muportDID.getDid();
@@ -176,7 +178,7 @@ class ThreeBox {
         did: did,
         consent: consent
       }
-      store.set("lastConsent",lastConsent)
+      localstorage.set("lastConsent",lastConsent)
 
     }else{
       console.log("profile linked");
@@ -186,7 +188,7 @@ class ThreeBox {
   }
 
   _clearCache () {
-    store.remove('serializedMuDID_' + this.muportDID.getDidDocument().managementKey)
+    localstorage.remove('serializedMuDID_' + this.muportDID.getDidDocument().managementKey)
   }
 
   //async postEvent (payload) {
@@ -199,5 +201,23 @@ class ThreeBox {
     //console.log('added event with id', this.previous)
   //}
 }
+
+const createDAGNode = (data, links) => new Promise((resolve, reject) => {
+  DAGNode.create(data, links, (err, node) => {
+    if (err) reject(err)
+    resolve(node)
+  })
+})
+
+const updateDAGNodeLink = (node, name, multihash) => new Promise((resolve, reject) => {
+  DAGNode.rmLink(node, name, (err, clearedNode) => {
+    if (err) reject(err)
+    // size has to be set to a non-zero value
+    DAGNode.addLink(clearedNode, {name, multihash, size: 1}, (err, newNode) => {
+      if (err) reject(err)
+      resolve(newNode)
+    })
+  })
+})
 
 module.exports = ThreeBox

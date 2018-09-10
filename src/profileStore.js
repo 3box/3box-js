@@ -60,29 +60,15 @@ class ProfileStore {
    * @return    {Boolean}                           true if successful
    */
   async _uploadProfile() {
-    //TODO: change to ipfs-mini.addJSON
-
-    const profile = JSON.stringify(this.profile);
-    console.log("_uploadProfile:" + profile);
-
-    let ipfsRes;
-    let multihash;
-
+    const profile = JSON.stringify(this.profile)
+    console.log("_uploadProfile:"+profile)
+    let dagNode;
     try {
-      ipfsRes = await this.ipfs.add(new Buffer(profile));
-      multihash = ipfsRes[0].hash;
+      dagNode = await this.ipfs.object.put(new Buffer(profile));
     } catch (e) {
-      console.error("Error when uploading profile to ipfs", e);
-      return false;
+      throw new Error(e)
     }
-
-    try {
-      await this.updateRoot(multihash);
-      return true;
-    } catch (e) {
-      console.error("Error when updating root", e);
-      return false;
-    }
+    return this.updateRoot(dagNode.toJSON().multihash)
   }
 
   /**
@@ -90,13 +76,15 @@ class ProfileStore {
    *
    * @param     {String}    hash                        The hash of the profile object
    */
-  async _sync(hash) {
-    if (hash !== undefined) {
+  async _sync (hash) {
+    if (hash) {
       //download profile from ipfs
-      const ipfsRes = await this.ipfs.cat(hash);
-      const profile = JSON.parse(ipfsRes.toString("utf8"));
-      console.log(profile);
-      this.profile = profile;
+      try {
+        const dagNode = await this.ipfs.object.get(hash, {recursive: false});
+        this.profile = JSON.parse(Buffer.from(dagNode.data).toString());
+      } catch (err) {
+        throw new Error(err)
+      }
     } else {
       this.profile = {};
     }
