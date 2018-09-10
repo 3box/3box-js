@@ -113,8 +113,8 @@ class ThreeBox {
 
     //Sync profile and privateStore
     //TODO: both can run in parallel.
-    await this.profileStore._sync(this.rootObject.profile)
-    await this.privateStore._sync(this.rootObject.datastore)
+    await this.profileStore._sync(this.rootObject.profile['/'])
+    //await this.privateStore._sync(this.rootObject.datastore['/'])
   }
 
   async _publishUpdate (store, hash) {
@@ -145,6 +145,7 @@ class ThreeBox {
     console.log(servRes)
 
     //TODO: Verify servRes.hash == rootHash;
+    return true
   }
 
   async _linkProfile () {
