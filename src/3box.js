@@ -47,13 +47,22 @@ class ThreeBox {
    * Get the public profile of the given address
    *
    * @param     {String}    address                 an ethereum address
-   * @return    {Object}                         the threeBox instance for the given address
+   * @param     {Object}        opts                Optional parameters
+   * @param     {IPFS}          opts.ipfs           A custom ipfs instance
+   * @return    {Object}                            a json object with the profile for the given address
    */
-  static async getProfile (address) {
-    throw new Error ('Not implemented yet. Use threeBox.profileStore')
-    // TODO - get the hash associated with the address from the root-hash-tracker and get the profile object
-    // should be simple getting: <multi-hash>/profile from ipfs.
-    return {}
+  static async getProfile (address, opts = {}) {
+    let ipfs = opts.ipfs || new ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+    try {
+      const rootHash = (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + address, 'GET')).data.hash;
+      const rootNode = await ipfs.object.get(rootHash)
+      const profileHash = rootNode.links.filter(link => link.name === 'profile')[0].toJSON().multihash
+      const profileNode = await ipfs.object.get(profileHash, {recursive: false});
+      return JSON.parse(Buffer.from(profileNode.data).toString());
+    } catch(e) {
+      console.error(e)
+      return {}
+    }
   }
 
   /**
@@ -88,9 +97,9 @@ class ThreeBox {
 
   async _sync () {
     let rootHash;
-    try{
-      const did = this.muportDID.getDid()
-      //read root ipld object from 3box-hash-server
+    const did = this.muportDID.getDid()
+    try {
+      //read root ipld object hash from 3box-hash-server
       rootHash = (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + did, 'GET')).data.hash;
     }catch(err){
       console.error(err)
