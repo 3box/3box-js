@@ -12,10 +12,11 @@
     "build:dist": "browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md src/*.js >> README.md"
   },
-  "jest" : {
+  "jest": {
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
       "node_modules",
+      "lib",
       "<rootDir>/src/__tests__/testUtils.js"
     ]
   },

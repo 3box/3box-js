@@ -15,6 +15,7 @@ describe('PrivateStore', () => {
       }
     },
     symDecrypt: (ciphertext, nonce) => ciphertext.split('!')[1],
+    getDid: () => 'did:muport:Qmsdfwerg'
   }
 
   let latestRoot = null

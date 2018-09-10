@@ -51,8 +51,8 @@ class PrivateStore {
     const dbKey = this._genDbKey(key)
 
     // TODO - error handling
-    const multihash = await this.db.put(dbKey, value)
-    this.updateRoot(multihash)
+    const hash = await this.db.put(dbKey, value)
+    this.updateRoot(hash)
     return true
   }
 
@@ -74,7 +74,9 @@ class PrivateStore {
   async _sync (hash) {
     if (!this.db) {
       const orbitdb = new OrbitDB(this.ipfs)
-      this.db = await orbitdb.keyvalue('3box.datastore', {
+      // the db needs a unique name, we use the hash of the DID + a store specific name
+      const storeName = multihash(this.muportDID.getDid()) + ".datastore"
+      this.db = await orbitdb.keyvalue(storeName, {
         replicate: false,
         write: ['*']
       })
@@ -105,8 +107,7 @@ class PrivateStore {
   }
 
   _genDbKey (key) {
-    const dataBuf = Buffer.from(this.salt + key, 'utf8')
-    return Multihash.encode(dataBuf, 'sha3-256').toString('hex')
+    return multihash(this.salt + key)
   }
 
   _encryptEntry (entry) {
@@ -118,6 +119,11 @@ class PrivateStore {
     let [nonce, ciphertext] = entry.split('.')
     return this.muportDID.symDecrypt(ciphertext, nonce)
   }
+}
+
+const multihash = str => {
+  const dataBuf = Buffer.from(str, 'utf8')
+  return Multihash.encode(dataBuf, 'sha3-256').toString('hex')
 }
 
 module.exports = PrivateStore
