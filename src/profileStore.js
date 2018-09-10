@@ -77,12 +77,14 @@ class ProfileStore {
    * @param     {String}    hash                        The hash of the profile object
    */
   async _sync (hash) {
-    if(hash != undefined){
-      console.log('1....', hash)
+    if (hash) {
       //download profile from ipfs
-      const dagNode = await this.ipfs.object.get(hash);
-      const profile = JSON.parse(Buffer.from(dagNode.data).toString());
-      this.profile = profile;
+      try {
+        const dagNode = await this.ipfs.object.get(hash, {recursive: false});
+        this.profile = JSON.parse(Buffer.from(dagNode.data).toString());
+      } catch (err) {
+        throw new Error(err)
+      }
     } else {
       this.profile = {};
     }
