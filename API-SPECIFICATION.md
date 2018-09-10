@@ -21,7 +21,6 @@ The implementation of this can be found at [`3box-js`](https://github.com/uport-
     * _static_
         * [.openBox(address)](#3Box.open) ⇒ [<code>3Box</code>](#3Box)
         * [.getPublicProfile(address)](#3Box.getPublicProfile) ⇒ [<code>3Box</code>](#3Box)
-        * [.getPublicActivity(address)](#3Box.getPublicActivity) ⇒ [<code>3Box</code>](#3Box)
 
 <a name="new_3Box_new"></a>
 
@@ -127,18 +126,6 @@ Returns the public profile associated with the given address
 
 **Kind**: static method of [<code>3Box</code>](#3Box)
 **Returns**: [<code>Object</code>](#3Box) - the public profile of the given address
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | an ethereum address |
-
-<a name="3Box.getPublicActivity"></a>
-
-### 3Box.getPublicActivity(address) ⇒ [<code>3Box</code>](#3Box)
-Returns the public activity associated with the given address
-
-**Kind**: static method of [<code>3Box</code>](#3Box)
-**Returns**: [<code>3Box</code>](#3Box) - the public activity of the given address
 
 | Param | Type | Description |
 | --- | --- | --- |

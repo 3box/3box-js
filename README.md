@@ -45,7 +45,6 @@ ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
         * [.privateStore](#ThreeBox+privateStore)
     * _static_
         * [.getProfile(address)](#ThreeBox.getProfile) ⇒ <code>Object</code>
-        * [.getActivity(address)](#ThreeBox.getActivity) ⇒ <code>Object</code>
         * [.openBox(address, web3provider, opts)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
 
 <a name="new_ThreeBox_new"></a>
@@ -86,18 +85,6 @@ Instantiates a threeBox
 
 ### ThreeBox.getProfile(address) ⇒ <code>Object</code>
 Get the public profile of the given address
-
-**Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
-**Returns**: <code>Object</code> - the threeBox instance for the given address  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | an ethereum address |
-
-<a name="ThreeBox.getActivity"></a>
-
-### ThreeBox.getActivity(address) ⇒ <code>Object</code>
-Get the public activity of the given address
 
 **Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
 **Returns**: <code>Object</code> - the threeBox instance for the given address  
