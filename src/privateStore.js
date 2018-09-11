@@ -28,7 +28,6 @@ class PrivateStore {
    */
   async get (key) {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
-    if (key === SALT_KEY) throw new Error('Invalid key')
 
     const encryptedEntry = await this.db.get(this._genDbKey(key))
     return encryptedEntry ? this._decryptEntry(encryptedEntry) : null
