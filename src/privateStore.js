@@ -110,12 +110,10 @@ class PrivateStore {
   }
 
   _encryptEntry (entry) {
-    const encrypted = this.muportDID.symEncrypt(entry)
-    return encrypted.nonce + '.' + encrypted.ciphertext
+    return this.muportDID.symEncrypt(entry)
   }
 
-  _decryptEntry (entry) {
-    let [nonce, ciphertext] = entry.split('.')
+  _decryptEntry ({ciphertext, nonce}) {
     return this.muportDID.symDecrypt(ciphertext, nonce)
   }
 }
