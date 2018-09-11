@@ -43,7 +43,6 @@ class PrivateStore {
    */
   async set (key, value) {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
-    if (key === SALT_KEY) throw new Error('Invalid key')
 
     if (value != null) {
       value = this._encryptEntry(value)
@@ -75,7 +74,7 @@ class PrivateStore {
     if (!this.db) {
       const orbitdb = new OrbitDB(this.ipfs)
       // the db needs a unique name, we use the hash of the DID + a store specific name
-      const storeName = multihash(this.muportDID.getDid()) + ".datastore"
+      const storeName = sha256(this.muportDID.getDid()) + ".datastore"
       this.db = await orbitdb.keyvalue(storeName, {
         replicate: false,
         write: ['*']
@@ -107,7 +106,7 @@ class PrivateStore {
   }
 
   _genDbKey (key) {
-    return multihash(this.salt + key)
+    return sha256(this.salt + key)
   }
 
   _encryptEntry (entry) {
@@ -121,9 +120,9 @@ class PrivateStore {
   }
 }
 
-const multihash = str => {
+const sha256 = str => {
   const dataBuf = Buffer.from(str, 'utf8')
-  return Multihash.encode(dataBuf, 'sha3-256').toString('hex')
+  return Multihash.encode(dataBuf, 'sha2-256').toString('hex')
 }
 
 module.exports = PrivateStore
