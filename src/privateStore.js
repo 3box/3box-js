@@ -14,7 +14,7 @@ class PrivateStore {
    * @param     {function}  updateRoot                  A callback function that is called when the store has been updated
    * @return    {PrivateStore}                          self
    */
-  constructor(muportDID, ipfs, updateRoot) {
+  constructor (muportDID, ipfs, updateRoot) {
     this.muportDID = muportDID
     this.ipfs = ipfs
     this.updateRoot = updateRoot
@@ -73,7 +73,7 @@ class PrivateStore {
     if (!this.db) {
       const orbitdb = new OrbitDB(this.ipfs)
       // the db needs a unique name, we use the hash of the DID + a store specific name
-      const storeName = sha256(this.muportDID.getDid()) + ".datastore"
+      const storeName = sha256(this.muportDID.getDid()) + '.datastore'
       this.db = await orbitdb.keyvalue(storeName, {
         replicate: false,
         write: ['*']
@@ -112,7 +112,7 @@ class PrivateStore {
     return this.muportDID.symEncrypt(entry)
   }
 
-  _decryptEntry ({ciphertext, nonce}) {
+  _decryptEntry ({ ciphertext, nonce }) {
     return this.muportDID.symDecrypt(ciphertext, nonce)
   }
 }

@@ -1,18 +1,17 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
 const localstorage = require('store')
-const ipfsAPI = require('ipfs-api')
+const IpfsAPI = require('ipfs-api')
 const DAGNode = require('ipld-dag-pb').DAGNode
 
 const ProfileStore = require('./profileStore')
 const PrivateStore = require('./privateStore')
 const utils = require('./utils')
 
-//TODO: Put production 3box-hash-server instance here ;)
-const HASH_SERVER_URL = 'https://api.uport.space/hash-server';
+// TODO: Put production 3box-hash-server instance here ;)
+const HASH_SERVER_URL = 'https://api.uport.space/hash-server'
 
 class ThreeBox {
-
   /**
    * Instantiates a threeBox
    *
@@ -31,7 +30,7 @@ class ThreeBox {
     } else {
       this.localCache = {}
     }
-    this.ipfs = opts.ipfs || new ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+    this.ipfs = opts.ipfs || new IpfsAPI('ipfs.infura.io', '5001', { protocol: 'https' })
 
     /**
      * @property {ProfileStore} profileStore        access the profile store of the users threeBox
@@ -52,14 +51,14 @@ class ThreeBox {
    * @return    {Object}                            a json object with the profile for the given address
    */
   static async getProfile (address, opts = {}) {
-    let ipfs = opts.ipfs || new ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+    let ipfs = opts.ipfs || new IpfsAPI('ipfs.infura.io', '5001', { protocol: 'https' })
     try {
-      const rootHash = (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + address, 'GET')).data.hash;
+      const rootHash = (await utils.httpRequest(HASH_SERVER_URL + '/hash/' + address, 'GET')).data.hash
       const rootNode = await ipfs.object.get(rootHash)
       const profileHash = rootNode.links.filter(link => link.name === 'profile')[0].toJSON().multihash
-      const profileNode = await ipfs.object.get(profileHash, {recursive: false});
-      return JSON.parse(Buffer.from(profileNode.data).toString());
-    } catch(e) {
+      const profileNode = await ipfs.object.get(profileHash, { recursive: false })
+      return JSON.parse(Buffer.from(profileNode.data).toString())
+    } catch (e) {
       console.error(e)
       return {}
     }
@@ -96,17 +95,17 @@ class ThreeBox {
   }
 
   async _sync () {
-    let rootHash;
+    let rootHash
     const did = this.muportDID.getDid()
     try {
-      //read root ipld object hash from 3box-hash-server
-      rootHash = (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + did, 'GET')).data.hash;
-    }catch(err){
+      // read root ipld object hash from 3box-hash-server
+      rootHash = (await utils.httpRequest(HASH_SERVER_URL + '/hash/' + did, 'GET')).data.hash
+    } catch (err) {
       console.error(err)
     }
 
     if (rootHash) {
-      //Get root ipld object from IPFS
+      // Get root ipld object from IPFS
       this.rootDAGNode = await this.ipfs.object.get(rootHash)
       if (!this.rootDAGNode.links.length) {
         // We got some random object from ipfs, create a real root object
@@ -118,8 +117,8 @@ class ThreeBox {
     // start with an empty DAGNode if one was not created
     console.log('rootDAGNode', this.rootDAGNode)
 
-    //Sync profile and privateStore
-    //TODO: both can run in parallel.
+    // Sync profile and privateStore
+    // TODO: both can run in parallel.
     let profileLink = this.rootDAGNode.links.filter(link => link.name === 'profile')[0]
     await this.profileStore._sync(profileLink ? profileLink.toJSON().multihash : null)
     let datastoreLink = this.rootDAGNode.links.filter(link => link.name === 'profile')[0]
@@ -127,17 +126,17 @@ class ThreeBox {
   }
 
   async _publishUpdate (storeName, hash) {
-    console.log("publishUpdate ("+storeName+"):"+hash);
+    console.log('publishUpdate (' + storeName + '):' + hash)
     if (storeName === 'profile') {
-      await this._linkProfile();
+      await this._linkProfile()
     }
 
-    //Update rootObject
+    // Update rootObject
     this.rootDAGNode = await updateDAGNodeLink(this.rootDAGNode, storeName, hash)
 
-    //Store rootObject on IPFS
+    // Store rootObject on IPFS
     const rootHash = this.rootDAGNode.toJSON().multihash
-    console.log("rootHash: "+rootHash)
+    console.log('rootHash: ' + rootHash)
     try {
       const ipfsRes = await this.ipfs.object.put(this.rootDAGNode)
       console.log(ipfsRes)
@@ -146,69 +145,64 @@ class ThreeBox {
       console.error(e)
     }
 
-    //Sign rootHash
-    const hashToken = await this.muportDID.signJWT({hash: rootHash});
-    console.log("hashToken: "+hashToken);
+    // Sign rootHash
+    const hashToken = await this.muportDID.signJWT({ hash: rootHash })
+    console.log('hashToken: ' + hashToken)
 
-    //Store hash on 3box-hash-server
-    const servRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash', 'POST', {hash_token: hashToken})).data;
+    // Store hash on 3box-hash-server
+    const servRes = (await utils.httpRequest(HASH_SERVER_URL + '/hash', 'POST', { hash_token: hashToken })).data
     console.log(servRes)
 
-    //TODO: Verify servRes.hash == rootHash;
+    // TODO: Verify servRes.hash == rootHash;
     return true
   }
 
   async _linkProfile () {
-    if(!localstorage.get("lastConsent")){
-
-      const address = this.muportDID.getDidDocument().managementKey;
-      const did=this.muportDID.getDid();
-      console.log("3box._linkProfile: "+address +"->"+did)
+    if (!localstorage.get('lastConsent')) {
+      const address = this.muportDID.getDidDocument().managementKey
+      const did = this.muportDID.getDid()
+      console.log('3box._linkProfile: ' + address + '->' + did)
 
       const consent = await utils.getLinkConsent(address, did, this.web3provider)
-      const linkData={
+      const linkData = {
 
         consent_msg: consent.msg,
         consent_signature: consent.sig,
         linked_did: did
       }
-      console.log(linkData);
+      console.log(linkData)
 
+      // Send consentSignature to root-hash-tracker to link profile with ethereum address
+      const linkRes = (await utils.httpRequest(HASH_SERVER_URL + '/link', 'POST', linkData)).data
 
-      //Send consentSignature to root-hash-tracker to link profile with ethereum address
-      const linkRes= (await utils.httpRequest(HASH_SERVER_URL+'/link', 'POST', linkData)).data;
+      // TOOD: check if did == linkRes.did and address == linkRes.address;
+      console.log(linkRes)
 
-      //TOOD: check if did == linkRes.did and address == linkRes.address;
-      console.log(linkRes);
-
-      //Store lastConsent into localstorage
-      const lastConsent={
+      // Store lastConsent into localstorage
+      const lastConsent = {
         address: address,
         did: did,
         consent: consent
       }
-      localstorage.set("lastConsent",lastConsent)
-
-    }else{
-      console.log("profile linked");
+      localstorage.set('lastConsent', lastConsent)
+    } else {
+      console.log('profile linked')
     }
-
-
   }
 
   _clearCache () {
     localstorage.remove('serializedMuDID_' + this.muportDID.getDidDocument().managementKey)
   }
 
-  //async postEvent (payload) {
-    //const encrypted = this.muportDID.symEncrypt(JSON.stringify(payload))
-    //const event_token = await this.muportDID.signJWT({
-      //previous: this.previous,
-      //event: encrypted.ciphertext + '.' + encrypted.nonce
-    //})
-    //this.previous = (await utils.httpRequest(CALEUCHE_URL, 'POST', {event_token})).data.id
-    //console.log('added event with id', this.previous)
-  //}
+  // async postEvent (payload) {
+  // const encrypted = this.muportDID.symEncrypt(JSON.stringify(payload))
+  // const event_token = await this.muportDID.signJWT({
+  // previous: this.previous,
+  // event: encrypted.ciphertext + '.' + encrypted.nonce
+  // })
+  // this.previous = (await utils.httpRequest(CALEUCHE_URL, 'POST', {event_token})).data.id
+  // console.log('added event with id', this.previous)
+  // }
 }
 
 const createDAGNode = (data, links) => new Promise((resolve, reject) => {
@@ -222,7 +216,7 @@ const updateDAGNodeLink = (node, name, multihash) => new Promise((resolve, rejec
   DAGNode.rmLink(node, name, (err, clearedNode) => {
     if (err) reject(err)
     // size has to be set to a non-zero value
-    DAGNode.addLink(clearedNode, {name, multihash, size: 1}, (err, newNode) => {
+    DAGNode.addLink(clearedNode, { name, multihash, size: 1 }, (err, newNode) => {
       if (err) reject(err)
       resolve(newNode)
     })
