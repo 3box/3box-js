@@ -4,10 +4,9 @@ class ProfileStore {
    *
    * @param     {IPFS}      ipfs                        An instance of the ipfs api
    * @param     {function}  updateRoot                  A callback function that is called when the store has been updated
-   * @param     {function}  linkProfile                 A callback function that is called if the profile is not made public yet
    * @return    {ProfileStore}                          self
    */
-  constructor (ipfs, updateRoot, linkProfile) {
+  constructor (ipfs, updateRoot) {
     this.ipfs = ipfs
     this.updateRoot = updateRoot
     this.profile = null
@@ -32,11 +31,8 @@ class ProfileStore {
    * @return    {Boolean}                           true if successful
    */
   async set (key, value) {
-    console.log('profileStore.set:' + key + '->' + value)
-    console.log(this.profile)
-    if (!this.profile) {
-      this.profile = {}
-    }
+    if (!this.profile) throw new Error('_sync must be called before interacting with the store')
+
     this.profile[key] = value
 
     return this._uploadProfile()
@@ -49,6 +45,8 @@ class ProfileStore {
    * @return    {Boolean}                           true if successful
    */
   async remove (key) {
+    if (!this.profile) throw new Error('_sync must be called before interacting with the store')
+
     delete this.profile[key]
 
     return this._uploadProfile()
@@ -61,7 +59,6 @@ class ProfileStore {
    */
   async _uploadProfile () {
     const profile = JSON.stringify(this.profile)
-    console.log('_uploadProfile:' + profile)
     let dagNode
     try {
       dagNode = await this.ipfs.object.put(Buffer.from(profile))
