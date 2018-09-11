@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
-    "test": "jest --coverage --runInBand --testURL=\"http://localhost\" ; npm run lint",
+    "test": "jest --coverage --runInBand --testURL=\"http://localhost\"",
     "build": "babel src --out-dir lib",
     "build:dist": "browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md src/*.js >> README.md"

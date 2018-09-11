@@ -23,6 +23,10 @@ jobs:
           command: npm test && codecov
 
       - run:
+          name: lint
+          command: npm run lint
+
+      - run:
           name: code-coverage
           command: bash <(curl -s https://codecov.io/bash)
 
