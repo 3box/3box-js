@@ -1,4 +1,9 @@
 const OrbitDB = require('orbit-db')
+const Log = require('ipfs-log')
+const Multihash = require('multihashes')
+const nacl = require('tweetnacl')
+
+const SALT_KEY = '3BOX_SALT'
 
 class PrivateStore {
   /**
@@ -25,8 +30,7 @@ class PrivateStore {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
     const encryptedEntry = await this.db.get(this._genDbKey(key))
-
-    return this._decryptEntry(encryptedEntry)
+    return encryptedEntry ? this._decryptEntry(encryptedEntry) : null
   }
 
   /**
@@ -39,13 +43,14 @@ class PrivateStore {
   async set (key, value) {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
-    const encryptedValue = this._encryptEntry(value)
+    if (value != null) {
+      value = this._encryptEntry(value)
+    }
     const dbKey = this._genDbKey(key)
 
     // TODO - error handling
-    const multihash = await this.db.put(dbKey, encryptedValue)
-
-    this.updateRoot(multihash)
+    const hash = await this.db.put(dbKey, value)
+    this.updateRoot(hash)
     return true
   }
 
@@ -65,30 +70,56 @@ class PrivateStore {
    * @param     {String}    hash                        The hash of the private store OrbitDB
    */
   async _sync (hash) {
-    // if hash === null; create a new orbitdb instance.
-    const orbitdb = new OrbitDB(this.ipfs)
-    //TODO - sync the OrbitDB key-value store
+    if (!this.db) {
+      const orbitdb = new OrbitDB(this.ipfs)
+      // the db needs a unique name, we use the hash of the DID + a store specific name
+      const storeName = sha256(this.muportDID.getDid()) + ".datastore"
+      this.db = await orbitdb.keyvalue(storeName, {
+        replicate: false,
+        write: ['*']
+      })
+    }
+    if (hash) {
+      // sync orbitdb to hash
+      let log = await Log.fromEntryHash(this.ipfs, hash)
+
+      return new Promise((resolve, reject) => {
+        this.db.events.on('replicated', async (address, logLength) => {
+          // get the key salt of the db
+          const encryptedSalt = await this.db.get(SALT_KEY)
+          this.salt = this._decryptEntry(encryptedSalt)
+          resolve()
+        })
+        this.db.sync(log.values)
+      })
+    }
+    // This is the first time the store is used.
+    // Generate a random salt and save in the db.
+    this.salt = Buffer.from(nacl.randomBytes(16)).toString('hex')
+    const encryptedSalt = this._encryptEntry(this.salt)
+    await this.db.put(SALT_KEY, encryptedSalt)
+  }
+
+  async close () {
+    this.db.close()
   }
 
   _genDbKey (key) {
-    // return someHashFunction(key + this.salt)
+    return sha256(this.salt + key)
   }
 
   _encryptEntry (entry) {
-    // TODO - use muport to encrypt entry
+    return this.muportDID.symEncrypt(entry)
   }
 
-  _decryptEntry (entry) {
-    // TODO - use muport to decrypt entry
+  _decryptEntry ({ciphertext, nonce}) {
+    return this.muportDID.symDecrypt(ciphertext, nonce)
   }
 }
 
-// some sample code for  creating a log store
-//orbitdb.log('hello', {replicate: false}).then(db => {
-  //db.add('asdfasdf').then(h => {
-    //const eve = db.get(h)
-    //console.log(eve)
-  //})
-//}).catch(console.log)
+const sha256 = str => {
+  const dataBuf = Buffer.from(str, 'utf8')
+  return Multihash.encode(dataBuf, 'sha2-256').toString('hex')
+}
 
 module.exports = PrivateStore

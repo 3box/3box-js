@@ -1,6 +1,5 @@
-const assert = require("chai").assert;
-const IPFSFactory = require("ipfsd-ctl");
-const ProfileStore = require("../profileStore");
+const IPFSFactory = require('ipfsd-ctl')
+const ProfileStore = require('../profileStore')
 
 describe("ProfileStore", () => {
   let ipfsd;
@@ -21,7 +20,7 @@ describe("ProfileStore", () => {
   });
 });
 
-function spawnIPFSD() {
+function spawnIPFSD () {
   return new Promise((resolve, reject) => {
     const f = IPFSFactory.create({ type: "proc", exec: require("ipfs") });
     f.spawn(function(err, ipfsd) {
