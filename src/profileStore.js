@@ -4,13 +4,12 @@ class ProfileStore {
    *
    * @param     {IPFS}      ipfs                        An instance of the ipfs api
    * @param     {function}  updateRoot                  A callback function that is called when the store has been updated
-   * @param     {function}  linkProfile                 A callback function that is called if the profile is not made public yet
    * @return    {ProfileStore}                          self
    */
-  constructor(ipfs, updateRoot, linkProfile) {
-    this.ipfs = ipfs;
-    this.updateRoot = updateRoot;
-    this.profile = null;
+  constructor (ipfs, updateRoot) {
+    this.ipfs = ipfs
+    this.updateRoot = updateRoot
+    this.profile = null
   }
 
   /**
@@ -19,9 +18,9 @@ class ProfileStore {
    * @param     {String}    key                     the key
    * @return    {String}                            the value associated with the key
    */
-  async get(key) {
-    if (!this.profile) throw new Error("This user has no public profile yet");
-    return this.profile[key];
+  async get (key) {
+    if (!this.profile) throw new Error('This user has no public profile yet')
+    return this.profile[key]
   }
 
   /**
@@ -31,15 +30,12 @@ class ProfileStore {
    * @param     {String}    value                   the value
    * @return    {Boolean}                           true if successful
    */
-  async set(key, value) {
-    console.log("profileStore.set:" + key + "->" + value);
-    console.log(this.profile);
-    if (!this.profile) {
-      this.profile = {};
-    }
-    this.profile[key] = value;
+  async set (key, value) {
+    if (!this.profile) throw new Error('_sync must be called before interacting with the store')
 
-    return this._uploadProfile();
+    this.profile[key] = value
+
+    return this._uploadProfile()
   }
 
   /**
@@ -48,10 +44,12 @@ class ProfileStore {
    * @param     {String}    key                     the key
    * @return    {Boolean}                           true if successful
    */
-  async remove(key) {
-    delete this.profile[key];
+  async remove (key) {
+    if (!this.profile) throw new Error('_sync must be called before interacting with the store')
 
-    return this._uploadProfile();
+    delete this.profile[key]
+
+    return this._uploadProfile()
   }
 
   /**
@@ -59,12 +57,11 @@ class ProfileStore {
    *
    * @return    {Boolean}                           true if successful
    */
-  async _uploadProfile() {
+  async _uploadProfile () {
     const profile = JSON.stringify(this.profile)
-    console.log("_uploadProfile:"+profile)
-    let dagNode;
+    let dagNode
     try {
-      dagNode = await this.ipfs.object.put(new Buffer(profile));
+      dagNode = await this.ipfs.object.put(Buffer.from(profile))
     } catch (e) {
       throw new Error(e)
     }
@@ -78,17 +75,17 @@ class ProfileStore {
    */
   async _sync (hash) {
     if (hash) {
-      //download profile from ipfs
+      // download profile from ipfs
       try {
-        const dagNode = await this.ipfs.object.get(hash, {recursive: false});
-        this.profile = JSON.parse(Buffer.from(dagNode.data).toString());
+        const dagNode = await this.ipfs.object.get(hash, { recursive: false })
+        this.profile = JSON.parse(Buffer.from(dagNode.data).toString())
       } catch (err) {
         throw new Error(err)
       }
     } else {
-      this.profile = {};
+      this.profile = {}
     }
   }
 }
 
-module.exports = ProfileStore;
+module.exports = ProfileStore

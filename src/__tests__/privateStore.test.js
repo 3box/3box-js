@@ -1,9 +1,7 @@
 const utils = require('./testUtils')
 const PrivateStore = require('../privateStore')
 
-
 describe('PrivateStore', () => {
-
   let ipfsd
   let privateStore
 
@@ -19,7 +17,7 @@ describe('PrivateStore', () => {
   }
 
   let latestRoot = null
-  updateRoot = newRoot => {
+  const updateRoot = newRoot => {
     expect(newRoot).not.toEqual(latestRoot)
     latestRoot = newRoot
   }
@@ -98,10 +96,8 @@ describe('PrivateStore', () => {
     await privateStore2.close()
   })
 
-  afterAll(async (done) => {
+  afterAll(async done => {
     await privateStore.close()
     ipfsd.stop(done)
   })
 })
-
-
