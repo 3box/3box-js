@@ -173,7 +173,12 @@ class ThreeBox {
     }
   }
 
-  logout () {
+  async close () {
+    await this.privateStore.close()
+  }
+
+  async logout () {
+    await this.close()
     const address = this.muportDID.getDidDocument().managementKey
     localstorage.remove('serializedMuDID_' + address)
     localstorage.remove('linkConsent_' + address)
