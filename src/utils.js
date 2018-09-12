@@ -24,9 +24,8 @@ module.exports = {
   },
 
   getLinkConsent: (fromAddress, toDID, web3provider) => {
-    const text = 'I consent to link my address: \n' +
-      fromAddress + '\n' +
-      'to my public profile\n\n' +
+    const text = 'I consent to link my address to DID: \n' +
+      toDID + '\n\n' +
       'Disclaimer: public data is public forever and can not be unassociated from this profile. ' +
       'Even if updates, the original entries will persist.'
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
