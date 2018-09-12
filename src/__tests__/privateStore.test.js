@@ -96,7 +96,7 @@ describe('PrivateStore', () => {
     await privateStore2.close()
   })
 
-  afterAll(async (done) => {
+  afterAll(async done => {
     await privateStore.close()
     ipfsd.stop(done)
   })

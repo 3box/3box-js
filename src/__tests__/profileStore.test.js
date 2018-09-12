@@ -55,7 +55,7 @@ describe('ProfileStore', () => {
     expect(await profileStore2.get('key3')).toBeUndefined()
   })
 
-  afterAll(async () => {
-    ipfsd.stop()
+  afterAll(async done => {
+    ipfsd.stop(done)
   })
 })
