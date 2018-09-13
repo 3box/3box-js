@@ -6,32 +6,104 @@ This is a library which allows you to set, get, and remove private and public da
 
 [Data Schema](./DATA-MODEL.md)
 
-[API Documentation](./API-SPECIFICATION.md)
-
-## Usage
-Simply install using npm
+## Installation
+Install 3box in your npm project:
 ```
 $ npm install 3box
 ```
-and then import into your project
+
+## Usage
+### Import 3Box into your project
+Import the 3box module
 ```js
 const ThreeBox = require('3box')
+```
+or use the dist build in your html code
+```js
+<script type="text/javascript" src="../dist/3box.js"></script>
+```
 
-ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
-  // Code goes here...
+### Get the public profile of an address
+3Box allows users to create a public profile. In your dapp you might have multiple ethereum addresses that you would like to display a name and picture for. The `getProfile` method allows you to retrieve the profile of any ethereum address (if it has one). This is a *static* method so you can call it directly from the **ThreeBox** object.
+
+Using `async/await`
+```js
+const profile = await ThreeBox.getProfile('0x12345abcde')
+console.log(profile)
+```
+or using `.then`
+```js
+ThreeBox.getProfile('0x12345abcde').then(profile => {
+  console.log(profile)
 })
 ```
 
-## Classes
+### Get, set, and remove data
+To get or modify data in a user's 3Box, first open their 3Box by calling the openBox method. This method prompts the user to authenticate your dapp and returns a promise with a threeBox instance. You can only set, get, and remove data of users that are currently interacting with your dapp. Below `web3provider` refers to the object that you would get from `web3.currentProvider`, or request directly from the web3 browser, e.g. MetaMask.
 
-<dl>
-<dt><a href="#ThreeBox">ThreeBox</a></dt>
-<dd></dd>
-<dt><a href="#PrivateStore">PrivateStore</a></dt>
-<dd></dd>
-<dt><a href="#ProfileStore">ProfileStore</a></dt>
-<dd></dd>
-</dl>
+#### Open 3Box session
+Using `async/await`
+```js
+const box = await ThreeBox.openBox('0x12345abcde', web3provider)
+```
+or using `.then`
+```js
+ThreeBox.openBox('0x12345abcde', web3provider).then(box => {
+  // interact with 3Box data
+})
+```
+
+#### Interact with 3Box data
+You can now use the `box` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`. [**What keys can I use?**](./KEY-USAGE.md)
+
+Using `async/await`
+```js
+// use the public profile
+// get
+const nickname = await box.profileStore.get('name')
+console.log(nickname)
+// set
+await box.profileStore.set('name', 'oed')
+// remove
+await box.profileStore.remove('name')
+
+// use the private store
+// get
+const email = await box.privateStore.get('email')
+console.log(email)
+// set
+await box.privateStore.set('email', 'oed@email.service')
+// remove
+await box.privateStore.remove('email')
+```
+or using `.then`
+```js
+// use the public profile
+// get
+box.profileStore.get('name').then(nickname => {
+  console.log(nickname)
+  // set
+  box.profileStore.set('name', 'oed').then(() => {
+    // remove
+    box.profileStore.remove('name').then(() => {
+    })
+  })
+})
+
+// use the private store
+// get
+box.privateStore.get('email').then(email => {
+  console.log(email)
+  // set
+  box.privateStore.set('email', 'oed@email.service').then(() => {
+    // remove
+    box.privateStore.remove('email').then(() => {
+    })
+  })
+})
+```
+
+# API Documentation
 
 <a name="ThreeBox"></a>
 
@@ -39,7 +111,7 @@ ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
 **Kind**: global class  
 
 * [ThreeBox](#ThreeBox)
-    * [new ThreeBox(muportDID, web3provider, opts)](#new_ThreeBox_new)
+    * [new ThreeBox()](#new_ThreeBox_new)
     * _instance_
         * [.profileStore](#ThreeBox+profileStore)
         * [.privateStore](#ThreeBox+privateStore)
@@ -51,18 +123,8 @@ ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
 
 <a name="new_ThreeBox_new"></a>
 
-### new ThreeBox(muportDID, web3provider, opts)
-Instantiates a threeBox
-
-**Returns**: [<code>ThreeBox</code>](#ThreeBox) - self  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| muportDID | <code>MuPort</code> | A MuPort DID instance |
-| web3provider | <code>Web3Provider</code> | A Web3 provider |
-| opts | <code>Object</code> | Optional parameters |
-| opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
-| opts.hashServer | <code>String</code> | A url to a custom hash server |
+### new ThreeBox()
+Please use the **openBox** method to instantiate a ThreeBox
 
 <a name="ThreeBox+profileStore"></a>
 
@@ -135,24 +197,15 @@ Opens the user space associated with the given address
 **Kind**: global class  
 
 * [PrivateStore](#PrivateStore)
-    * [new PrivateStore(muportDID, ipfs, updateRoot)](#new_PrivateStore_new)
+    * [new PrivateStore()](#new_PrivateStore_new)
     * [.get(key)](#PrivateStore+get) ⇒ <code>String</code>
     * [.set(key, value)](#PrivateStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#PrivateStore+remove) ⇒ <code>Boolean</code>
-    * [._sync(hash)](#PrivateStore+_sync)
 
 <a name="new_PrivateStore_new"></a>
 
-### new PrivateStore(muportDID, ipfs, updateRoot)
-Instantiates a PrivateStore
-
-**Returns**: [<code>PrivateStore</code>](#PrivateStore) - self  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| muportDID | <code>MuPort</code> | A MuPort DID instance |
-| ipfs | <code>IPFS</code> | An instance of the ipfs api |
-| updateRoot | <code>function</code> | A callback function that is called when the store has been updated |
+### new PrivateStore()
+Please use **threeBox.privateStore** to get the instance of this class
 
 <a name="PrivateStore+get"></a>
 
@@ -191,41 +244,21 @@ Remove the value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
-<a name="PrivateStore+_sync"></a>
-
-### privateStore._sync(hash)
-Sync the private store with the given ipfs hash
-
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| hash | <code>String</code> | The hash of the private store OrbitDB |
-
 <a name="ProfileStore"></a>
 
 ## ProfileStore
 **Kind**: global class  
 
 * [ProfileStore](#ProfileStore)
-    * [new ProfileStore(ipfs, updateRoot)](#new_ProfileStore_new)
+    * [new ProfileStore()](#new_ProfileStore_new)
     * [.get(key)](#ProfileStore+get) ⇒ <code>String</code>
     * [.set(key, value)](#ProfileStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#ProfileStore+remove) ⇒ <code>Boolean</code>
-    * [._uploadProfile()](#ProfileStore+_uploadProfile) ⇒ <code>Boolean</code>
-    * [._sync(hash)](#ProfileStore+_sync)
 
 <a name="new_ProfileStore_new"></a>
 
-### new ProfileStore(ipfs, updateRoot)
-Instantiates a ProfileStore
-
-**Returns**: [<code>ProfileStore</code>](#ProfileStore) - self  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| ipfs | <code>IPFS</code> | An instance of the ipfs api |
-| updateRoot | <code>function</code> | A callback function that is called when the store has been updated |
+### new ProfileStore()
+Please use **threeBox.profileStore** to get the instance of this class
 
 <a name="ProfileStore+get"></a>
 
@@ -263,22 +296,4 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
-
-<a name="ProfileStore+_uploadProfile"></a>
-
-### profileStore._uploadProfile() ⇒ <code>Boolean</code>
-Upload the instanced profile to IPFS
-
-**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
-**Returns**: <code>Boolean</code> - true if successful  
-<a name="ProfileStore+_sync"></a>
-
-### profileStore._sync(hash)
-Sync the profile store with the given ipfs hash
-
-**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| hash | <code>String</code> | The hash of the profile object |
 
