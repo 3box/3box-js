@@ -119,7 +119,7 @@ threeBox.privateStore.get('email').then(email => {
 <a name="new_ThreeBox_new"></a>
 
 ### new ThreeBox()
-Please use the **openBox** to instantiate a ThreeBox
+Please use the **openBox** method to instantiate a ThreeBox
 
 <a name="ThreeBox+profileStore"></a>
 
@@ -200,7 +200,7 @@ Opens the user space associated with the given address
 <a name="new_PrivateStore_new"></a>
 
 ### new PrivateStore()
-Please use threeBox.privateStore to get the instance of this class
+Please use **threeBox.privateStore** to get the instance of this class
 
 <a name="PrivateStore+get"></a>
 
@@ -253,7 +253,7 @@ Remove the value for the given key
 <a name="new_ProfileStore_new"></a>
 
 ### new ProfileStore()
-Please use threeBox.profileStore to get the instance of this class
+Please use **threeBox.profileStore** to get the instance of this class
 
 <a name="ProfileStore+get"></a>
 

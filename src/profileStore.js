@@ -1,6 +1,6 @@
 class ProfileStore {
   /**
-   * Please use threeBox.profileStore to get the instance of this class
+   * Please use **threeBox.profileStore** to get the instance of this class
    */
   constructor (ipfs, updateRoot) {
     this.ipfs = ipfs

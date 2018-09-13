@@ -7,7 +7,7 @@ const SALT_KEY = '3BOX_SALT'
 
 class PrivateStore {
   /**
-   * Please use threeBox.privateStore to get the instance of this class
+   * Please use **threeBox.privateStore** to get the instance of this class
    */
   constructor (muportDID, ipfs, updateRoot) {
     this.muportDID = muportDID

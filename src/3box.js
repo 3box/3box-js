@@ -13,7 +13,7 @@ const HASH_SERVER_URL = 'https://api.uport.space/hash-server'
 
 class ThreeBox {
   /**
-   * Please use the **openBox** to instantiate a ThreeBox
+   * Please use the **openBox** method to instantiate a ThreeBox
    */
   constructor (muportDID, web3provider, opts = {}) {
     this.muportDID = muportDID
