@@ -64,12 +64,12 @@ await threeBox.profileStore.remove('name')
 
 // use the private store
 // get
-const email = await threeBox.profileStore.get('email')
+const email = await threeBox.privateStore.get('email')
 console.log(email)
 // set
-await threeBox.profileStore.set('email', 'oed@email.service')
+await threeBox.privateStore.set('email', 'oed@email.service')
 // remove
-await threeBox.profileStore.remove('email')
+await threeBox.privateStore.remove('email')
 ```
 or using `.then`
 ```js
@@ -87,12 +87,12 @@ threeBox.profileStore.get('name').then(nickname => {
 
 // use the private store
 // get
-threeBox.profileStore.get('email').then(email => {
+threeBox.privateStore.get('email').then(email => {
   console.log(email)
   // set
-  threeBox.profileStore.set('email', 'oed@email.service').then(() => {
+  threeBox.privateStore.set('email', 'oed@email.service').then(() => {
     // remove
-    threeBox.profileStore.remove('email').then(() => {
+    threeBox.privateStore.remove('email').then(() => {
     })
   })
 })
