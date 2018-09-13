@@ -2,11 +2,7 @@ const XMLHttpRequest = (typeof window !== 'undefined') ? window.XMLHttpRequest :
 
 module.exports = {
   openBoxConsent: (fromAddress, web3provider) => {
-    const text = 'This dApp wants to access your 3Box, to:\n' +
-            '* store public and private data about you\n' +
-            '* read public and private data about you\n' +
-            '* remove private data about you\n\n' +
-            'You are always in control of your data. Create your public profile at https://my.3Box.io'
+    const text = 'This app wants to view and update your 3Box profile.'
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
@@ -24,10 +20,10 @@ module.exports = {
   },
 
   getLinkConsent: (fromAddress, toDID, web3provider) => {
-    const text = 'I consent to link my address to DID: \n' +
-      toDID + '\n\n' +
-      'Disclaimer: public data is public forever and can not be unassociated from this profile. ' +
-      'Even if updates, the original entries will persist.'
+    const text = 'Create a new 3Box profile' +
+      '\n\n' +
+      '- \n' +
+      'Your unique profile ID is ' + toDID
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
