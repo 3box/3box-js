@@ -173,10 +173,18 @@ class ThreeBox {
     }
   }
 
+  /**
+   * Uninitializes the 3box. Should be called after you are done with
+   * the instance (unless logout has been called)
+   */
   async close () {
     await this.privateStore.close()
   }
 
+  /**
+   * Uninitializes the 3box and clears the local cache. If you call this
+   * users will need to sign a message the next time you call openBox
+   */
   async logout () {
     await this.close()
     const address = this.muportDID.getDidDocument().managementKey

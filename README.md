@@ -43,8 +43,10 @@ ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
     * _instance_
         * [.profileStore](#ThreeBox+profileStore)
         * [.privateStore](#ThreeBox+privateStore)
+        * [.close()](#ThreeBox+close)
+        * [.logout()](#ThreeBox+logout)
     * _static_
-        * [.getProfile(address)](#ThreeBox.getProfile) ⇒ <code>Object</code>
+        * [.getProfile(address, opts)](#ThreeBox.getProfile) ⇒ <code>Object</code>
         * [.openBox(address, web3provider, opts)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
 
 <a name="new_ThreeBox_new"></a>
@@ -60,6 +62,7 @@ Instantiates a threeBox
 | web3provider | <code>Web3Provider</code> | A Web3 provider |
 | opts | <code>Object</code> | Optional parameters |
 | opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
+| opts.hashServer | <code>String</code> | A url to a custom hash server |
 
 <a name="ThreeBox+profileStore"></a>
 
@@ -81,17 +84,33 @@ Instantiates a threeBox
 | --- | --- | --- |
 | privateStore | [<code>PrivateStore</code>](#PrivateStore) | access the private store of the users threeBox |
 
+<a name="ThreeBox+close"></a>
+
+### threeBox.close()
+Uninitializes the 3box. Should be called after you are done with
+the instance (unless logout has been called)
+
+**Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
+<a name="ThreeBox+logout"></a>
+
+### threeBox.logout()
+Uninitializes the 3box and clears the local cache. If you call this
+users will need to sign a message the next time you call openBox
+
+**Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
 <a name="ThreeBox.getProfile"></a>
 
-### ThreeBox.getProfile(address) ⇒ <code>Object</code>
+### ThreeBox.getProfile(address, opts) ⇒ <code>Object</code>
 Get the public profile of the given address
 
 **Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
-**Returns**: <code>Object</code> - the threeBox instance for the given address  
+**Returns**: <code>Object</code> - a json object with the profile for the given address  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | address | <code>String</code> | an ethereum address |
+| opts | <code>Object</code> | Optional parameters |
+| opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
 
 <a name="ThreeBox.openBox"></a>
 
@@ -187,15 +206,16 @@ Sync the private store with the given ipfs hash
 **Kind**: global class  
 
 * [ProfileStore](#ProfileStore)
-    * [new ProfileStore(ipfs, updateRoot, linkProfile)](#new_ProfileStore_new)
+    * [new ProfileStore(ipfs, updateRoot)](#new_ProfileStore_new)
     * [.get(key)](#ProfileStore+get) ⇒ <code>String</code>
     * [.set(key, value)](#ProfileStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#ProfileStore+remove) ⇒ <code>Boolean</code>
+    * [._uploadProfile()](#ProfileStore+_uploadProfile) ⇒ <code>Boolean</code>
     * [._sync(hash)](#ProfileStore+_sync)
 
 <a name="new_ProfileStore_new"></a>
 
-### new ProfileStore(ipfs, updateRoot, linkProfile)
+### new ProfileStore(ipfs, updateRoot)
 Instantiates a ProfileStore
 
 **Returns**: [<code>ProfileStore</code>](#ProfileStore) - self  
@@ -204,7 +224,6 @@ Instantiates a ProfileStore
 | --- | --- | --- |
 | ipfs | <code>IPFS</code> | An instance of the ipfs api |
 | updateRoot | <code>function</code> | A callback function that is called when the store has been updated |
-| linkProfile | <code>function</code> | A callback function that is called if the profile is not made public yet |
 
 <a name="ProfileStore+get"></a>
 
@@ -243,6 +262,13 @@ Remove the value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
+<a name="ProfileStore+_uploadProfile"></a>
+
+### profileStore._uploadProfile() ⇒ <code>Boolean</code>
+Upload the instanced profile to IPFS
+
+**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
+**Returns**: <code>Boolean</code> - true if successful  
 <a name="ProfileStore+_sync"></a>
 
 ### profileStore._sync(hash)
