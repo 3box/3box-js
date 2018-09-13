@@ -87,15 +87,17 @@ Instantiates a threeBox
 <a name="ThreeBox+close"></a>
 
 ### threeBox.close()
-Uninitializes the 3box. Should be called after you are done with
-the instance (unless logout has been called)
+Closes the 3box instance without clearing the local cache.
+Should be called after you are done using the 3Box instance,
+but without logging the user out.
 
 **Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
 <a name="ThreeBox+logout"></a>
 
 ### threeBox.logout()
-Uninitializes the 3box and clears the local cache. If you call this
-users will need to sign a message the next time you call openBox
+Closes the 3box instance and clears local cache. If you call this,
+users will need to sign a consent message to log in the next time
+you call openBox.
 
 **Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
 <a name="ThreeBox.getProfile"></a>
