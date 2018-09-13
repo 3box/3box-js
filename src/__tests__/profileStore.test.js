@@ -4,7 +4,8 @@ const ProfileStore = require('../profileStore')
 describe('ProfileStore', () => {
   let ipfsd
   let profileStore
-
+  jest.setTimeout(20000)
+  
   let latestRoot = null
   const updateRoot = newRoot => {
     expect(newRoot).not.toEqual(latestRoot)

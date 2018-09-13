@@ -41,11 +41,15 @@ class PrivateStore {
    * @return    {Boolean}                           true if successful
    */
   async set (key, value) {
+	
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
-    if (value != null) {
-      value = this._encryptEntry(value)
+    if (value == null) {
+      // Do nothing for null value
+      // To remove a value, call remove
+      return false
     }
+    value = this._encryptEntry(value)
     const dbKey = this._genDbKey(key)
 
     // TODO - error handling
@@ -61,7 +65,14 @@ class PrivateStore {
    * @return    {Boolean}                           true if successful
    */
   async remove (key) {
-    return this.set(key, null)
+
+    if (!this.db) throw new Error('_sync must be called before interacting with the store')
+
+    const dbKey = this._genDbKey(key)
+    const hash = await this.db.del(dbKey)
+    this.updateRoot(hash)
+    
+    return true
   }
 
   /**
