@@ -24,6 +24,8 @@ or use the dist build in your html code
 ```
 
 ### Get the public profile of an address
+3Box allows users to create a public profile. In your dapp you might have multiple ethereum addresses that you would like to display a name and picture for. The `getProfile` method allows you to retrieve the profile of any ethereum address (if it has one). This is a *static* method so you can call it directly from the **ThreeBox** object.
+
 Using `async/await`
 ```js
 const profile = await ThreeBox.getProfile('0x12345abcde')
