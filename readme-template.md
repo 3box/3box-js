@@ -44,60 +44,60 @@ To get or modify data in a user's 3Box, first open their 3Box by calling the ope
 #### Open 3Box session
 Using `async/await`
 ```js
-const threeBox = await ThreeBox.openBox('0x12345abcde', web3provider)
+const box = await ThreeBox.openBox('0x12345abcde', web3provider)
 ```
 or using `.then`
 ```js
-ThreeBox.openBox('0x12345abcde', web3provider).then(threeBox => {
+ThreeBox.openBox('0x12345abcde', web3provider).then(box => {
   // interact with 3Box data
 })
 ```
 
 #### Interact with 3Box data
-You can now use the `threeBox` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`. [**What keys can I use?**](./KEY-USAGE.md)
+You can now use the `box` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`. [**What keys can I use?**](./KEY-USAGE.md)
 
 Using `async/await`
 ```js
 // use the public profile
 // get
-const nickname = await threeBox.profileStore.get('name')
+const nickname = await box.profileStore.get('name')
 console.log(nickname)
 // set
-await threeBox.profileStore.set('name', 'oed')
+await box.profileStore.set('name', 'oed')
 // remove
-await threeBox.profileStore.remove('name')
+await box.profileStore.remove('name')
 
 // use the private store
 // get
-const email = await threeBox.privateStore.get('email')
+const email = await box.privateStore.get('email')
 console.log(email)
 // set
-await threeBox.privateStore.set('email', 'oed@email.service')
+await box.privateStore.set('email', 'oed@email.service')
 // remove
-await threeBox.privateStore.remove('email')
+await box.privateStore.remove('email')
 ```
 or using `.then`
 ```js
 // use the public profile
 // get
-threeBox.profileStore.get('name').then(nickname => {
+box.profileStore.get('name').then(nickname => {
   console.log(nickname)
   // set
-  threeBox.profileStore.set('name', 'oed').then(() => {
+  box.profileStore.set('name', 'oed').then(() => {
     // remove
-    threeBox.profileStore.remove('name').then(() => {
+    box.profileStore.remove('name').then(() => {
     })
   })
 })
 
 // use the private store
 // get
-threeBox.privateStore.get('email').then(email => {
+box.privateStore.get('email').then(email => {
   console.log(email)
   // set
-  threeBox.privateStore.set('email', 'oed@email.service').then(() => {
+  box.privateStore.set('email', 'oed@email.service').then(() => {
     // remove
-    threeBox.privateStore.remove('email').then(() => {
+    box.privateStore.remove('email').then(() => {
     })
   })
 })
