@@ -13,6 +13,7 @@ $ npm install 3box
 ```
 
 ## Usage
+### Import 3Box into your project
 Import the 3box module
 ```js
 const ThreeBox = require('3box')
@@ -36,8 +37,9 @@ ThreeBox.getProfile('0x12345abcde').then(profile => {
 ```
 
 ### Get, set, and remove data
-To get private data, or modify public or private data in a users 3box you first have to open it by calling the `openBox` method. This method prompts the user to authenticate your dapp and returns a promise with a threeBox instance. You can only set, get, and remove data of users that are currently interacting with your dapp. Below `web3provider` refers to the object that you would get from `web3.currentProvider`, or request directly from the web3 browser, e.g. MetaMask.
+To get or modify data in a user's 3Box, first open their 3Box by calling the openBox method. This method prompts the user to authenticate your dapp and returns a promise with a threeBox instance. You can only set, get, and remove data of users that are currently interacting with your dapp. Below `web3provider` refers to the object that you would get from `web3.currentProvider`, or request directly from the web3 browser, e.g. MetaMask.
 
+#### Open 3Box session
 Using `async/await`
 ```js
 const threeBox = await ThreeBox.openBox('0x12345abcde', web3provider)
@@ -45,10 +47,11 @@ const threeBox = await ThreeBox.openBox('0x12345abcde', web3provider)
 or using `.then`
 ```js
 ThreeBox.openBox('0x12345abcde', web3provider).then(threeBox => {
-  // use the threeBox instance
+  // interact with 3Box data
 })
 ```
 
+#### Interact with 3Box data
 You can now use the `threeBox` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`. [**What keys can I use?**](./KEY-USAGE.md)
 
 Using `async/await`
