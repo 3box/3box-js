@@ -49,7 +49,7 @@ ThreeBox.openBox('0x12345abcde', web3provider).then(threeBox => {
 })
 ```
 
-You can now use the `threeBox` instance object to interact with data in the users private store and profile.
+You can now use the `threeBox` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`. [What keys can I use?](./KEY-USAGE.md)
 Using `async/await`
 ```js
 // use the public profile
