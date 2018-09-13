@@ -13,14 +13,7 @@ const HASH_SERVER_URL = 'https://api.uport.space/hash-server'
 
 class ThreeBox {
   /**
-   * Instantiates a threeBox
-   *
-   * @param     {MuPort}        muportDID                   A MuPort DID instance
-   * @param     {Web3Provider}  web3provider                A Web3 provider
-   * @param     {Object}        opts                        Optional parameters
-   * @param     {IPFS}          opts.ipfs                   A custom ipfs instance
-   * @param     {String}        opts.hashServer             A url to a custom hash server
-   * @return    {ThreeBox}                                  self
+   * Please use the **openBox** to instantiate a ThreeBox
    */
   constructor (muportDID, web3provider, opts = {}) {
     this.muportDID = muportDID
@@ -42,8 +35,8 @@ class ThreeBox {
    * Get the public profile of the given address
    *
    * @param     {String}    address                 an ethereum address
-   * @param     {Object}        opts                Optional parameters
-   * @param     {IPFS}          opts.ipfs           A custom ipfs instance
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {IPFS}      opts.ipfs               A custom ipfs instance
    * @return    {Object}                            a json object with the profile for the given address
    */
   static async getProfile (address, opts = {}) {

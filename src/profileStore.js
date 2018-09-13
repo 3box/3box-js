@@ -1,10 +1,6 @@
 class ProfileStore {
   /**
-   * Instantiates a ProfileStore
-   *
-   * @param     {IPFS}      ipfs                        An instance of the ipfs api
-   * @param     {function}  updateRoot                  A callback function that is called when the store has been updated
-   * @return    {ProfileStore}                          self
+   * Please use threeBox.profileStore to get the instance of this class
    */
   constructor (ipfs, updateRoot) {
     this.ipfs = ipfs
@@ -52,11 +48,6 @@ class ProfileStore {
     return this._uploadProfile()
   }
 
-  /**
-   * Upload the instanced profile to IPFS
-   *
-   * @return    {Boolean}                           true if successful
-   */
   async _uploadProfile () {
     const profile = JSON.stringify(this.profile)
     let dagNode
@@ -68,11 +59,6 @@ class ProfileStore {
     return this.updateRoot(dagNode.toJSON().multihash)
   }
 
-  /**
-   * Sync the profile store with the given ipfs hash
-   *
-   * @param     {String}    hash                        The hash of the profile object
-   */
   async _sync (hash) {
     if (hash) {
       // download profile from ipfs

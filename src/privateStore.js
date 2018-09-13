@@ -7,12 +7,7 @@ const SALT_KEY = '3BOX_SALT'
 
 class PrivateStore {
   /**
-   * Instantiates a PrivateStore
-   *
-   * @param     {MuPort}    muportDID                   A MuPort DID instance
-   * @param     {IPFS}      ipfs                        An instance of the ipfs api
-   * @param     {function}  updateRoot                  A callback function that is called when the store has been updated
-   * @return    {PrivateStore}                          self
+   * Please use threeBox.privateStore to get the instance of this class
    */
   constructor (muportDID, ipfs, updateRoot) {
     this.muportDID = muportDID
@@ -64,11 +59,6 @@ class PrivateStore {
     return this.set(key, null)
   }
 
-  /**
-   * Sync the private store with the given ipfs hash
-   *
-   * @param     {String}    hash                        The hash of the private store OrbitDB
-   */
   async _sync (hash) {
     if (!this.db) {
       const orbitdb = new OrbitDB(this.ipfs)

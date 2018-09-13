@@ -64,12 +64,12 @@ await threeBox.profileStore.remove('name')
 
 // use the private store
 // get
-const email = await threeBox.profileStore.get('email')
+const email = await threeBox.privateStore.get('email')
 console.log(email)
 // set
-await threeBox.profileStore.set('email', 'oed@email.service')
+await threeBox.privateStore.set('email', 'oed@email.service')
 // remove
-await threeBox.profileStore.remove('email')
+await threeBox.privateStore.remove('email')
 ```
 or using `.then`
 ```js
@@ -87,12 +87,12 @@ threeBox.profileStore.get('name').then(nickname => {
 
 // use the private store
 // get
-threeBox.profileStore.get('email').then(email => {
+threeBox.privateStore.get('email').then(email => {
   console.log(email)
   // set
-  threeBox.profileStore.set('email', 'oed@email.service').then(() => {
+  threeBox.privateStore.set('email', 'oed@email.service').then(() => {
     // remove
-    threeBox.profileStore.remove('email').then(() => {
+    threeBox.privateStore.remove('email').then(() => {
     })
   })
 })
@@ -106,7 +106,7 @@ threeBox.profileStore.get('email').then(email => {
 **Kind**: global class  
 
 * [ThreeBox](#ThreeBox)
-    * [new ThreeBox(muportDID, web3provider, opts)](#new_ThreeBox_new)
+    * [new ThreeBox()](#new_ThreeBox_new)
     * _instance_
         * [.profileStore](#ThreeBox+profileStore)
         * [.privateStore](#ThreeBox+privateStore)
@@ -118,18 +118,8 @@ threeBox.profileStore.get('email').then(email => {
 
 <a name="new_ThreeBox_new"></a>
 
-### new ThreeBox(muportDID, web3provider, opts)
-Instantiates a threeBox
-
-**Returns**: [<code>ThreeBox</code>](#ThreeBox) - self  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| muportDID | <code>MuPort</code> | A MuPort DID instance |
-| web3provider | <code>Web3Provider</code> | A Web3 provider |
-| opts | <code>Object</code> | Optional parameters |
-| opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
-| opts.hashServer | <code>String</code> | A url to a custom hash server |
+### new ThreeBox()
+Please use the **openBox** to instantiate a ThreeBox
 
 <a name="ThreeBox+profileStore"></a>
 
@@ -202,24 +192,15 @@ Opens the user space associated with the given address
 **Kind**: global class  
 
 * [PrivateStore](#PrivateStore)
-    * [new PrivateStore(muportDID, ipfs, updateRoot)](#new_PrivateStore_new)
+    * [new PrivateStore()](#new_PrivateStore_new)
     * [.get(key)](#PrivateStore+get) ⇒ <code>String</code>
     * [.set(key, value)](#PrivateStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#PrivateStore+remove) ⇒ <code>Boolean</code>
-    * [._sync(hash)](#PrivateStore+_sync)
 
 <a name="new_PrivateStore_new"></a>
 
-### new PrivateStore(muportDID, ipfs, updateRoot)
-Instantiates a PrivateStore
-
-**Returns**: [<code>PrivateStore</code>](#PrivateStore) - self  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| muportDID | <code>MuPort</code> | A MuPort DID instance |
-| ipfs | <code>IPFS</code> | An instance of the ipfs api |
-| updateRoot | <code>function</code> | A callback function that is called when the store has been updated |
+### new PrivateStore()
+Please use threeBox.privateStore to get the instance of this class
 
 <a name="PrivateStore+get"></a>
 
@@ -258,41 +239,21 @@ Remove the value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
-<a name="PrivateStore+_sync"></a>
-
-### privateStore._sync(hash)
-Sync the private store with the given ipfs hash
-
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| hash | <code>String</code> | The hash of the private store OrbitDB |
-
 <a name="ProfileStore"></a>
 
 ## ProfileStore
 **Kind**: global class  
 
 * [ProfileStore](#ProfileStore)
-    * [new ProfileStore(ipfs, updateRoot)](#new_ProfileStore_new)
+    * [new ProfileStore()](#new_ProfileStore_new)
     * [.get(key)](#ProfileStore+get) ⇒ <code>String</code>
     * [.set(key, value)](#ProfileStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#ProfileStore+remove) ⇒ <code>Boolean</code>
-    * [._uploadProfile()](#ProfileStore+_uploadProfile) ⇒ <code>Boolean</code>
-    * [._sync(hash)](#ProfileStore+_sync)
 
 <a name="new_ProfileStore_new"></a>
 
-### new ProfileStore(ipfs, updateRoot)
-Instantiates a ProfileStore
-
-**Returns**: [<code>ProfileStore</code>](#ProfileStore) - self  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| ipfs | <code>IPFS</code> | An instance of the ipfs api |
-| updateRoot | <code>function</code> | A callback function that is called when the store has been updated |
+### new ProfileStore()
+Please use threeBox.profileStore to get the instance of this class
 
 <a name="ProfileStore+get"></a>
 
@@ -330,22 +291,4 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
-
-<a name="ProfileStore+_uploadProfile"></a>
-
-### profileStore._uploadProfile() ⇒ <code>Boolean</code>
-Upload the instanced profile to IPFS
-
-**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
-**Returns**: <code>Boolean</code> - true if successful  
-<a name="ProfileStore+_sync"></a>
-
-### profileStore._sync(hash)
-Sync the profile store with the given ipfs hash
-
-**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| hash | <code>String</code> | The hash of the profile object |
 
