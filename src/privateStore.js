@@ -41,7 +41,6 @@ class PrivateStore {
    * @return    {Boolean}                           true if successful
    */
   async set (key, value) {
-	
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
     if (value == null) {
@@ -65,13 +64,12 @@ class PrivateStore {
    * @return    {Boolean}                           true if successful
    */
   async remove (key) {
-
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
     const dbKey = this._genDbKey(key)
     const hash = await this.db.del(dbKey)
     this.updateRoot(hash)
-    
+
     return true
   }
 
