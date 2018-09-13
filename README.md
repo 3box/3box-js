@@ -6,32 +6,98 @@ This is a library which allows you to set, get, and remove private and public da
 
 [Data Schema](./DATA-MODEL.md)
 
-[API Documentation](./API-SPECIFICATION.md)
-
-## Usage
-Simply install using npm
+## Installation
+Install 3box in your npm project:
 ```
 $ npm install 3box
 ```
-and then import into your project
+
+## Usage
+Import the 3box module
 ```js
 const ThreeBox = require('3box')
+```
+or use the dist build in your html code
+```js
+<script type="text/javascript" src="../dist/3box.js"></script>
+```
 
-ThreeBox.openBox(web3.eth.accounts[0]).then(threeBox => {
-  // Code goes here...
+### Get the public profile of an address
+Using `async/await`
+```js
+const profile = await ThreeBox.getProfile('0x12345abcde')
+console.log(profile)
+```
+or using `.then`
+```js
+ThreeBox.getProfile('0x12345abcde').then(profile => {
+  console.log(profile)
 })
 ```
 
-## Classes
+### Get, set, and remove data
+To get private data, or modify public or private data in a users 3box you first have to open it by calling the `openBox` method. This method prompts the user to authenticate your dapp and returns a promise with a threeBox instance. You can only set, get, and remove data of users that are currently interacting with your dapp. Below `web3provider` refers to the object that you would get from `web3.currentProvider`, or request directly from the web3 browser, e.g. MetaMask.
 
-<dl>
-<dt><a href="#ThreeBox">ThreeBox</a></dt>
-<dd></dd>
-<dt><a href="#PrivateStore">PrivateStore</a></dt>
-<dd></dd>
-<dt><a href="#ProfileStore">ProfileStore</a></dt>
-<dd></dd>
-</dl>
+Using `async/await`
+```js
+const threeBox = await ThreeBox.openBox('0x12345abcde', web3provider)
+```
+or using `.then`
+```js
+ThreeBox.openBox('0x12345abcde', web3provider).then(threeBox => {
+  // use the threeBox instance
+})
+```
+
+You can now use the `threeBox` instance object to interact with data in the users private store and profile.
+Using `async/await`
+```js
+// use the public profile
+// get
+const nickname = await threeBox.profileStore.get('name')
+console.log(nickname)
+// set
+await threeBox.profileStore.set('name', 'oed')
+// remove
+await threeBox.profileStore.remove('name')
+
+// use the private store
+// get
+const email = await threeBox.profileStore.get('email')
+console.log(email)
+// set
+await threeBox.profileStore.set('email', 'oed@email.service')
+// remove
+await threeBox.profileStore.remove('email')
+```
+or using `.then`
+```js
+// use the public profile
+// get
+threeBox.profileStore.get('name').then(nickname => {
+  console.log(nickname)
+  // set
+  threeBox.profileStore.set('name', 'oed').then(() => {
+    // remove
+    threeBox.profileStore.remove('name').then(() => {
+    })
+  })
+})
+
+// use the private store
+// get
+threeBox.profileStore.get('email').then(email => {
+  console.log(email)
+  // set
+  threeBox.profileStore.set('email', 'oed@email.service').then(() => {
+    // remove
+    threeBox.profileStore.remove('email').then(() => {
+    })
+  })
+})
+```
+
+# API Documentation
 
 <a name="ThreeBox"></a>
 
