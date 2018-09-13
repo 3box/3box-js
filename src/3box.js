@@ -173,10 +173,20 @@ class ThreeBox {
     }
   }
 
+  /**
+   * Closes the 3box instance without clearing the local cache.
+   * Should be called after you are done using the 3Box instance,
+   * but without logging the user out.
+   */
   async close () {
     await this.privateStore.close()
   }
 
+  /**
+   * Closes the 3box instance and clears local cache. If you call this,
+   * users will need to sign a consent message to log in the next time
+   * you call openBox.
+   */
   async logout () {
     await this.close()
     const address = this.muportDID.getDidDocument().managementKey
