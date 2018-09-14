@@ -53,7 +53,7 @@ jest.mock('../utils', () => {
           } else if (hashmap[linkmap[lastPart]]) {
             return {status: 'success', data: { hash: hashmap[linkmap[lastPart]] } }
           } else {
-            return {status: 'error', message: 'hash not found' }
+            throw '{"status": "error", "message": "hash not found"}'
           }
       }
     }),

@@ -50,7 +50,6 @@ module.exports = {
       request.onreadystatechange = () => {
         if (request.readyState === 4 && request.timeout !== 1) {
           if (request.status !== 200) {
-            console.log(request)
             reject(request.responseText)
           } else {
             try {

@@ -88,13 +88,11 @@ class ThreeBox {
     try {
       // read root ipld object hash from 3box-hash-server
       const res = await utils.httpRequest(this.hashServerUrl + '/hash/' + did, 'GET')
-      if (res.status === 'success') {
-        rootHash = res.data.hash
-      } else if (res.status === 'error' && res.message !== 'hash not found') {
-        throw new Error(res.message)
-      }
+      rootHash = res.data.hash
     } catch (err) {
-      throw new Error(err)
+      if (JSON.parse(err).message !== 'hash not found') {
+        throw new Error(err)
+      }
     }
 
     if (rootHash) {
