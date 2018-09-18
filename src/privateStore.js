@@ -38,15 +38,11 @@ class PrivateStore {
   async set (key, value) {
     if (!this.db) throw new Error('_sync must be called before interacting with the store')
 
-    if (value != null) {
-      value = this._encryptEntry(value)
-    }
+    value = this._encryptEntry(value)
     const dbKey = this._genDbKey(key)
 
-    // TODO - error handling
     const hash = await this.db.put(dbKey, value)
-    this.updateRoot(hash)
-    return true
+    return this.updateRoot(hash)
   }
 
   /**
@@ -56,7 +52,11 @@ class PrivateStore {
    * @return    {Boolean}                           true if successful
    */
   async remove (key) {
-    return this.set(key, null)
+    if (!this.db) throw new Error('_sync must be called before interacting with the store')
+
+    const dbKey = this._genDbKey(key)
+    const hash = await this.db.del(dbKey)
+    return this.updateRoot(hash)
   }
 
   async _sync (hash) {
@@ -99,11 +99,13 @@ class PrivateStore {
   }
 
   _encryptEntry (entry) {
-    return this.muportDID.symEncrypt(entry)
+    if (typeof entry === 'undefined') throw new Error('Entry to encrypt cannot be undefined')
+
+    return this.muportDID.symEncrypt(JSON.stringify(entry))
   }
 
   _decryptEntry ({ ciphertext, nonce }) {
-    return this.muportDID.symDecrypt(ciphertext, nonce)
+    return JSON.parse(this.muportDID.symDecrypt(ciphertext, nonce))
   }
 }
 

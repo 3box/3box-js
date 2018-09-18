@@ -76,6 +76,7 @@ describe('3Box', () => {
   let threeBox
   let privStoreHash
   let profStoreHash
+  jest.setTimeout(20000)
 
   let muportDIDMock = {
     symEncrypt: cleartext => {

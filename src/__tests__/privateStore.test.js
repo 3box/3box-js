@@ -4,7 +4,8 @@ const PrivateStore = require('../privateStore')
 describe('PrivateStore', () => {
   let ipfsd
   let privateStore
-
+  jest.setTimeout(20000)
+  
   let muportDIDMock = {
     symEncrypt: cleartext => {
       return {
