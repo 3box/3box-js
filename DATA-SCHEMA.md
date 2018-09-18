@@ -5,17 +5,10 @@ The implementation of this can be found at [`3box-js`](https://github.com/uport-
 Each user has its own separate ipfs data structure in 3box. This data structure consists of thee parts; the public profile, the private data store, and a root object that points to the latest versions of these. As long as the user has access to the hash of the root object it can retrieve the entire data store from the ipfs network.
 
 ### Root object
-The root object is an IPLD formated ipfs object that contains a link to the latest hash of the public profile and a link to the latest hash of the private data store. It have the following structure:
-
-```js
-{
-  profile: {"/" : "zdpuAufy3hawb25akerURtR81y7D4BKfdxfqbpYZ7cJGjwgFW"},
-  datastore: {"/" : "zdpuAufy3hawb25akerURtR81y7D4BKfdxfqbpYZ7cJGjwgDS"}
-}
-```
+The root object is an IPLD [DAGNode](https://github.com/ipld/js-ipld-dag-pb) that contains a link to the latest hash of the public profile with the link name `profile` and a link to the latest hash of the private data store with the link name `datastore`.
 
 ### Public profile
-The public profile is an IPLD formated ipfs object that contains the public information about the user such as name and picture. We use the Profile scheme from <http://schema.org/>, with extensions by [Blockstack](https://github.com/blockstack/blockstack.js/tree/master/src/profiles), and using IPLD links. We start with just the items `name` and `image`. Note that the `image` field is an array.
+The public profile is an ipfs object that contains the public information about the user such as name and picture. We use the Profile scheme from <http://schema.org/>, with extensions by [Blockstack](https://github.com/blockstack/blockstack.js/tree/master/src/profiles). We start with just the items `name` and `image`. Note that the `image` field is an array.
 
 ```js
 {
