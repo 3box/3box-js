@@ -1,6 +1,4 @@
-const OrbitDB = require('orbit-db')
 const Log = require('ipfs-log')
-const Multihash = require('multihashes')
 const nacl = require('tweetnacl')
 
 const SALT_KEY = '3BOX_SALT'
@@ -107,11 +105,6 @@ class PrivateStore {
   _decryptEntry ({ ciphertext, nonce }) {
     return JSON.parse(this.muportDID.symDecrypt(ciphertext, nonce))
   }
-}
-
-const sha256 = str => {
-  const dataBuf = Buffer.from(str, 'utf8')
-  return Multihash.encode(dataBuf, 'sha2-256').toString('hex')
 }
 
 module.exports = PrivateStore
