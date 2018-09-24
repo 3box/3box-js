@@ -72,6 +72,9 @@ class ProfileStore {
       this.profile = {}
     }
   }
+
+  async close () {
+  }
 }
 
 module.exports = ProfileStore

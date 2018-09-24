@@ -73,8 +73,6 @@ module.exports = {
       }
     })
   },
-
-
   sha256Multihash: str => {
     const dataBuf = Buffer.from(str, 'utf8')
     return Multihash.encode(dataBuf, 'sha2-256').toString('hex')

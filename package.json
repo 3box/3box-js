@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
-    "test": "jest --detectOpenHandles --coverage --runInBand --testURL=\"http://localhost\"",
+    "test": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
     "build": "babel src --out-dir lib",
     "build:dist": "browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none src/*.js >> README.md"
@@ -33,7 +33,7 @@
   "homepage": "https://github.com/uport-project/3box-js#readme",
   "dependencies": {
     "bip39": "^2.5.0",
-    "ipfs": "~0.30.0",
+    "ipfs": "^0.32.2",
     "ipfs-api": "^24.0.0",
     "muport-core": "^0.4.1",
     "orbit-db": "^0.19.9",
