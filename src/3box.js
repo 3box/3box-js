@@ -16,6 +16,9 @@ const IPFS_OPTIONS = {
   }
 }
 
+let globalIPFS
+let globalOrbitDB
+
 class ThreeBox {
   /**
    * Please use the **openBox** method to instantiate a ThreeBox
@@ -40,6 +43,8 @@ class ThreeBox {
     const didFingerprint = utils.sha256Multihash(did)
     this._ipfs = await initIPFS(opts.ipfsOptions)
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath)
+    globalIPFS = this._ipfs
+    globalOrbitDB = this._orbitdb
 
     this.profileStore = new ProfileStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
     this.privateStore = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
@@ -91,12 +96,29 @@ class ThreeBox {
    * @param     {IPFS}      opts.ipfs               A custom ipfs instance
    * @return    {Object}                            a json object with the profile for the given address
    */
-  async getProfile (address, opts = {}) {
-    const rootStoreAddress = await getRootStoreAddress(this._serverUrl, address)
-    const profileStore = new ProfileStore(this._orbitdb)
+  static async getProfile (address, opts = {}) {
+    const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
+    const rootStoreAddress = await getRootStoreAddress(serverUrl, address)
+    let usingGlobalIPFS = false
+    let usingGlobalOrbitDB = false
+    let ipfs
+    let orbitdb
+    if (globalIPFS) {
+      ipfs = globalIPFS
+      usingGlobalIPFS = true
+    } else {
+      ipfs = await initIPFS(opts.ipfsOptions)
+    }
+    if (globalOrbitDB) {
+      orbitdb = globalOrbitDB
+      usingGlobalIPFS = true
+    } else {
+      orbitdb = new OrbitDB(ipfs, opts.orbitPath)
+    }
+    const profileStore = new ProfileStore(orbitdb)
 
     if (rootStoreAddress) {
-      const rootStore = await this._orbitdb.open(rootStoreAddress)
+      const rootStore = await orbitdb.open(rootStoreAddress)
       const readyPromise = new Promise((resolve, reject) => {
         rootStore.events.on('ready', resolve)
       })
@@ -117,8 +139,14 @@ class ThreeBox {
         })
       await profileStore._sync(profileEntry.payload.value.odbAddress)
       const profile = profileStore.all()
-      rootStore.close()
-      profileStore.close()
+      const closeAll = async () => {
+        await rootStore.close()
+        await profileStore.close()
+        if (!usingGlobalOrbitDB) await orbitdb.stop()
+        if (!usingGlobalIPFS) await ipfs.stop()
+      }
+      // close but don't wait for it
+      closeAll()
       return profile
     } else {
       return null
@@ -197,6 +225,8 @@ class ThreeBox {
   async close () {
     await this._orbitdb.stop()
     await this._ipfs.stop()
+    globalOrbitDB = null
+    globalIPFS = null
   }
 
   /**

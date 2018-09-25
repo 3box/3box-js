@@ -230,7 +230,8 @@ describe('3Box', () => {
 
   it('should getProfile correctly', async () => {
     await box._rootStore.drop()
-    const profile = await box2.getProfile('0x12345', boxOpts)
+    //awaitbox2._ruotStore.drop()
+    const profile = await ThreeBox.getProfile('0x12345', boxOpts)
     expect(profile).toEqual({
       name: 'oed',
       image: 'an awesome selfie'
@@ -247,6 +248,16 @@ describe('3Box', () => {
     await box2._linkProfile()
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
     await box2.close()
+  })
+
+  it('should getProfile correctly when box is not open', async () => {
+    const profile = await ThreeBox.getProfile('0x12345', boxOpts)
+    expect(profile).toEqual({
+      name: 'oed',
+      image: 'an awesome selfie'
+    })
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("address-server/odbAddress/0x12345", 'GET')
   })
 
   afterAll(async () => {
