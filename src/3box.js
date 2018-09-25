@@ -28,11 +28,11 @@ class ThreeBox {
     this._web3provider = web3provider
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     /**
-     * @property {ProfileStore} profileStore        access the profile store of the users threeBox
+     * @property {KeyValueStore} profileStore        access the profile store of the users threeBox
      */
     this.profileStore = null
     /**
-     * @property {PrivateStore} privateStore        access the private store of the users threeBox
+     * @property {KeyValueStore} privateStore        access the private store of the users threeBox
      */
     this.privateStore = null
   }

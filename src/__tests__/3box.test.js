@@ -1,5 +1,4 @@
 const testUtils = require('./testUtils')
-const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const jsdom = require('jsdom')
 global.window = new jsdom.JSDOM().window
@@ -116,7 +115,7 @@ describe('3Box', () => {
   jest.setTimeout(20000)
 
   beforeAll(async () => {
-    ipfs = await initIPFS()
+    ipfs = await testUtils.initIPFS()
   })
 
   beforeEach(() => {
@@ -264,26 +263,3 @@ describe('3Box', () => {
     await ipfs.stop()
   })
 })
-
-async function initIPFS () {
-  return new Promise((resolve, reject) => {
-    let ipfs = new IPFS({
-      EXPERIMENTAL: {
-        pubsub: true
-      },
-      repo: './tmp/ipfs2/',
-      config: {
-        Addresses: {
-          Swarm: [
-            '/ip4/0.0.0.0/tcp/4004',
-            '/ip4/127.0.0.1/tcp/4005/ws'
-          ],
-          API: '/ip4/127.0.0.1/tcp/5003',
-          Gateway: '/ip4/127.0.0.1/tcp/9091'
-        }
-      }
-    })
-    ipfs.on('error', reject)
-    ipfs.on('ready', () => resolve(ipfs))
-  })
-}
