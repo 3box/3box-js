@@ -18,13 +18,14 @@ describe('ProfileStore', () => {
   })
 
   it('should call linkProfile when set is called', async () => {
+    await profileStore._sync()
     let ret = await profileStore.set('key1', 'value1')
+    expect(ret).toEqual(true)
     expect(linkProfile).toHaveBeenCalledTimes(1)
     expect(linkProfile).toHaveBeenCalledWith()
   })
 
   it('should return profile correctly', async () => {
-    profileStore._db = { all: () => 'profile' }
-    expect(await profileStore.all()).toEqual('profile')
+    expect(await profileStore.all()).toEqual({ key1: 'value1' })
   })
 })

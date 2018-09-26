@@ -115,7 +115,7 @@ describe('3Box', () => {
   jest.setTimeout(20000)
 
   beforeAll(async () => {
-    ipfs = await testUtils.initIPFS()
+    ipfs = await testUtils.initIPFS(true)
   })
 
   beforeEach(() => {
