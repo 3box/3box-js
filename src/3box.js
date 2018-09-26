@@ -51,16 +51,16 @@ class ThreeBox {
 
     if (rootStoreAddress) {
       this._rootStore = await this._orbitdb.open(rootStoreAddress)
-      //this._rootStore.events.on('replicate', console.log)
+      // this._rootStore.events.on('replicate', console.log)
       const readyPromise = new Promise((resolve, reject) => {
         this._rootStore.events.on('ready', resolve)
       })
       this._rootStore.load()
       await readyPromise
-      //console.log('p2', (await this._ipfs.swarm.peers())[0].addr.toString())
-      //console.log('p2 id', (await this._ipfs.id()).id)
-      //console.log(this._rootStore.iterator({ limit: -1 }).collect().length)
-      //console.log(await this._ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
+      // console.log('p2', (await this._ipfs.swarm.peers())[0].addr.toString())
+      // console.log('p2 id', (await this._ipfs.id()).id)
+      // console.log(this._rootStore.iterator({ limit: -1 }).collect().length)
+      // console.log(await this._ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
       if (!this._rootStore.iterator({ limit: -1 }).collect().length) {
         await new Promise((resolve, reject) => {
           this._rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {

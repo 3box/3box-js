@@ -40,7 +40,6 @@ describe('KeyValueStore', () => {
     expect(await keyValueStore.get('key3')).toEqual('12345')
   })
 
-
   it('should remove values correctly', async () => {
     await keyValueStore.remove('key3')
     expect(await keyValueStore.get('key3')).toBeUndefined()

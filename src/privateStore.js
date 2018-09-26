@@ -5,7 +5,6 @@ const nacl = require('tweetnacl')
 const SALT_KEY = '3BOX_SALT'
 
 class PrivateStore extends KeyValueStore {
-
   constructor (muportDID, orbitdb, name) {
     super(orbitdb, name)
     this.muportDID = muportDID

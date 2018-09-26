@@ -1,7 +1,6 @@
 const KeyValueStore = require('./keyValueStore')
 
 class ProfileStore extends KeyValueStore {
-
   constructor (orbitdb, name, linkProfile) {
     super(orbitdb, name)
     this._linkProfile = linkProfile
