@@ -134,7 +134,7 @@ Please use the **openBox** method to instantiate a ThreeBox
 
 | Name | Type | Description |
 | --- | --- | --- |
-| profileStore | [<code>ProfileStore</code>](#ProfileStore) | access the profile store of the users threeBox |
+| profileStore | [<code>KeyValueStore</code>](#KeyValueStore) | access the profile store of the users threeBox |
 
 <a name="ThreeBox+privateStore"></a>
 
@@ -144,7 +144,7 @@ Please use the **openBox** method to instantiate a ThreeBox
 
 | Name | Type | Description |
 | --- | --- | --- |
-| privateStore | [<code>PrivateStore</code>](#PrivateStore) | access the private store of the users threeBox |
+| privateStore | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users threeBox |
 
 <a name="ThreeBox+close"></a>
 
@@ -165,7 +165,7 @@ you call openBox.
 <a name="ThreeBox.getProfile"></a>
 
 ### ThreeBox.getProfile(address, opts) ⇒ <code>Object</code>
-Get the public profile of the given address
+Get the public profile of a given address
 
 **Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
 **Returns**: <code>Object</code> - a json object with the profile for the given address  
@@ -189,42 +189,43 @@ Opens the user space associated with the given address
 | address | <code>String</code> | an ethereum address |
 | web3provider | <code>Web3Provider</code> | A Web3 provider |
 | opts | <code>Object</code> | Optional parameters |
-| opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
+| opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
+| opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 
-<a name="PrivateStore"></a>
+<a name="KeyValueStore"></a>
 
-## PrivateStore
+## KeyValueStore
 **Kind**: global class  
 
-* [PrivateStore](#PrivateStore)
-    * [new PrivateStore()](#new_PrivateStore_new)
-    * [.get(key)](#PrivateStore+get) ⇒ <code>String</code>
-    * [.set(key, value)](#PrivateStore+set) ⇒ <code>Boolean</code>
-    * [.remove(key)](#PrivateStore+remove) ⇒ <code>Boolean</code>
+* [KeyValueStore](#KeyValueStore)
+    * [new KeyValueStore()](#new_KeyValueStore_new)
+    * [.get(key)](#KeyValueStore+get) ⇒ <code>String</code>
+    * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
+    * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
 
-<a name="new_PrivateStore_new"></a>
+<a name="new_KeyValueStore_new"></a>
 
-### new PrivateStore()
-Please use **threeBox.privateStore** to get the instance of this class
+### new KeyValueStore()
+Please use **threeBox.profileStore** or **threeBox.profileStore** to get the instance of this class
 
-<a name="PrivateStore+get"></a>
+<a name="KeyValueStore+get"></a>
 
-### privateStore.get(key) ⇒ <code>String</code>
+### keyValueStore.get(key) ⇒ <code>String</code>
 Get the value of the given key
 
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
 **Returns**: <code>String</code> - the value associated with the key  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
-<a name="PrivateStore+set"></a>
+<a name="KeyValueStore+set"></a>
 
-### privateStore.set(key, value) ⇒ <code>Boolean</code>
+### keyValueStore.set(key, value) ⇒ <code>Boolean</code>
 Set a value for the given key
 
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
 **Returns**: <code>Boolean</code> - true if successful  
 
 | Param | Type | Description |
@@ -232,65 +233,12 @@ Set a value for the given key
 | key | <code>String</code> | the key |
 | value | <code>String</code> | the value |
 
-<a name="PrivateStore+remove"></a>
+<a name="KeyValueStore+remove"></a>
 
-### privateStore.remove(key) ⇒ <code>Boolean</code>
+### keyValueStore.remove(key) ⇒ <code>Boolean</code>
 Remove the value for the given key
 
-**Kind**: instance method of [<code>PrivateStore</code>](#PrivateStore)  
-**Returns**: <code>Boolean</code> - true if successful  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>String</code> | the key |
-
-<a name="ProfileStore"></a>
-
-## ProfileStore
-**Kind**: global class  
-
-* [ProfileStore](#ProfileStore)
-    * [new ProfileStore()](#new_ProfileStore_new)
-    * [.get(key)](#ProfileStore+get) ⇒ <code>String</code>
-    * [.set(key, value)](#ProfileStore+set) ⇒ <code>Boolean</code>
-    * [.remove(key)](#ProfileStore+remove) ⇒ <code>Boolean</code>
-
-<a name="new_ProfileStore_new"></a>
-
-### new ProfileStore()
-Please use **threeBox.profileStore** to get the instance of this class
-
-<a name="ProfileStore+get"></a>
-
-### profileStore.get(key) ⇒ <code>String</code>
-Get the value of the given key
-
-**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
-**Returns**: <code>String</code> - the value associated with the key  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>String</code> | the key |
-
-<a name="ProfileStore+set"></a>
-
-### profileStore.set(key, value) ⇒ <code>Boolean</code>
-Set a value for the given key
-
-**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
-**Returns**: <code>Boolean</code> - true if successful  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>String</code> | the key |
-| value | <code>String</code> | the value |
-
-<a name="ProfileStore+remove"></a>
-
-### profileStore.remove(key) ⇒ <code>Boolean</code>
-Remove the value for the given key
-
-**Kind**: instance method of [<code>ProfileStore</code>](#ProfileStore)  
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
 **Returns**: <code>Boolean</code> - true if successful  
 
 | Param | Type | Description |

@@ -9,7 +9,7 @@ const PrivateStore = require('./privateStore')
 const utils = require('./utils')
 
 // TODO: Put production 3box-hash-server instance here ;)
-const ADDRESS_SERVER_URL = 'https://api.uport.space/hash-server'
+const ADDRESS_SERVER_URL = 'https://beta.3box.io/hashserver'
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
