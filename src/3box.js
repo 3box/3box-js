@@ -4,7 +4,7 @@ const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 
-const ProfileStore = require('./profileStore')
+const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const utils = require('./utils')
 
@@ -46,7 +46,7 @@ class ThreeBox {
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
-    this.public = new ProfileStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
+    this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
     this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
 
     if (rootStoreAddress) {
@@ -117,7 +117,7 @@ class ThreeBox {
     } else {
       orbitdb = new OrbitDB(ipfs, opts.orbitPath)
     }
-    const profileStore = new ProfileStore(orbitdb)
+    const publicStore = new PublicStore(orbitdb)
 
     if (rootStoreAddress) {
       const rootStore = await orbitdb.open(rootStoreAddress)
@@ -139,11 +139,11 @@ class ThreeBox {
         .find(entry => {
           return entry.payload.value.odbAddress.split('.')[1] === 'public'
         })
-      await profileStore._sync(profileEntry.payload.value.odbAddress)
-      const profile = profileStore.all()
+      await publicStore._sync(profileEntry.payload.value.odbAddress)
+      const profile = publicStore.all()
       const closeAll = async () => {
         await rootStore.close()
-        await profileStore.close()
+        await publicStore.close()
         if (!usingGlobalOrbitDB) await orbitdb.stop()
         if (!usingGlobalIPFS) await ipfs.stop()
       }

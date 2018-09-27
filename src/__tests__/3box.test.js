@@ -25,7 +25,7 @@ jest.mock('muport-core', () => {
   }
   return MuPort
 })
-jest.mock('../profileStore', () => {
+jest.mock('../publicStore', () => {
   return jest.fn(() => {
     return {
       _sync: jest.fn(() => '/orbitdb/Qmasdf/08a7.public'),
