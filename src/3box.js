@@ -70,15 +70,17 @@ class ThreeBox {
           })
         })
       }
-      this._rootStore.iterator({ limit: -1 }).collect().map(async entry => {
+      let storePromises = []
+      this._rootStore.iterator({ limit: -1 }).collect().map(entry => {
         const odbAddress = entry.payload.value.odbAddress
         const name = odbAddress.split('.')[1]
         if (name === 'public') {
-          await this.profileStore._sync(odbAddress)
+          storePromises.push(this.profileStore._sync(odbAddress))
         } else if (name === 'private') {
-          await this.privateStore._sync(odbAddress)
+          storePromises.push(this.privateStore._sync(odbAddress))
         }
       })
+      await Promise.all(storePromises)
     } else {
       const rootStoreName = didFingerprint + '.root'
       this._rootStore = await this._orbitdb.feed(rootStoreName, { write: ['*'] })
