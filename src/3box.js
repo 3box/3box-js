@@ -28,13 +28,13 @@ class ThreeBox {
     this._web3provider = web3provider
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     /**
-     * @property {KeyValueStore} profileStore        access the profile store of the users threeBox
+     * @property {KeyValueStore} public         access the profile store of the users threeBox
      */
-    this.profileStore = null
+    this.public = null
     /**
-     * @property {KeyValueStore} privateStore        access the private store of the users threeBox
+     * @property {KeyValueStore} private        access the private store of the users threeBox
      */
-    this.privateStore = null
+    this.private = null
   }
 
   async _sync (opts = {}) {
@@ -46,8 +46,8 @@ class ThreeBox {
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
-    this.profileStore = new ProfileStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
-    this.privateStore = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
+    this.public = new ProfileStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
+    this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
 
     if (rootStoreAddress) {
       this._rootStore = await this._orbitdb.open(rootStoreAddress)
@@ -75,17 +75,17 @@ class ThreeBox {
         const odbAddress = entry.payload.value.odbAddress
         const name = odbAddress.split('.')[1]
         if (name === 'public') {
-          storePromises.push(this.profileStore._sync(odbAddress))
+          storePromises.push(this.public._sync(odbAddress))
         } else if (name === 'private') {
-          storePromises.push(this.privateStore._sync(odbAddress))
+          storePromises.push(this.private._sync(odbAddress))
         }
       })
       await Promise.all(storePromises)
     } else {
       const rootStoreName = didFingerprint + '.root'
       this._rootStore = await this._orbitdb.feed(rootStoreName, { write: ['*'] })
-      await this._rootStore.add({ odbAddress: await this.profileStore._sync() })
-      await this._rootStore.add({ odbAddress: await this.privateStore._sync() })
+      await this._rootStore.add({ odbAddress: await this.public._sync() })
+      await this._rootStore.add({ odbAddress: await this.private._sync() })
       await this._publishRootStore(this._rootStore.address.toString())
     }
   }

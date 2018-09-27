@@ -134,10 +134,10 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
       hash_token: 'veryJWT,/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
     })
-    expect(box.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(box.profileStore._sync).toHaveBeenCalledWith()
-    expect(box.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(box.privateStore._sync).toHaveBeenCalledWith()
+    expect(box.public._sync).toHaveBeenCalledTimes(1)
+    expect(box.public._sync).toHaveBeenCalledWith()
+    expect(box.private._sync).toHaveBeenCalledTimes(1)
+    expect(box.private._sync).toHaveBeenCalledWith()
   })
 
   it('should get entropy and db from localstorage subsequent openBox calls', async () => {
@@ -146,10 +146,10 @@ describe('3Box', () => {
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
-    expect(box.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(box.profileStore._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
-    expect(box.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(box.privateStore._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
+    expect(box.public._sync).toHaveBeenCalledTimes(1)
+    expect(box.public._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
+    expect(box.private._sync).toHaveBeenCalledTimes(1)
+    expect(box.private._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
   })
 
   it('should sync db updates to/from remote pinning server', async () => {
@@ -175,10 +175,10 @@ describe('3Box', () => {
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
-    expect(box.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(box.profileStore._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
-    expect(box.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(box.privateStore._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
+    expect(box.public._sync).toHaveBeenCalledTimes(1)
+    expect(box.public._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
+    expect(box.private._sync).toHaveBeenCalledTimes(1)
+    expect(box.private._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
   })
 
   it('should link profile on call to _linkProfile', async () => {
@@ -211,10 +211,10 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
       hash_token: 'veryJWT,/orbitdb/QmTshhMpnDxHRgBuMKxsQfEMfcQnoCE5EromHfH1V9JZr6/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
     })
-    expect(box2.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(box2.profileStore._sync).toHaveBeenCalledWith()
-    expect(box2.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(box2.privateStore._sync).toHaveBeenCalledWith()
+    expect(box2.public._sync).toHaveBeenCalledTimes(1)
+    expect(box2.public._sync).toHaveBeenCalledWith()
+    expect(box2.private._sync).toHaveBeenCalledTimes(1)
+    expect(box2.private._sync).toHaveBeenCalledWith()
 
     await box2._linkProfile()
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(3)
