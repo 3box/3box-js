@@ -9,7 +9,7 @@ const PrivateStore = require('./privateStore')
 const utils = require('./utils')
 
 // TODO: Put production 3box-hash-server instance here ;)
-const ADDRESS_SERVER_URL = 'https://beta.3box.io/hashserver'
+const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
@@ -46,8 +46,16 @@ class ThreeBox {
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
-    this.profileStore = new ProfileStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
-    this.privateStore = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
+    this.profileStore = new ProfileStore(
+      this._orbitdb,
+      didFingerprint + '.public',
+      this._linkProfile.bind(this)
+    )
+    this.privateStore = new PrivateStore(
+      this._muportDID,
+      this._orbitdb,
+      didFingerprint + '.private'
+    )
 
     if (rootStoreAddress) {
       this._rootStore = await this._orbitdb.open(rootStoreAddress)
@@ -63,11 +71,14 @@ class ThreeBox {
       // console.log(await this._ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
       if (!this._rootStore.iterator({ limit: -1 }).collect().length) {
         await new Promise((resolve, reject) => {
-          this._rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {
-            if (num === max) {
-              this._rootStore.events.on('replicated', resolve)
+          this._rootStore.events.on(
+            'replicate.progress',
+            (_x, _y, _z, num, max) => {
+              if (num === max) {
+                this._rootStore.events.on('replicated', resolve)
+              }
             }
-          })
+          )
         })
       }
       let storePromises = []
@@ -83,7 +94,9 @@ class ThreeBox {
       await Promise.all(storePromises)
     } else {
       const rootStoreName = didFingerprint + '.root'
-      this._rootStore = await this._orbitdb.feed(rootStoreName, { write: ['*'] })
+      this._rootStore = await this._orbitdb.feed(rootStoreName, {
+        write: ['*']
+      })
       await this._rootStore.add({ odbAddress: await this.profileStore._sync() })
       await this._rootStore.add({ odbAddress: await this.privateStore._sync() })
       await this._publishRootStore(this._rootStore.address.toString())
@@ -135,7 +148,9 @@ class ThreeBox {
           })
         })
       }
-      const profileEntry = rootStore.iterator({ limit: -1 }).collect()
+      const profileEntry = rootStore
+        .iterator({ limit: -1 })
+        .collect()
         .find(entry => {
           return entry.payload.value.odbAddress.split('.')[1] === 'public'
         })
@@ -171,7 +186,10 @@ class ThreeBox {
     if (serializedMuDID) {
       muportDID = new MuPort(serializedMuDID)
     } else {
-      const entropy = (await utils.openBoxConsent(address, web3provider)).slice(2, 34)
+      const entropy = (await utils.openBoxConsent(address, web3provider)).slice(
+        2,
+        34
+      )
       const mnemonic = bip39.entropyToMnemonic(entropy)
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: address,
@@ -189,7 +207,9 @@ class ThreeBox {
     const hashToken = await this._muportDID.signJWT({ odbAddress })
     // Store odbAddress on 3box-address-server
     try {
-      await utils.httpRequest(this._serverUrl + '/odbAddress', 'POST', { hash_token: hashToken })
+      await utils.httpRequest(this._serverUrl + '/odbAddress', 'POST', {
+        hash_token: hashToken
+      })
     } catch (err) {
       throw new Error(err)
     }
@@ -200,7 +220,11 @@ class ThreeBox {
     const address = this._muportDID.getDidDocument().managementKey
     if (!localstorage.get('linkConsent_' + address)) {
       const did = this._muportDID.getDid()
-      const consent = await utils.getLinkConsent(address, did, this._web3provider)
+      const consent = await utils.getLinkConsent(
+        address,
+        did,
+        this._web3provider
+      )
       const linkData = {
         consent_msg: consent.msg,
         consent_signature: consent.sig,
@@ -256,7 +280,10 @@ async function getRootStoreAddress (serverUrl, identifier) {
   return new Promise(async (resolve, reject) => {
     try {
       // read orbitdb root store address from the 3box-address-server
-      const res = await utils.httpRequest(serverUrl + '/odbAddress/' + identifier, 'GET')
+      const res = await utils.httpRequest(
+        serverUrl + '/odbAddress/' + identifier,
+        'GET'
+      )
       resolve(res.data.odbAddress)
     } catch (err) {
       if (JSON.parse(err).message === 'odbAddress not found') {
