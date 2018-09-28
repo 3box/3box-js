@@ -1,11 +1,14 @@
 const utils = require('./testUtils')
 const PrivateStore = require('../privateStore')
 
+const STORE_NAME = '09ab7cd93f9e.private'
+
+jest.mock('../keyValueStore')
+
 describe('PrivateStore', () => {
-  let ipfsd
   let privateStore
-  jest.setTimeout(20000)
-  
+  let encryptedSalt
+
   let muportDIDMock = {
     symEncrypt: cleartext => {
       return {
@@ -17,15 +20,8 @@ describe('PrivateStore', () => {
     getDid: () => 'did:muport:Qmsdfwerg'
   }
 
-  let latestRoot = null
-  const updateRoot = newRoot => {
-    expect(newRoot).not.toEqual(latestRoot)
-    latestRoot = newRoot
-  }
-
   beforeAll(async () => {
-    ipfsd = await utils.spawnIPFSD()
-    privateStore = new PrivateStore(muportDIDMock, ipfsd.api, updateRoot)
+    privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
   })
 
   it('should encrypt and decrypt correctly', async () => {
@@ -41,30 +37,38 @@ describe('PrivateStore', () => {
     expect(privateStore.remove('key')).rejects.toThrow(/_sync must/)
   })
 
-  it('should create a new orbitdb kv-store on first _sync', async () => {
-    await privateStore._sync()
-    latestRoot = privateStore.db.address.root
-    expect(privateStore.db).toBeDefined()
+  it('should create a salt on first _sync', async () => {
+    const address = await privateStore._sync('addr')
+    expect(address).toEqual('addr')
 
     // Check if salt was initiated correctly
-    const encryptedSalt = privateStore.db.get('3BOX_SALT')
+    encryptedSalt = privateStore._db.get('3BOX_SALT')
     expect(encryptedSalt).toBeDefined()
+  })
+
+  it('should not generate new salt on subsequent _sync', async () => {
+    const address = await privateStore._sync('addr')
+    expect(address).toEqual('addr')
+
+    // Check if salt was initiated correctly
+    newEncryptedSalt = privateStore._db.get('3BOX_SALT')
+    expect(newEncryptedSalt).toEqual(encryptedSalt)
   })
 
   it('should set values correctly', async () => {
     await privateStore.set('key1', 'value1')
     let dbkey = privateStore._genDbKey('key1')
-    let retreived = privateStore.db.get(dbkey)
+    let retreived = privateStore._db.get(dbkey)
     expect(privateStore._decryptEntry(retreived)).toEqual('value1')
 
     await privateStore.set('key2', 'lalalla')
     dbkey = privateStore._genDbKey('key2')
-    retreived = privateStore.db.get(dbkey)
+    retreived = privateStore._db.get(dbkey)
     expect(privateStore._decryptEntry(retreived)).toEqual('lalalla')
 
     await privateStore.set('key3', '12345')
     dbkey = privateStore._genDbKey('key3')
-    retreived = privateStore.db.get(dbkey)
+    retreived = privateStore._db.get(dbkey)
     expect(privateStore._decryptEntry(retreived)).toEqual('12345')
   })
 
@@ -84,21 +88,5 @@ describe('PrivateStore', () => {
     expect(await privateStore.get('key3')).toBeNull()
     await privateStore.remove('key2')
     expect(await privateStore.get('key2')).toBeNull()
-  })
-
-  it('should sync an old orbitdb instance correctly', async () => {
-    let privateStore2 = new PrivateStore(muportDIDMock, ipfsd.api, updateRoot)
-    await privateStore2._sync(latestRoot)
-
-    expect(await privateStore2.get('key1')).toEqual('value1')
-    expect(await privateStore2.get('key2')).toBeNull()
-    expect(await privateStore2.get('key3')).toBeNull()
-
-    await privateStore2.close()
-  })
-
-  afterAll(async done => {
-    await privateStore.close()
-    ipfsd.stop(done)
   })
 })

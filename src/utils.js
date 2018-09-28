@@ -1,4 +1,5 @@
 const XMLHttpRequest = (typeof window !== 'undefined') ? window.XMLHttpRequest : require('xmlhttprequest').XMLHttpRequest
+const Multihash = require('multihashes')
 
 module.exports = {
   openBoxConsent: (fromAddress, web3provider) => {
@@ -71,5 +72,9 @@ module.exports = {
         request.send()
       }
     })
+  },
+  sha256Multihash: str => {
+    const dataBuf = Buffer.from(str, 'utf8')
+    return Multihash.encode(dataBuf, 'sha2-256').toString('hex')
   }
 }

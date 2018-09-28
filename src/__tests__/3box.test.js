@@ -1,5 +1,5 @@
 const testUtils = require('./testUtils')
-const DAGNode = require('ipld-dag-pb').DAGNode
+const OrbitDB = require('orbit-db')
 const jsdom = require('jsdom')
 global.window = new jsdom.JSDOM().window
 
@@ -11,7 +11,7 @@ jest.mock('muport-core', () => {
     return {
       serializeState: () => serialized,
       getDid: () => did,
-      signJWT: ({hash}) => 'veryJWT,' + hash + ',' + did,
+      signJWT: ({ odbAddress }) => 'veryJWT,' + odbAddress + ',' + did,
       getDidDocument: () => { return { managementKey } }
     }
   }
@@ -19,16 +19,28 @@ jest.mock('muport-core', () => {
     expect(serializeState).toEqual(serialized)
     return instance(did1, '0x12345')
   }
-  MuPort.newIdentity = (p, d, {externalMgmtKey}) => {
+  MuPort.newIdentity = (p, d, { externalMgmtKey }) => {
     const did = externalMgmtKey === '0x12345' ? did1 : did2
     return instance(did, externalMgmtKey)
   }
   return MuPort
 })
-jest.mock('../profileStore')
-jest.mock('../privateStore')
+jest.mock('../profileStore', () => {
+  return jest.fn(() => {
+    return {
+      _sync: jest.fn(() => '/orbitdb/Qmasdf/08a7.public'),
+      all: jest.fn(() => { return { name: 'oed', image: 'an awesome selfie' } }),
+      close: jest.fn()
+    }
+  })
+})
+jest.mock('../privateStore', () => {
+  return jest.fn(() => {
+    return { _sync: jest.fn(() => '/orbitdb/Qmfdsa/08a7.private') }
+  })
+})
 jest.mock('../utils', () => {
-  let hashmap = {}
+  let addressMap = {}
   let linkmap = {}
   return {
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
@@ -37,23 +49,23 @@ jest.mock('../utils', () => {
       const lastPart = split[split.length - 1]
       let x, hash, did
       switch (lastPart) {
-        case 'hash': // put hash
+        case 'odbAddress': // put odbAddress
           [x, hash, did] = payload.hash_token.split(',')
-          hashmap[did] = hash
-          return { status: 'success', data: { hash }}
+          addressMap[did] = hash
+          return { status: 'success', data: { hash } }
         case 'link': // make a link
           did = payload.consent_msg.split(',')[1]
           const address = payload.consent_signature.split(',')[1]
           linkmap[address] = did
-          return { status: 'success', data: { did, address }}
+          return { status: 'success', data: { did, address } }
           break
-        default: // default is GET hash
-          if (hashmap[lastPart]) {
-            return {status: 'success', data: { hash: hashmap[lastPart] } }
-          } else if (hashmap[linkmap[lastPart]]) {
-            return {status: 'success', data: { hash: hashmap[linkmap[lastPart]] } }
+        default: // default is GET odbAddress
+          if (addressMap[lastPart]) {
+            return { status: 'success', data: { odbAddress: addressMap[lastPart] } }
+          } else if (addressMap[linkmap[lastPart]]) {
+            return { status: 'success', data: { odbAddress: addressMap[linkmap[lastPart]] } }
           } else {
-            throw '{"status": "error", "message": "hash not found"}'
+            throw '{"status": "error", "message": "odbAddress not found"}'
           }
       }
     }),
@@ -62,35 +74,47 @@ jest.mock('../utils', () => {
         msg: 'I agree to stuff,' + did,
         sig: '0xSuchRealSig,' + address
       }
+    }),
+    sha256Multihash: jest.fn(str => {
+      if (str === 'did:muport:Qmsdsdf87g329') return 'ab8c73d8f'
+      return 'b932fe7ab'
     })
   }
 })
 const mockedUtils = require('../utils')
-const MOCK_HASH_SERVER = 'hash-server'
+const MOCK_HASH_SERVER = 'address-server'
+const boxOpts = {
+  ipfsOptions: {
+    EXPERIMENTAL: {
+      pubsub: true
+    },
+    repo: './tmp/ipfs1/'
+  },
+  orbitPath: './tmp/orbitdb1',
+  addressServer: MOCK_HASH_SERVER
+}
+const boxOpts2 = {
+  ipfsOptions: {
+    EXPERIMENTAL: {
+      pubsub: true
+    },
+    repo: './tmp/ipfs3/'
+  },
+  orbitPath: './tmp/orbitdb1',
+  addressServer: MOCK_HASH_SERVER
+}
 
 const ThreeBox = require('../3box')
 
 describe('3Box', () => {
-
-  let ipfsd
-  let threeBox
-  let privStoreHash
-  let profStoreHash
+  let ipfs
+  let box
+  let box2
+  let orbitdb
   jest.setTimeout(20000)
 
-  let muportDIDMock = {
-    symEncrypt: cleartext => {
-      return {
-        nonce: 'asd9hfg0847h',
-        ciphertext: 'such encrypted, wow!' + cleartext
-      }
-    },
-    symDecrypt: (ciphertext, nonce) => ciphertext.split('!')[1],
-    getDid: () => 'did:muport:Qmsdfwerg'
-  }
-
   beforeAll(async () => {
-    ipfsd = await testUtils.spawnIPFSD()
+    ipfs = await testUtils.initIPFS(true)
   })
 
   beforeEach(() => {
@@ -102,128 +126,139 @@ describe('3Box', () => {
   it('should get entropy from signature first time openBox is called', async () => {
     const addr = '0x12345'
     const prov = 'web3prov'
-    threeBox = await ThreeBox.openBox(addr, prov, { ipfs: ipfsd.api, hashServer: MOCK_HASH_SERVER })
+    box = await ThreeBox.openBox(addr, prov, boxOpts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("hash-server/hash/did:muport:Qmsdfp98yw4t7", 'GET')
-    expect(threeBox.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox.profileStore._sync).toHaveBeenCalledWith(null)
-    expect(threeBox.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox.privateStore._sync).toHaveBeenCalledWith(null)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
+      hash_token: 'veryJWT,/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
+    })
+    expect(box.profileStore._sync).toHaveBeenCalledTimes(1)
+    expect(box.profileStore._sync).toHaveBeenCalledWith()
+    expect(box.privateStore._sync).toHaveBeenCalledTimes(1)
+    expect(box.privateStore._sync).toHaveBeenCalledWith()
   })
 
-  it('should get entropy from localstorage subsequent openBox calls', async () => {
-    await ThreeBox.openBox('0x12345', 'web3prov', { ipfs: ipfsd.api, hashServer: MOCK_HASH_SERVER })
+  it('should get entropy and db from localstorage subsequent openBox calls', async () => {
+    await box.close()
+    box = await ThreeBox.openBox('0x12345', 'web3prov', boxOpts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("hash-server/hash/did:muport:Qmsdfp98yw4t7", 'GET')
-    expect(threeBox.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox.profileStore._sync).toHaveBeenCalledWith(null)
-    expect(threeBox.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox.privateStore._sync).toHaveBeenCalledWith(null)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
+    expect(box.profileStore._sync).toHaveBeenCalledTimes(1)
+    expect(box.profileStore._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
+    expect(box.privateStore._sync).toHaveBeenCalledTimes(1)
+    expect(box.privateStore._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
   })
 
-  it('should publish update to hash-server if store was updated', async () => {
-    const dagNode = await createDAGNode('fakePrivateStore', [])
-    privStoreHash = dagNode.toJSON().multihash
-    await threeBox._publishUpdate('datastore', privStoreHash)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("hash-server/hash", 'POST', {
-      hash_token: 'veryJWT,QmNYYHejZNNUPE6ZwARBHVsNwsQY949u9Xyo28Xug33Xm5,did:muport:Qmsdfp98yw4t7'
+  it('should sync db updates to/from remote pinning server', async () => {
+    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb2')
+    const rootStoreAddress = box._rootStore.address.toString()
+    const store = await orbitdb.open(rootStoreAddress)
+    await new Promise((resolve, reject) => {
+      store.events.on('replicate.progress', (_x, _y, _z, num, max) => {
+        if (num === max) resolve()
+      })
     })
+    // console.log('p1 id', (await ipfs.id()).id)
+    // console.log('serverPeers', await ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
+    // console.log(await ipfs.id())
+    await box._rootStore.drop()
+    await box.close()
+    // console.log(await ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
+    // await ipfs.pubsub.subscribe('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root', console.log)
+    // console.log('p1', (await ipfs.swarm.peers())[0].addr.toString())
+    // console.log('p1', await ipfs.pubsub.ls())
+    // Something weird happens when using the same ipfs repo using boxOpts2 for now.
+    box = await ThreeBox.openBox('0x12345', 'web3prov', boxOpts2)
+    expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
+    expect(box.profileStore._sync).toHaveBeenCalledTimes(1)
+    expect(box.profileStore._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
+    expect(box.privateStore._sync).toHaveBeenCalledTimes(1)
+    expect(box.privateStore._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
   })
 
-  it('should link profile on first profileStore update', async () => {
-    const dagNode = await createDAGNode('fakeProfile', [])
-    profStoreHash = dagNode.toJSON().multihash
-    await threeBox._publishUpdate('profile', profStoreHash)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
-    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(1, "hash-server/link", 'POST', {
+  it('should link profile on call to _linkProfile', async () => {
+    await box._linkProfile()
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(1, 'address-server/link', 'POST', {
       consent_msg: 'I agree to stuff,did:muport:Qmsdfp98yw4t7',
       consent_signature: '0xSuchRealSig,0x12345',
       linked_did: 'did:muport:Qmsdfp98yw4t7'
     })
-    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(2, "hash-server/hash", 'POST', {
-      hash_token: 'veryJWT,Qma1pDRcQrvZZpxfoqFADdBu3DedE57Xt9xLYA3AoyPoEE,did:muport:Qmsdfp98yw4t7'
-    })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
   })
 
-  it('should not link profile on second profileStore update', async () => {
-    const dagNode = await createDAGNode(JSON.stringify({
-      name: 'oed',
-      imange: 'my nice selfie'
-    }), [])
-    // we are going to use this profile in a later test, add it to ipfs
-    ipfsd.api.object.put(dagNode)
-    profStoreHash = dagNode.toJSON().multihash
-    await threeBox._publishUpdate('profile', profStoreHash)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("hash-server/hash", 'POST', {
-      hash_token: 'veryJWT,QmPEZVAXMHptxKZ3K8qXwgaD6ffcF6pPjXEFutx6gFoodm,did:muport:Qmsdfp98yw4t7'
-    })
+  it('should not link profile on second call to _linkProfile', async () => {
+    await box._linkProfile()
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(0)
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(0)
   })
 
-  it('should fetch data correctly when reopening with openBox', async () => {
-    threeBox = null
-    threeBox = await ThreeBox.openBox('0x12345', 'web3prov', { ipfs: ipfsd.api, hashServer: MOCK_HASH_SERVER })
-    expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("hash-server/hash/did:muport:Qmsdfp98yw4t7", 'GET')
-    expect(threeBox.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox.profileStore._sync).toHaveBeenCalledWith(profStoreHash)
-    expect(threeBox.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox.privateStore._sync).toHaveBeenCalledWith(privStoreHash)
+  it('should handle a second address/account correctly', async () => {
+    await box.close()
+    const addr = '0xabcde'
+    const prov = 'web3prov'
+    box2 = await ThreeBox.openBox(addr, prov, boxOpts)
+
+    expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdsdf87g329', 'GET')
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
+      hash_token: 'veryJWT,/orbitdb/QmTshhMpnDxHRgBuMKxsQfEMfcQnoCE5EromHfH1V9JZr6/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
+    })
+    expect(box2.profileStore._sync).toHaveBeenCalledTimes(1)
+    expect(box2.profileStore._sync).toHaveBeenCalledWith()
+    expect(box2.privateStore._sync).toHaveBeenCalledTimes(1)
+    expect(box2.privateStore._sync).toHaveBeenCalledWith()
+
+    await box2._linkProfile()
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(3)
+    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(3, 'address-server/link', 'POST', {
+      consent_msg: 'I agree to stuff,did:muport:Qmsdsdf87g329',
+      consent_signature: '0xSuchRealSig,0xabcde',
+      linked_did: 'did:muport:Qmsdsdf87g329'
+    })
+    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
   })
 
   it('should getProfile correctly', async () => {
-    const profile = await ThreeBox.getProfile('0x12345', { ipfs: ipfsd.api, hashServer: MOCK_HASH_SERVER })
+    await box._rootStore.drop()
+    // awaitbox2._ruotStore.drop()
+    const profile = await ThreeBox.getProfile('0x12345', boxOpts)
     expect(profile).toEqual({
       name: 'oed',
-      imange: 'my nice selfie'
+      image: 'an awesome selfie'
     })
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("hash-server/hash/0x12345", 'GET')
-  })
-
-  it('should handle a second address/account correctly', async () => {
-    const addr = '0xabcde'
-    const prov = 'web3prov'
-    let threeBox2 = await ThreeBox.openBox(addr, prov, { ipfs: ipfsd.api, hashServer: MOCK_HASH_SERVER })
-    expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith("hash-server/hash/did:muport:Qmsdsdf87g329", 'GET')
-    expect(threeBox2.profileStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox2.profileStore._sync).toHaveBeenCalledWith(null)
-    expect(threeBox2.privateStore._sync).toHaveBeenCalledTimes(1)
-    expect(threeBox2.privateStore._sync).toHaveBeenCalledWith(null)
-
-    // Check that link consent is called for this new address
-    await threeBox2._publishUpdate('profile', profStoreHash)
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/0x12345', 'GET')
   })
 
   it('should clear cache correctly', async () => {
-    await threeBox.logout()
-    threeBox = null
-    threeBox = await ThreeBox.openBox('0x12345', 'web3prov', { ipfs: ipfsd.api, hashServer: MOCK_HASH_SERVER })
+    await box2.logout()
+    box2 = null
+    box2 = await ThreeBox.openBox('0xabcde', 'web3prov', boxOpts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
-    await threeBox._publishUpdate('profile', profStoreHash)
+    await box2._linkProfile()
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
+    await box2.close()
   })
 
-  afterAll(async done => {
-    ipfsd.stop(done)
+  it('should getProfile correctly when box is not open', async () => {
+    const profile = await ThreeBox.getProfile('0x12345', boxOpts)
+    expect(profile).toEqual({
+      name: 'oed',
+      image: 'an awesome selfie'
+    })
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/0x12345', 'GET')
+  })
+
+  afterAll(async () => {
+    await ipfs.stop()
   })
 })
-
-const createDAGNode = (data, links) => new Promise((resolve, reject) => {
-  DAGNode.create(data, links, (err, node) => {
-    if (err) reject(err)
-    resolve(node)
-  })
-})
-
