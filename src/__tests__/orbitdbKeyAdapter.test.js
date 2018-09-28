@@ -1,13 +1,7 @@
 const OrbitdbKeyStore = require('../orbitdbKeyAdapter')
 
 const muportMockInstance = {
-  keyring: {
-    signingKey: {
-      _hdkey: {
-        _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex')
-      }
-    }
-  }
+  keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
 }
 
 describe('OrbitdbKeyStore', () => {

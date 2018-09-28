@@ -12,7 +12,8 @@ jest.mock('muport-core', () => {
       serializeState: () => serialized,
       getDid: () => did,
       signJWT: ({ odbAddress }) => 'veryJWT,' + odbAddress + ',' + did,
-      getDidDocument: () => { return { managementKey } }
+      getDidDocument: () => { return { managementKey } },
+      keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
     }
   }
   const MuPort = function (serializeState) {
