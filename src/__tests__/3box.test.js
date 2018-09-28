@@ -133,7 +133,7 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
-      hash_token: 'veryJWT,/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
+      hash_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
     })
     expect(box.profileStore._sync).toHaveBeenCalledTimes(1)
     expect(box.profileStore._sync).toHaveBeenCalledWith()
@@ -163,12 +163,12 @@ describe('3Box', () => {
       })
     })
     // console.log('p1 id', (await ipfs.id()).id)
-    // console.log('serverPeers', await ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
+    // console.log('serverPeers', await ipfs.pubsub.peers('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root'))
     // console.log(await ipfs.id())
     await box._rootStore.drop()
     await box.close()
-    // console.log(await ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
-    // await ipfs.pubsub.subscribe('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root', console.log)
+    // console.log(await ipfs.pubsub.peers('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root'))
+    // await ipfs.pubsub.subscribe('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root', console.log)
     // console.log('p1', (await ipfs.swarm.peers())[0].addr.toString())
     // console.log('p1', await ipfs.pubsub.ls())
     // Something weird happens when using the same ipfs repo using boxOpts2 for now.
@@ -210,7 +210,7 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdsdf87g329', 'GET')
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
-      hash_token: 'veryJWT,/orbitdb/QmTshhMpnDxHRgBuMKxsQfEMfcQnoCE5EromHfH1V9JZr6/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
+      hash_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
     })
     expect(box2.profileStore._sync).toHaveBeenCalledTimes(1)
     expect(box2.profileStore._sync).toHaveBeenCalledWith()

@@ -85,7 +85,7 @@ class ThreeBox {
       await Promise.all(storePromises)
     } else {
       const rootStoreName = didFingerprint + '.root'
-      this._rootStore = await this._orbitdb.feed(rootStoreName, { write: ['*'] })
+      this._rootStore = await this._orbitdb.feed(rootStoreName)
       await this._rootStore.add({ odbAddress: await this.profileStore._sync() })
       await this._rootStore.add({ odbAddress: await this.privateStore._sync() })
       await this._publishRootStore(this._rootStore.address.toString())

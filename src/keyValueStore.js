@@ -69,7 +69,7 @@ class KeyValueStore {
         })
       })
     } else {
-      this._db = await this._orbitdb.keyvalue(this._name, { write: ['*'] })
+      this._db = await this._orbitdb.keyvalue(this._name)
     }
     return this._db.address.toString()
   }
