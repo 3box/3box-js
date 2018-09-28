@@ -4,6 +4,7 @@ const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Room = require('ipfs-pubsub-room')
+const sha256 = require('js-sha256').sha256
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
@@ -251,8 +252,9 @@ class ThreeBox {
       console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
-      const entropy = (await utils.openBoxConsent(address, web3provider)).slice(2, 34)
       if (opts.consentCallback) opts.consentCallback(true)
+      const sig = await utils.openBoxConsent(address, web3provider)
+      const entropy = sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
       console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
