@@ -31,6 +31,24 @@ describe('PrivateStore', () => {
     expect(decrypted).toEqual(value)
   })
 
+  it('should (un)pad encrypted values (with blocksize = 24)', async () => {
+    const value = 'my secret string'
+    let paddedVal
+    const muportDIDMock = {
+      symEncrypt: cleartext => {
+        paddedVal = cleartext
+        expect(cleartext.length % 24).toEqual(0)
+      },
+      symDecrypt: () => paddedVal,
+      getDid: () => 'did:muport:Qmsdfwerg'
+    }
+    const privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
+
+    privateStore._encryptEntry(value)
+    const decrypted = privateStore._decryptEntry({nonce: '', ciphertext: ''})
+    expect(decrypted).toEqual(value)
+  })
+
   it('should throw if not synced', async () => {
     expect(privateStore.set('key', 'value')).rejects.toThrow(/_sync must/)
     expect(privateStore.get('key')).rejects.toThrow(/_sync must/)
