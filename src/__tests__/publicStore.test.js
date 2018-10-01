@@ -1,4 +1,3 @@
-const utils = require('./testUtils')
 const PublicStore = require('../publicStore')
 
 const STORE_NAME = '09ab7cd93f9e.public'

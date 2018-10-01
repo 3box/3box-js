@@ -6,6 +6,7 @@ const OrbitDB = require('orbit-db')
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
+const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
 // TODO: Put production 3box-hash-server instance here ;)
@@ -42,7 +43,8 @@ class ThreeBox {
     const rootStoreAddress = await getRootStoreAddress(this._serverUrl, did)
     const didFingerprint = utils.sha256Multihash(did)
     this._ipfs = await initIPFS(opts.ipfsOptions)
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath)
+    const keystore = new OrbitdbKeyAdapter(this._muportDID)
+    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
@@ -83,7 +85,7 @@ class ThreeBox {
       await Promise.all(storePromises)
     } else {
       const rootStoreName = didFingerprint + '.root'
-      this._rootStore = await this._orbitdb.feed(rootStoreName, { write: ['*'] })
+      this._rootStore = await this._orbitdb.feed(rootStoreName)
       await this._rootStore.add({ odbAddress: await this.public._sync() })
       await this._rootStore.add({ odbAddress: await this.private._sync() })
       await this._publishRootStore(this._rootStore.address.toString())
