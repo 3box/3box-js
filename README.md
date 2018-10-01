@@ -117,8 +117,8 @@ box.privateStore.get('email').then(email => {
 * [ThreeBox](#ThreeBox)
     * [new ThreeBox()](#new_ThreeBox_new)
     * _instance_
-        * [.profileStore](#ThreeBox+profileStore)
-        * [.privateStore](#ThreeBox+privateStore)
+        * [.public](#ThreeBox+public)
+        * [.private](#ThreeBox+private)
         * [.close()](#ThreeBox+close)
         * [.logout()](#ThreeBox+logout)
     * _static_
@@ -130,25 +130,25 @@ box.privateStore.get('email').then(email => {
 ### new ThreeBox()
 Please use the **openBox** method to instantiate a ThreeBox
 
-<a name="ThreeBox+profileStore"></a>
+<a name="ThreeBox+public"></a>
 
-### threeBox.profileStore
+### threeBox.public
 **Kind**: instance property of [<code>ThreeBox</code>](#ThreeBox)  
 **Properties**
 
 | Name | Type | Description |
 | --- | --- | --- |
-| profileStore | [<code>KeyValueStore</code>](#KeyValueStore) | access the profile store of the users threeBox |
+| public | [<code>KeyValueStore</code>](#KeyValueStore) | access the profile store of the users threeBox |
 
-<a name="ThreeBox+privateStore"></a>
+<a name="ThreeBox+private"></a>
 
-### threeBox.privateStore
+### threeBox.private
 **Kind**: instance property of [<code>ThreeBox</code>](#ThreeBox)  
 **Properties**
 
 | Name | Type | Description |
 | --- | --- | --- |
-| privateStore | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users threeBox |
+| private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users threeBox |
 
 <a name="ThreeBox+close"></a>
 
