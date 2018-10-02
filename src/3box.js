@@ -193,11 +193,11 @@ class ThreeBox {
 
   async _publishRootStore (rootStoreAddress) {
     // Sign rootStoreAddress
-    const address_token = await this._muportDID.signJWT({ rootStoreAddress })
+    const addressToken = await this._muportDID.signJWT({ rootStoreAddress })
     // Store odbAddress on 3box-address-server
     try {
       await utils.httpRequest(this._serverUrl + '/odbAddress', 'POST', {
-        address_token
+        address_token: addressToken
       })
     } catch (err) {
       throw new Error(err)
