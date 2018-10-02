@@ -54,8 +54,8 @@ class KeyValueStore {
       // wait for a while to see if we get updates from the network
       await new Promise((resolve, reject) => {
         let toid = setTimeout(() => {
-          this._db.events.off('replicated', () => {})
-          this._db.events.off('replicate.progress', () => {})
+          this._db.events.removeAllListeners('replicated')
+          this._db.events.removeAllListeners('replicate.progress')
           resolve()
         }, 2000)
         this._db.events.on('replicate.progress', (_x, _y, _z, num, max) => {

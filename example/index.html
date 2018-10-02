@@ -27,11 +27,11 @@
       ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider).then(box => {
         console.log(box)
 
-        updateProfileData(box)
         controlls.style.display = 'inline'
+        updateProfileData(box)
 
         setProfile.addEventListener('click', () => {
-          box.profileStore.set(prkey.value, prvalue.value).then(() => {
+          box.public.set(prkey.value, prvalue.value).then(() => {
             prkey.value = null
             prvalue.value = null
             updateProfileData(box)
@@ -42,7 +42,8 @@
 
     function updateProfileData(box) {
       profileData.innerHTML = ''
-      box.profileStore.all().then(profile => {
+      box.public.all().then(profile => {
+        console.log(profile)
         Object.entries(profile).map(kv => {
           profileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
         })

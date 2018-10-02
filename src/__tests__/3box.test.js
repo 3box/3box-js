@@ -11,7 +11,7 @@ jest.mock('muport-core', () => {
     return {
       serializeState: () => serialized,
       getDid: () => did,
-      signJWT: ({ odbAddress }) => 'veryJWT,' + odbAddress + ',' + did,
+      signJWT: ({ rootStoreAddress }) => 'veryJWT,' + rootStoreAddress + ',' + did,
       getDidDocument: () => { return { managementKey } },
       keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
     }
@@ -51,7 +51,7 @@ jest.mock('../utils', () => {
       let x, hash, did
       switch (lastPart) {
         case 'odbAddress': // put odbAddress
-          [x, hash, did] = payload.hash_token.split(',')
+          [x, hash, did] = payload.address_token.split(',')
           addressMap[did] = hash
           return { status: 'success', data: { hash } }
         case 'link': // make a link
@@ -62,11 +62,11 @@ jest.mock('../utils', () => {
           break
         default: // default is GET odbAddress
           if (addressMap[lastPart]) {
-            return { status: 'success', data: { odbAddress: addressMap[lastPart] } }
+            return { status: 'success', data: { rootStoreAddress: addressMap[lastPart] } }
           } else if (addressMap[linkmap[lastPart]]) {
-            return { status: 'success', data: { odbAddress: addressMap[linkmap[lastPart]] } }
+            return { status: 'success', data: { rootStoreAddress: addressMap[linkmap[lastPart]] } }
           } else {
-            throw '{"status": "error", "message": "odbAddress not found"}'
+            throw '{"status": "error", "message": "root store address not found"}'
           }
       }
     }),
@@ -133,7 +133,7 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
-      hash_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
+      address_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
     })
     expect(box.public._sync).toHaveBeenCalledTimes(1)
     expect(box.public._sync).toHaveBeenCalledWith()
@@ -210,7 +210,7 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdsdf87g329', 'GET')
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
-      hash_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
+      address_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
     })
     expect(box2.public._sync).toHaveBeenCalledTimes(1)
     expect(box2.public._sync).toHaveBeenCalledWith()
