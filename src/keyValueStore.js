@@ -15,7 +15,8 @@ class KeyValueStore {
    */
   async get (key) {
     if (!this._db) throw new Error('_sync must be called before interacting with the store')
-    return this._db.get(key)
+    const dbGetRes = await this._db.get(key)
+    return dbGetRes ? dbGetRes.value : dbGetRes
   }
 
   /**
@@ -27,7 +28,8 @@ class KeyValueStore {
    */
   async set (key, value) {
     if (!this._db) throw new Error('_sync must be called before interacting with the store')
-    await this._db.put(key, value)
+    const timestamp = new Date().getTime()
+    await this._db.put(key, { value, timestamp })
     return true
   }
 
