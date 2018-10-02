@@ -178,10 +178,7 @@ class ThreeBox {
     if (serializedMuDID) {
       muportDID = new MuPort(serializedMuDID)
     } else {
-      const entropy = (await utils.openBoxConsent(address, web3provider)).slice(
-        2,
-        34
-      )
+      const entropy = (await utils.openBoxConsent(address, web3provider)).slice(2, 34)
       const mnemonic = bip39.entropyToMnemonic(entropy)
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: address,
@@ -194,13 +191,13 @@ class ThreeBox {
     return threeBox
   }
 
-  async _publishRootStore (odbAddress) {
+  async _publishRootStore (rootStoreAddress) {
     // Sign rootStoreAddress
-    const hashToken = await this._muportDID.signJWT({ odbAddress })
+    const addressToken = await this._muportDID.signJWT({ rootStoreAddress })
     // Store odbAddress on 3box-address-server
     try {
       await utils.httpRequest(this._serverUrl + '/odbAddress', 'POST', {
-        hash_token: hashToken
+        address_token: addressToken
       })
     } catch (err) {
       throw new Error(err)
@@ -276,9 +273,9 @@ async function getRootStoreAddress (serverUrl, identifier) {
         serverUrl + '/odbAddress/' + identifier,
         'GET'
       )
-      resolve(res.data.odbAddress)
+      resolve(res.data.rootStoreAddress)
     } catch (err) {
-      if (JSON.parse(err).message === 'odbAddress not found') {
+      if (JSON.parse(err).message === 'root store address not found') {
         resolve(null)
       }
       reject(err)
