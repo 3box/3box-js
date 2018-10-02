@@ -3,6 +3,7 @@ const utils = require('./utils')
 const nacl = require('tweetnacl')
 
 const SALT_KEY = '3BOX_SALT'
+const ENC_BLOCK_SIZE = 24
 
 class PrivateStore extends KeyValueStore {
   constructor (muportDID, orbitdb, name) {
@@ -46,11 +47,20 @@ class PrivateStore extends KeyValueStore {
   _encryptEntry (entry) {
     if (typeof entry === 'undefined') throw new Error('Entry to encrypt cannot be undefined')
 
-    return this.muportDID.symEncrypt(JSON.stringify(entry))
+    return this.muportDID.symEncrypt(this._pad(JSON.stringify(entry)))
   }
 
   _decryptEntry ({ ciphertext, nonce }) {
-    return JSON.parse(this.muportDID.symDecrypt(ciphertext, nonce))
+    return JSON.parse(this._unpad(this.muportDID.symDecrypt(ciphertext, nonce)))
+  }
+
+  _pad (val, blockSize = ENC_BLOCK_SIZE) {
+    const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
+    return `${val}${'\0'.repeat(blockDiff)}`
+  }
+
+  _unpad (padded) {
+    return padded.replace(/\0+$/, '')
   }
 }
 
