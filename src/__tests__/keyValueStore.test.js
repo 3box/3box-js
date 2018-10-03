@@ -61,6 +61,52 @@ describe('KeyValueStore', () => {
     await ipfs2.stop()
   })
 
+  describe('log', () => {
+
+    beforeEach(async () => {
+      keyValueStore = new KeyValueStore(orbitdb, STORE_NAME)
+      storeAddr = await keyValueStore._sync()
+      await keyValueStore.set('key1', 'value1')
+      await keyValueStore.set('key2', 'lalalla')
+      await keyValueStore.set('key3', '12345')
+    })
+
+    it('should return array of ALL entries ({op: .., key: .., value: .., timestamp: ..}) of log underlying store ', async () => {
+      const log = keyValueStore.log
+      expect(log.length).toEqual(3)
+      const entry = log[0]
+      expect(Object.keys(entry).sort()).toEqual(['key', 'op', 'timestamp', 'value'])
+    })
+
+    it('should be time ordered', async () => {
+      const log = keyValueStore.log
+      expect(log[0].key).toEqual('key1')
+      expect(log[1].key).toEqual('key2')
+      expect(log[2].key).toEqual('key3')
+    })
+
+    it('should including ALL entries, including OPS on same keys', async () => {
+      // write over existing key
+      await keyValueStore.set('key3', '6789')
+      const log = keyValueStore.log
+      expect(log[2].key).toEqual('key3')
+      expect(log[3].key).toEqual('key3')
+      expect(log[2].value).toEqual('12345')
+      expect(log[3].value).toEqual('6789')
+    })
+
+    it('should including ALL entries, including DEL ops', async () => {
+      await keyValueStore.remove('key1')
+      const log = keyValueStore.log
+      expect(log.length).toEqual(4)
+      const lastEntry = log.pop()
+      expect(lastEntry.key).toEqual('key1')
+      expect(lastEntry.op).toEqual('DEL')
+      expect(lastEntry.value).toBeNull()
+    })
+  })
+
+
   afterAll(async () => {
     await orbitdb.stop()
     await ipfs.stop()

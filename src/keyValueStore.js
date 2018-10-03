@@ -80,6 +80,27 @@ class KeyValueStore {
     if (!this._db) throw new Error('_sync must be called before interacting with the store')
     await this._db.close()
   }
+
+  /**
+   * Returns array of underlying log entries. In linearized order according to their Lamport clocks.
+   * Useful for generating a complete history of all operations on store.
+   *
+   *  @example
+   *  const log = store.log
+   *  const entry = log[0]
+   *  console.log(entry)
+   *  // { op: 'PUT', key: 'Name', value: 'Botbot', timestamp: '1538575416068' }
+   *
+   * @return    {Array<Object>}     Array of ordered log entry objects
+   */
+  get log () {
+    return this._db._oplog.values.map(obj => {
+      return { op: obj.payload.op,
+        key: obj.payload.key,
+        value: obj.payload.value ? obj.payload.value.value : null,
+        timestamp: obj.payload.value ? obj.payload.value.timestamp : null }
+    })
+  }
 }
 
 module.exports = KeyValueStore
