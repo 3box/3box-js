@@ -23,7 +23,11 @@ class KeyValueStore {
 
   async _sync (orbitAddress) {
     this._db = {
-      all: () => this._store,
+      all: () => {
+        let allObj = {}
+        Object.keys(this._store).map(key => allObj[key] = { timestamp: 123, value: this._store[key] })
+        return allObj
+      },
       set: (k, v) => this._store[k] = v,
       get: (k) => this._store[k],
       remove: k => delete this._store[k]
