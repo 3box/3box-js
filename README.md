@@ -13,7 +13,7 @@ This is a library which allows you to set, get, and remove private and public da
 ## Installation
 Install 3box in your npm project:
 ```
-$ npm install 3box
+$ npm install 3box@next
 ```
 
 ## Usage
