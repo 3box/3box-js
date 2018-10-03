@@ -25,6 +25,7 @@
   <script type="text/javascript">
     bopen.addEventListener('click', event => {
       ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider).then(box => {
+        window.box = box
         console.log(box)
 
         controlls.style.display = 'inline'

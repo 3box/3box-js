@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.0.0-beta-4",
+  "version": "1.0.0-beta-5",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -11,6 +11,7 @@
     "test": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
     "build": "./node_modules/.bin/babel src --out-dir lib",
     "build:dist": "./node_modules/.bin/browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
+    "build:all": "npm run build; npm run build:dist",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none src/*.js >> README.md"
   },
   "jest": {
