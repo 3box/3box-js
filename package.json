@@ -36,6 +36,7 @@
     "bip39": "^2.5.0",
     "ipfs": "^0.32.2",
     "ipfs-api": "^24.0.0",
+    "ipfs-pubsub-room": "^1.4.0",
     "js-sha256": "^0.9.0",
     "muport-core": "^0.4.1",
     "orbit-db": "^0.19.9",

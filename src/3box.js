@@ -3,14 +3,15 @@ const bip39 = require('bip39')
 const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
+const Room = require('ipfs-pubsub-room')
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
-// TODO: Put production 3box-hash-server instance here ;)
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
+const PINNING_SERVER = '/ip4/18.236.233.237/tcp/4003/ws/ipfs/QmbgpyTLCYBy84E1HGwei6niQHiLQmRpfN6SQtfJiyNMUd'
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
@@ -43,6 +44,25 @@ class ThreeBox {
     const rootStoreAddress = await getRootStoreAddress(this._serverUrl, did)
     const didFingerprint = utils.sha256Multihash(did)
     this._ipfs = await initIPFS(opts.ipfsOptions)
+    // TODO - if connection to this peer is lost we should try to reconnect
+    await this._ipfs.swarm.connect(PINNING_SERVER)
+
+    console.log(await this._ipfs.swarm.peers())
+    const room = Room(this._ipfs, '3box')
+
+    room.on('peer joined', (peer) => {
+      console.log('Peer joined the room', peer)
+      if (rootStoreAddress) {
+        room.broadcast(rootStoreAddress)
+        room.removeAllListeners()
+      }
+    })
+
+    // now started to listen to room
+    room.on('subscribed', () => {
+      console.log('Now connected!')
+    })
+
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
     globalIPFS = this._ipfs
@@ -92,6 +112,7 @@ class ThreeBox {
       await this._rootStore.add({ odbAddress: await this.public._sync() })
       await this._rootStore.add({ odbAddress: await this.private._sync() })
       await this._publishRootStore(this._rootStore.address.toString())
+      room.broadcast(this._rootStore.address.toString())
     }
   }
 
