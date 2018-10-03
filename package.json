@@ -9,8 +9,8 @@
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
     "test": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
-    "build": "babel src --out-dir lib",
-    "build:dist": "browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
+    "build": "./node_modules/.bin/babel src --out-dir lib",
+    "build:dist": "./node_modules/.bin/browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none src/*.js >> README.md"
   },
   "jest": {
@@ -46,6 +46,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
+    "browserify": "^16.2.3",
     "ganache-cli": "^6.1.0",
     "ipfsd-ctl": "^0.39.1",
     "jest": "^23.6.0",
