@@ -11,6 +11,8 @@
     <button id="bopen">Open 3box</button>
     <br />
     <div id="controlls" style="display: none">
+    <div>
+      <h2> Public Store </h2>
       <input type="text" id="prkey" placeholder="Profile Key">
       <input type="text" id="prvalue" placeholder="Profile Value">
       <button id="setProfile">Set Profile Data</button>
@@ -20,6 +22,24 @@
       <span id="profileData"></span>
       </p>
     </div>
+    <div>
+      <h2> Private Store </h2>
+      <input type="text" id="pskey" placeholder="Private Store Key">
+      <input type="text" id="psvalue" placeholder="Private Store Value">
+      <button id="setPrivateStore">Set Private Store Data</button>
+      <br />
+      <p>
+      Private Store Data : (Key must be known to get value)<br/><br/>
+      <input type="text" id="getpskey" placeholder="Private Store Key">
+      <button id="getPrivateStore">Get Private Store Value</button>
+      <br /><br />
+      <span id="privateStoreData"></span>
+      </p>
+    </div>
+    <div >
+      <button id="bclose">Close 3box</button>
+    </div>
+  </div>
   </body>
 
   <script type="text/javascript">
@@ -38,6 +58,25 @@
             updateProfileData(box)
           })
         })
+
+        setPrivateStore.addEventListener('click', () => {
+          box.private.set(pskey.value, psvalue.value).then(() => {
+            pskey.value = null
+            psvalue.value = null
+          })
+        })
+
+        getPrivateStore.addEventListener('click', () => {
+          const key = getpskey.value
+          box.private.get(key).then(val => {
+            getpskey.value = null
+            updatePrivateData(key, val)
+          })
+        })
+
+        bclose.addEventListener('click', () => {
+          logout(box)
+        })
       })
     })
 
@@ -50,6 +89,20 @@
         })
       })
     }
+
+    function updatePrivateData(key, value) {
+      privateStoreData.innerHTML = ''
+      privateStoreData.innerHTML  = key + ': ' + value
+    }
+
+    function logout(box){
+      box.logout().then(() => {
+        privateStoreData.innerHTML = ''
+        profileData.innerHTML = ''
+        controlls.style.display = 'none'
+      })
+    }
+
   </script>
 
 </html>
