@@ -38,7 +38,7 @@ module.exports = {
         if (err) reject(err)
         if (result.error) reject(result.error)
         const out = {
-          msg: msg,
+          msg: text,
           sig: result.result
         }
         resolve(out)
