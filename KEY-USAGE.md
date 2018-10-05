@@ -16,15 +16,16 @@ ujo.description
 ## Common entries
 There are lots of cases where it can be valuable for dapps to use the same entries/data, e.g. name and image in the profile, and email in the private store. Below are tables containing well known keys. Feel free to add more by making a PR :)
 
-### ProfileStore
+### Profile Data
 
 | key | Description |
 | -- | -- |
 | name | a name chosen by the user |
 | image | an ipfs hash of a profile image |
 
-### PrivateStore
+### Private Data
 
 | key | Description |
 | -- | -- |
-| email | the users email address |
+| email | the user's email address |
+| consensys.badge-employment | a claim the user works at ConsenSys |
