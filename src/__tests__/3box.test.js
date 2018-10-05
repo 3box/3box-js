@@ -127,7 +127,9 @@ describe('3Box', () => {
   it('should get entropy from signature first time openBox is called', async () => {
     const addr = '0x12345'
     const prov = 'web3prov'
-    box = await ThreeBox.openBox(addr, prov, boxOpts)
+    const consentCallback = jest.fn()
+    const opts = { ...boxOpts, consentCallback }
+    box = await ThreeBox.openBox(addr, prov, opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
@@ -139,11 +141,15 @@ describe('3Box', () => {
     expect(box.public._sync).toHaveBeenCalledWith()
     expect(box.private._sync).toHaveBeenCalledTimes(1)
     expect(box.private._sync).toHaveBeenCalledWith()
+    expect(consentCallback).toHaveBeenCalledTimes(1)
+    expect(consentCallback).toHaveBeenCalledWith(true)
   })
 
   it('should get entropy and db from localstorage subsequent openBox calls', async () => {
+    const consentCallback = jest.fn()
+    const opts = { ...boxOpts, consentCallback }
     await box.close()
-    box = await ThreeBox.openBox('0x12345', 'web3prov', boxOpts)
+    box = await ThreeBox.openBox('0x12345', 'web3prov', opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
@@ -151,6 +157,8 @@ describe('3Box', () => {
     expect(box.public._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
     expect(box.private._sync).toHaveBeenCalledTimes(1)
     expect(box.private._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
+    expect(consentCallback).toHaveBeenCalledTimes(1)
+    expect(consentCallback).toHaveBeenCalledWith(false)
   })
 
   it('should sync db updates to/from remote pinning server', async () => {
