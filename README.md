@@ -231,7 +231,7 @@ Useful for generating a complete history of all operations on store.
 const log = store.log
  const entry = log[0]
  console.log(entry)
- // { op: 'PUT', key: 'Name', value: 'Botbot', timestamp: '1538575416068' }
+ // { op: 'PUT', key: 'Name', value: 'Botbot', timeStamp: '1538575416068' }
 ```
 <a name="KeyValueStore+get"></a>
 

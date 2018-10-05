@@ -25,7 +25,7 @@ class KeyValueStore {
     this._db = {
       all: () => {
         let allObj = {}
-        Object.keys(this._store).map(key => allObj[key] = { timestamp: 123, value: this._store[key] })
+        Object.keys(this._store).map(key => allObj[key] = { timeStamp: 123, value: this._store[key] })
         return allObj
       },
       set: (k, v) => this._store[k] = v,
@@ -42,7 +42,7 @@ class KeyValueStore {
   get log () {
     // simple mock, order and del ops not retained
     const all = this._db.all()
-    return   Object.keys(all).map(key => ({'op': 'PUT', 'key': 'hash', 'value': all[key].value, 'timestamp': all[key].timestamp}))
+    return   Object.keys(all).map(key => ({'op': 'PUT', 'key': 'hash', 'value': all[key].value, 'timeStamp': all[key].timeStamp}))
   }
 }
 

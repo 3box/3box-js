@@ -71,11 +71,11 @@ describe('KeyValueStore', () => {
       await keyValueStore.set('key3', '12345')
     })
 
-    it('should return array of ALL entries ({op: .., key: .., value: .., timestamp: ..}) of log underlying store ', async () => {
+    it('should return array of ALL entries ({op: .., key: .., value: .., timeStamp: ..}) of log underlying store ', async () => {
       const log = keyValueStore.log
       expect(log.length).toEqual(3)
       const entry = log[0]
-      expect(Object.keys(entry).sort()).toEqual(['key', 'op', 'timestamp', 'value'])
+      expect(Object.keys(entry).sort()).toEqual(['key', 'op', 'timeStamp', 'value'])
     })
 
     it('should be time ordered', async () => {
@@ -105,7 +105,6 @@ describe('KeyValueStore', () => {
       expect(lastEntry.value).toBeNull()
     })
   })
-
 
   afterAll(async () => {
     await orbitdb.stop()
