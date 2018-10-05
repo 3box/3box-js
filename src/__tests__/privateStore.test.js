@@ -107,4 +107,20 @@ describe('PrivateStore', () => {
     await privateStore.remove('key2')
     expect(await privateStore.get('key2')).toBeNull()
   })
+
+  describe('log', () => {
+
+    beforeEach(async () => {
+      privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
+      storeAddr = await privateStore._sync()
+      await privateStore.set('key1', 'value1')
+    })
+
+    it('should return array of ALL entries values of log underlying store decrypted', async () => {
+      const log = privateStore.log
+      const entry = log.pop()
+      expect(entry.key).toEqual('hash')
+      expect(entry.value).toEqual('value1')
+    })
+  })
 })

@@ -38,6 +38,12 @@ class KeyValueStore {
   async close () {
     if (!this._db) throw new Error('_sync must be called before interacting with the store')
   }
+
+  get log () {
+    // simple mock, order and del ops not retained
+    const all = this._db.all()
+    return   Object.keys(all).map(key => ({'op': 'PUT', 'key': 'hash', 'value': all[key].value, 'timestamp': all[key].timestamp}))
+  }
 }
 
 module.exports = KeyValueStore

@@ -27,6 +27,25 @@ class PrivateStore extends KeyValueStore {
     return super.remove(key)
   }
 
+  /**
+   * Returns array of underlying log entries. In linearized order according to their Lamport clocks.
+   * Useful for generating a complete history of all operations on store. Key is hashed, so key is
+   * not available from the private store.
+   *
+   *  @example
+   *  const log = store.log
+   *  const entry = log[0]
+   *  console.log(entry)
+   *  // { op: 'PUT', key: ...., value: 'Botbot', timestamp: '1538575416068' }
+   *
+   * @return    {Array<Object>}     Array of ordered log entry objects
+   */
+  get log () {
+    return super.log.map(obj => {
+      return Object.assign(obj, { value: obj.value ? this._decryptEntry(obj.value) : null })
+    })
+  }
+
   async _sync (orbitAddress) {
     const address = await super._sync(orbitAddress)
     let encryptedSalt = await super.get(SALT_KEY)
