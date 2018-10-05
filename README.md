@@ -4,11 +4,6 @@
 
 This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. Currently it supports one shared space which all dapps can access. In the future there will be support for more granular access control using namespaces.
 
-## Quick Links
-
-[Data Schema](./DATA-SCHEMA.md)
-
-**Report an issue**: Copy the [3Box issue template](https://github.com/uport-project/3box/.github/ISSUE_TEMPLATE.md) and [create a new issue in 3box-js](https://github.com/uport-project/3box-js/issues/new).
 
 ## Installation
 Install 3box in your npm project:
@@ -203,6 +198,7 @@ Opens the user space associated with the given address
 
 * [KeyValueStore](#KeyValueStore)
     * [new KeyValueStore()](#new_KeyValueStore_new)
+    * [.log](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
     * [.get(key)](#KeyValueStore+get) ⇒ <code>String</code>
     * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
@@ -212,6 +208,21 @@ Opens the user space associated with the given address
 ### new KeyValueStore()
 Please use **threeBox.profileStore** or **threeBox.profileStore** to get the instance of this class
 
+<a name="KeyValueStore+log"></a>
+
+### keyValueStore.log ⇒ <code>Array.&lt;Object&gt;</code>
+Returns array of underlying log entries. In linearized order according to their Lamport clocks.
+Useful for generating a complete history of all operations on store.
+
+**Kind**: instance property of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - Array of ordered log entry objects  
+**Example**  
+```js
+const log = store.log
+ const entry = log[0]
+ console.log(entry)
+ // { op: 'PUT', key: 'Name', value: 'Botbot', timestamp: '1538575416068' }
+```
 <a name="KeyValueStore+get"></a>
 
 ### keyValueStore.get(key) ⇒ <code>String</code>
