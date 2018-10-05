@@ -4,12 +4,11 @@
 
 This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. Currently it supports one shared space which all dapps can access. In the future there will be support for more granular access control using namespaces.
 
-[Data Schema](./DATA-MODEL.md)
 
 ## Installation
 Install 3box in your npm project:
 ```
-$ npm install 3box
+$ npm install 3box@next
 ```
 
 ## Usage
