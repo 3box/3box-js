@@ -102,6 +102,16 @@ box.privateStore.get('email').then(email => {
 })
 ```
 
+# Example
+
+You can quickly run and interact with some code by looking at the files in the `/example` folder. You run the example with the following command:
+
+```bash
+$ npm run example:start
+```
+
+This runs a simple server at `http://localhost:3000/` that serves the static `example/index.html` file. This allows it easily interact with metamask. You can edit the `example/index.html` file to try differnt code.
+
 # API Documentation
 
 <a name="ThreeBox"></a>
@@ -259,4 +269,3 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
-

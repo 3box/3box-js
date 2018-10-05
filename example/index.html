@@ -2,54 +2,55 @@
 
 <html>
   <head>
-    <title>3box demo</title>
+    <title>3box Demo</title>
     <script type="text/javascript" src="../dist/3box.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   </head>
 
   <body>
+    <!-- Open Box -->
+    <button id="bopen" type="button" class="btn btn-primary" style="margin: 50px 100px;">Open 3box</button>
 
-    <button id="bopen">Open 3box</button>
-    <br />
-    <div id="controlls" style="display: none">
-      <input type="text" id="prkey" placeholder="Profile Key">
-      <input type="text" id="prvalue" placeholder="Profile Value">
-      <button id="setProfile">Set Profile Data</button>
-      <br />
-      <p>
-      Profile:<br/>
-      <span id="profileData"></span>
-      </p>
+    <div id="controlls" style="display: none; padding: 5px 100px;">
+
+      <!-- Public Store Div -->
+      <div style="padding: 0px 0px 25px 0px;">
+        <h2> Public Store </h2>
+
+        <input type="text" id="prkey" placeholder="Profile Key" >
+        <input type="text" id="prvalue" placeholder="Profile Value" >
+        <button id="setProfile" type="button" class="btn btn-primary">Set Profile Data</button>
+
+        <h5 style="padding: 20px 0px 10px 0px"> Profile: </h5>
+        <p>
+          <span id="profileData"></span>
+        </p>
+      </div>
+
+      <!-- Private Store Div -->
+      <div>
+        <h2> Private Store </h2>
+        <input type="text" id="pskey" placeholder="Private Store Key">
+        <input type="text" id="psvalue" placeholder="Private Store Value">
+        <button id="setPrivateStore" type="button" class="btn btn btn-primary"> Set Private Store Data</button>
+
+        <h5 style="padding: 20px 0px 10px 0px" >Private Store Data : (Key must be known to get value)</h5>
+        <input type="text" id="getpskey" placeholder="Private Store Key">
+        <button id="getPrivateStore" type="button" class="btn btn btn-primary" >Get Private Store Value</button>
+
+        <p style="padding: 20px 0px 10px 0px">
+          <span id="privateStoreData"></span>
+        </p>
+      </div>
+
+      <!-- Logout -->
+      <div style="padding: 25px 0px;">
+        <button id="bclose" type="button" class="btn btn-primary">Logout from 3box</button>
+      </div>
+
     </div>
   </body>
 
-  <script type="text/javascript">
-    bopen.addEventListener('click', event => {
-      ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider).then(box => {
-        window.box = box
-        console.log(box)
-
-        controlls.style.display = 'inline'
-        updateProfileData(box)
-
-        setProfile.addEventListener('click', () => {
-          box.public.set(prkey.value, prvalue.value).then(() => {
-            prkey.value = null
-            prvalue.value = null
-            updateProfileData(box)
-          })
-        })
-      })
-    })
-
-    function updateProfileData(box) {
-      profileData.innerHTML = ''
-      box.public.all().then(profile => {
-        console.log(profile)
-        Object.entries(profile).map(kv => {
-          profileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
-        })
-      })
-    }
-  </script>
+  <script type="text/javascript" src="index.js"></script>
 
 </html>

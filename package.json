@@ -12,6 +12,7 @@
     "build": "./node_modules/.bin/babel src --out-dir lib",
     "build:dist": "./node_modules/.bin/browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "build:all": "npm run build; npm run build:dist",
+    "example:start": "node example/server.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none src/*.js >> README.md"
   },
   "jest": {
