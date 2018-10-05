@@ -59,48 +59,57 @@ Using `async/await`
 ```js
 // use the public profile
 // get
-const nickname = await box.profileStore.get('name')
+const nickname = await box.public.get('name')
 console.log(nickname)
 // set
-await box.profileStore.set('name', 'oed')
+await box.public.set('name', 'oed')
 // remove
-await box.profileStore.remove('name')
+await box.public.remove('name')
 
 // use the private store
 // get
-const email = await box.privateStore.get('email')
+const email = await box.private.get('email')
 console.log(email)
 // set
-await box.privateStore.set('email', 'oed@email.service')
+await box.private.set('email', 'oed@email.service')
 // remove
-await box.privateStore.remove('email')
+await box.private.remove('email')
 ```
 or using `.then`
 ```js
 // use the public profile
 // get
-box.profileStore.get('name').then(nickname => {
+box.public.get('name').then(nickname => {
   console.log(nickname)
   // set
-  box.profileStore.set('name', 'oed').then(() => {
+  box.public.set('name', 'oed').then(() => {
     // remove
-    box.profileStore.remove('name').then(() => {
+    box.public.remove('name').then(() => {
     })
   })
 })
 
 // use the private store
 // get
-box.privateStore.get('email').then(email => {
+box.private.get('email').then(email => {
   console.log(email)
   // set
-  box.privateStore.set('email', 'oed@email.service').then(() => {
+  box.private.set('email', 'oed@email.service').then(() => {
     // remove
-    box.privateStore.remove('email').then(() => {
+    box.private.remove('email').then(() => {
     })
   })
 })
 ```
 
-# API Documentation
+# Example
 
+You can quickly run and interact with some code by looking at the files in the `/example` folder. You run the example with the following command:
+
+```bash
+$ npm run example:start
+```
+
+This runs a simple server at `http://localhost:3000/` that serves the static `example/index.html` file. This allows it easily interact with metamask. You can edit the `example/index.html` file to try differnt code.
+
+# API Documentation
