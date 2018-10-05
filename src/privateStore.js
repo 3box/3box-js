@@ -36,7 +36,7 @@ class PrivateStore extends KeyValueStore {
    *  const log = store.log
    *  const entry = log[0]
    *  console.log(entry)
-   *  // { op: 'PUT', key: ...., value: 'Botbot', timestamp: '1538575416068' }
+   *  // { op: 'PUT', key: ...., value: 'Botbot', timeStamp: '1538575416068' }
    *
    * @return    {Array<Object>}     Array of ordered log entry objects
    */
