@@ -28,8 +28,8 @@ class KeyValueStore {
    */
   async set (key, value) {
     if (!this._db) throw new Error('_sync must be called before interacting with the store')
-    const timestamp = new Date().getTime()
-    await this._db.put(key, { value, timestamp })
+    const timeStamp = new Date().getTime()
+    await this._db.put(key, { value, timeStamp })
     return true
   }
 
@@ -89,7 +89,7 @@ class KeyValueStore {
    *  const log = store.log
    *  const entry = log[0]
    *  console.log(entry)
-   *  // { op: 'PUT', key: 'Name', value: 'Botbot', timestamp: '1538575416068' }
+   *  // { op: 'PUT', key: 'Name', value: 'Botbot', timeStamp: '1538575416068' }
    *
    * @return    {Array<Object>}     Array of ordered log entry objects
    */
@@ -98,7 +98,7 @@ class KeyValueStore {
       return { op: obj.payload.op,
         key: obj.payload.key,
         value: obj.payload.value ? obj.payload.value.value : null,
-        timestamp: obj.payload.value ? obj.payload.value.timestamp : null }
+        timeStamp: obj.payload.value ? obj.payload.value.timeStamp : null }
     })
   }
 }
