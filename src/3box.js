@@ -43,25 +43,24 @@ class ThreeBox {
     const did = this._muportDID.getDid()
     const rootStoreAddress = await getRootStoreAddress(this._serverUrl, did)
     const didFingerprint = utils.sha256Multihash(did)
+    const pinningServer = opts.pinningServer || PINNING_SERVER
     this._ipfs = await initIPFS(opts.ipfsOptions)
     // TODO - if connection to this peer is lost we should try to reconnect
-    await this._ipfs.swarm.connect(PINNING_SERVER)
+    this._ipfs.swarm.connect(pinningServer)
 
-    console.log(await this._ipfs.swarm.peers())
-    const room = Room(this._ipfs, '3box')
-
-    room.on('peer joined', (peer) => {
-      console.log('Peer joined the room', peer)
-      if (rootStoreAddress) {
-        room.broadcast(rootStoreAddress)
-        room.removeAllListeners()
-      }
-    })
-
-    // now started to listen to room
-    room.on('subscribed', () => {
-      console.log('Now connected!')
-    })
+    // console.log(await this._ipfs.swarm.peers())
+    this._room = Room(this._ipfs, '3box')
+    if (rootStoreAddress) {
+      this._room.on('peer joined', (peer) => {
+        console.log('Peer joined the room', peer)
+        if (peer === pinningServer.split('/').pop()) {
+          console.log('broadcasting odb-address')
+          this._room.broadcast(rootStoreAddress)
+          // doesn't seem like the listener is removed by this for some reason.
+          this._room.removeListener('peer joined', () => {})
+        }
+      })
+    }
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
@@ -112,7 +111,7 @@ class ThreeBox {
       await this._rootStore.add({ odbAddress: await this.public._sync() })
       await this._rootStore.add({ odbAddress: await this.private._sync() })
       await this._publishRootStore(this._rootStore.address.toString())
-      room.broadcast(this._rootStore.address.toString())
+      this._room.broadcast(this._rootStore.address.toString())
     }
   }
 
@@ -263,6 +262,7 @@ class ThreeBox {
    */
   async close () {
     await this._orbitdb.stop()
+    await this._room.leave()
     await this._ipfs.stop()
     globalOrbitDB = null
     globalIPFS = null
