@@ -170,6 +170,7 @@ class ThreeBox {
    * @param     {Object}        opts                    Optional parameters
    * @param     {Object}        opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
    * @param     {String}        opts.orbitPath          A custom path for orbitdb storage
+   * @param     {Function}      opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @return    {ThreeBox}                              the threeBox instance for the given address
    */
   static async openBox (address, web3provider, opts = {}) {
@@ -177,8 +178,10 @@ class ThreeBox {
     let serializedMuDID = localstorage.get('serializedMuDID_' + address)
     if (serializedMuDID) {
       muportDID = new MuPort(serializedMuDID)
+      if (opts.consentCallback) opts.consentCallback(false)
     } else {
       const entropy = (await utils.openBoxConsent(address, web3provider)).slice(2, 34)
+      if (opts.consentCallback) opts.consentCallback(true)
       const mnemonic = bip39.entropyToMnemonic(entropy)
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: address,
