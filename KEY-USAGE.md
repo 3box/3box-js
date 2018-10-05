@@ -28,4 +28,4 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | key | Description |
 | -- | -- |
 | email | the user's email address |
-| consensys.badge-employment | a claim the user works at ConsenSys |
+| consensys.employment | a claim the user works at ConsenSys |
