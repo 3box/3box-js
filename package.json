@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
-    "test": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
+    "test": "rm -rf ./tmp ; jest --forceExit --detectOpenHandles --coverage --runInBand --testURL=\"http://localhost\"",
     "build": "./node_modules/.bin/babel src --out-dir lib",
     "build:dist": "./node_modules/.bin/browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
     "build:all": "npm run build; npm run build:dist",
