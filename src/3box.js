@@ -41,19 +41,28 @@ class ThreeBox {
 
   async _sync (opts = {}) {
     const did = this._muportDID.getDid()
+    console.time('getRootStoreAddress')
     const rootStoreAddress = await getRootStoreAddress(this._serverUrl, did)
+    console.timeEnd('getRootStoreAddress')
     const didFingerprint = utils.sha256Multihash(did)
     const pinningServer = opts.pinningServer || PINNING_SERVER
+    console.time('start ipfs')
     this._ipfs = await initIPFS(opts.ipfsOptions)
+    console.timeEnd('start ipfs')
     // TODO - if connection to this peer is lost we should try to reconnect
-    this._ipfs.swarm.connect(pinningServer)
+    console.time('connect to pinning ipfs node')
+    this._ipfs.swarm.connect(pinningServer, () => {
+      console.timeEnd('connect to pinning ipfs node')
+    })
 
     // console.log(await this._ipfs.swarm.peers())
+    console.time('open room, pinning server joined')
     this._room = Room(this._ipfs, '3box')
     if (rootStoreAddress) {
       this._room.on('peer joined', (peer) => {
         console.log('Peer joined the room', peer)
         if (peer === pinningServer.split('/').pop()) {
+          console.timeEnd('open room, pinning server joined')
           console.log('broadcasting odb-address')
           this._room.broadcast(rootStoreAddress)
           // doesn't seem like the listener is removed by this for some reason.
@@ -63,7 +72,9 @@ class ThreeBox {
     }
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
+    console.time('new OrbitDB')
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
+    console.timeEnd('new OrbitDB')
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
@@ -71,23 +82,29 @@ class ThreeBox {
     this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
 
     if (rootStoreAddress) {
+      console.time('open rootStore')
       this._rootStore = await this._orbitdb.open(rootStoreAddress)
+      console.timeEnd('open rootStore')
       // this._rootStore.events.on('replicate', console.log)
       const readyPromise = new Promise((resolve, reject) => {
         this._rootStore.events.on('ready', resolve)
       })
+      console.time('rootStore.load')
       this._rootStore.load()
       await readyPromise
+      console.timeEnd('rootStore.load')
       // console.log('p2', (await this._ipfs.swarm.peers())[0].addr.toString())
       // console.log('p2 id', (await this._ipfs.id()).id)
       // console.log(this._rootStore.iterator({ limit: -1 }).collect().length)
       // console.log(await this._ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
+      console.time('replicate rootStore')
       if (!this._rootStore.iterator({ limit: -1 }).collect().length) {
         await new Promise((resolve, reject) => {
           this._rootStore.events.on(
             'replicate.progress',
             (_x, _y, _z, num, max) => {
               if (num === max) {
+                console.timeEnd('replicate rootStore')
                 this._rootStore.events.on('replicated', resolve)
               }
             }
@@ -95,6 +112,7 @@ class ThreeBox {
         })
       }
       let storePromises = []
+      console.time('sync stores')
       this._rootStore.iterator({ limit: -1 }).collect().map(entry => {
         const odbAddress = entry.payload.value.odbAddress
         const name = odbAddress.split('.')[1]
@@ -105,13 +123,24 @@ class ThreeBox {
         }
       })
       await Promise.all(storePromises)
+      console.timeEnd('sync stores')
     } else {
       const rootStoreName = didFingerprint + '.root'
+      console.time('create rootStore')
       this._rootStore = await this._orbitdb.feed(rootStoreName)
+      console.timeEnd('create rootStore')
+      console.time('add PublicStore to rootStore')
       await this._rootStore.add({ odbAddress: await this.public._sync() })
+      console.timeEnd('add PublicStore to rootStore')
+      console.time('add PrivateStore to rootStore')
       await this._rootStore.add({ odbAddress: await this.private._sync() })
+      console.timeEnd('add PrivateStore to rootStore')
+      console.time('publish rootStoreAddress to address-server')
       await this._publishRootStore(this._rootStore.address.toString())
+      console.timeEnd('publish rootStoreAddress to address-server')
+      console.time('broadcast rootStoreAddress over pubsub')
       this._room.broadcast(this._rootStore.address.toString())
+      console.timeEnd('broadcast rootStoreAddress over pubsub')
     }
   }
 
@@ -194,23 +223,33 @@ class ThreeBox {
    * @return    {ThreeBox}                              the threeBox instance for the given address
    */
   static async openBox (address, web3provider, opts = {}) {
+    console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + address)
     if (serializedMuDID) {
+      console.time('new Muport')
       muportDID = new MuPort(serializedMuDID)
+      console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
       const entropy = (await utils.openBoxConsent(address, web3provider)).slice(2, 34)
       if (opts.consentCallback) opts.consentCallback(true)
       const mnemonic = bip39.entropyToMnemonic(entropy)
+      console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: address,
         mnemonic
       })
+      console.timeEnd('muport.newIdentity')
       localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
+    console.time('new 3box')
     let threeBox = new ThreeBox(muportDID, web3provider, opts)
+    console.timeEnd('new 3box')
+    console.time('sync 3box')
     await threeBox._sync(opts)
+    console.timeEnd('sync 3box')
+    console.timeEnd('-- openBox --')
     return threeBox
   }
 
