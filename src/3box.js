@@ -136,7 +136,7 @@ class ThreeBox {
       await this._rootStore.add({ odbAddress: await this.private._sync() })
       console.timeEnd('add PrivateStore to rootStore')
       console.time('publish rootStoreAddress to address-server')
-      await this._publishRootStore(this._rootStore.address.toString())
+      this._publishRootStore(this._rootStore.address.toString())
       console.timeEnd('publish rootStoreAddress to address-server')
       console.time('broadcast rootStoreAddress over pubsub')
       this._room.broadcast(this._rootStore.address.toString())
