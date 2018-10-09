@@ -22,6 +22,8 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | -- | -- |
 | name | a name chosen by the user |
 | image | an ipfs hash of a profile image |
+| attestari.skills | array of skills (object) listed on attestari.me |
+| attestari.attestations | object containing all the attestations received by skill via attestari.me |
 
 ### Private Data
 
@@ -29,6 +31,7 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | -- | -- |
 | email | the user's email address |
 | consensys.employment | a claim the user works at ConsenSys |
+| attestari.pendingAttestations | list of attestations waiting to be attested by other people via attestari.me |
 | ipfsUploader.files | up to date array of ipfs file hashes uploaded by the user |
 | ipfsUploader.files[ipfsHash].name | user given name of a file uploaded to ipfs |
 | ipfsUploader.files[ipfsHash].date | unix timestamp of file uploaded to ipfs |
