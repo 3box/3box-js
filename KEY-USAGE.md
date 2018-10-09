@@ -31,5 +31,5 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | consensys.employment | a claim the user works at ConsenSys |
 | ipfsUploader.files | up to date array of ipfs file hashes uploaded by the user |
 | ipfsUploader.files[ipfsHash].name | user given name of a file uploaded to ipfs |
-ipfsUploader.files[ipfsHash].date | unix timestamp of file uploaded to ipfs |
+| ipfsUploader.files[ipfsHash].date | unix timestamp of file uploaded to ipfs |
 
