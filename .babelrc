@@ -1,0 +1,12 @@
+{
+  "env": {
+    "production": {
+      "plugins": ["transform-es2015-modules-umd"]
+    },
+  },
+  "presets": ["env"],
+  "plugins": [
+    "syntax-object-rest-spread",
+    "transform-object-rest-spread"
+  ]
+}
