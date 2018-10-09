@@ -31,5 +31,8 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | -- | -- |
 | email | the user's email address |
 | consensys.employment | a claim the user works at ConsenSys |
-| attestari.pendingAttestations | list of attestations waiting to be attested by other peop via attestari.me |
+| attestari.pendingAttestations | list of attestations waiting to be attested by other people via attestari.me |
+| ipfsUploader.files | up to date array of ipfs file hashes uploaded by the user |
+| ipfsUploader.files[ipfsHash].name | user given name of a file uploaded to ipfs |
+| ipfsUploader.files[ipfsHash].date | unix timestamp of file uploaded to ipfs |
 
