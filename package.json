@@ -9,9 +9,10 @@
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
     "test": "rm -rf ./tmp ; jest --forceExit --detectOpenHandles --coverage --runInBand --testURL=\"http://localhost\"",
-    "build": "./node_modules/.bin/babel src --out-dir lib  --presets env --plugins syntax-object-rest-spread --ignore=src/__tests__/,src/__mocks__/",
-    "build:dist": "./node_modules/.bin/browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
-    "build:all": "npm run build; npm run build:dist",
+    "build:es5": "./node_modules/.bin/babel src --out-dir lib  --presets env --plugins syntax-object-rest-spread --ignore=src/__tests__/,src/__mocks__/",
+    "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",
+    "build:dist:prod": "./node_modules/.bin/webpack --config webpack.config.js --mode=production --output-filename 3box.min.js",
+    "build": "npm run build:es5; npm run build:dist; npm run build:dist:prod",
     "example:start": "node example/server.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none src/*.js >> README.md"
   },
@@ -46,10 +47,11 @@
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
+    "babel-loader": "^7.1.5",
+    "babel-core": "^6.26.3",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
-    "browserify": "^16.2.3",
     "ganache-cli": "^6.1.0",
     "ipfsd-ctl": "^0.39.1",
     "jest": "^23.6.0",
