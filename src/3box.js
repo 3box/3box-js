@@ -17,7 +17,6 @@ const IPFS_OPTIONS = {
   config: {
     Addresses: {
       Swarm: [
-        '/dns4/wrtc-star.discovery.libp2p.io/tcp/443/wss/p2p-webrtc-star',
         '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
       ]
     },
@@ -344,7 +343,10 @@ class ThreeBox {
 async function initIPFS (ipfsOptions) {
   return new Promise((resolve, reject) => {
     let ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
-    ipfs.on('error', reject)
+    ipfs.on('error', error => {
+      console.error(error)
+      reject(error)
+    })
     ipfs.on('ready', () => resolve(ipfs))
   })
 }
