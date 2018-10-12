@@ -1,6 +1,6 @@
 const testUtils = require('./testUtils')
 const OrbitDB = require('orbit-db')
-const Room = require('ipfs-pubsub-room')
+const Pubsub = require('orbit-db-pubsub')
 const jsdom = require('jsdom')
 global.window = new jsdom.JSDOM().window
 
@@ -110,7 +110,7 @@ const ThreeBox = require('../3box')
 
 describe('3Box', () => {
   let ipfs
-  let room
+  let pubsub
   let box
   let box2
   let orbitdb
@@ -119,9 +119,9 @@ describe('3Box', () => {
   beforeAll(async () => {
     ipfs = await testUtils.initIPFS(true)
     const ipfsMultiAddr = (await ipfs.id()).addresses[0]
-    boxOpts.pinningServer = ipfsMultiAddr
-    boxOpts2.pinningServer = ipfsMultiAddr
-    room = Room(ipfs, '3box')
+    boxOpts.pinningNode = ipfsMultiAddr
+    boxOpts2.pinningNode = ipfsMultiAddr
+    pubsub = new Pubsub(ipfs, (await ipfs.id()).id)
   })
 
   beforeEach(() => {
@@ -132,10 +132,10 @@ describe('3Box', () => {
 
   it('should get entropy from signature first time openBox is called', async () => {
     const publishPromise = new Promise((resolve, reject) => {
-      room.once('message', msg => {
-        expect(msg.data.toString()).toEqual('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root')
+      pubsub.subscribe('3box-pinning', (topic, data) => {
+        expect(data.odbAddress).toEqual('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root')
         resolve()
-      })
+      }, () => {})
     })
     const addr = '0x12345'
     const prov = 'web3prov'
@@ -155,6 +155,8 @@ describe('3Box', () => {
     expect(box.private._sync).toHaveBeenCalledWith()
     expect(consentCallback).toHaveBeenCalledTimes(1)
     expect(consentCallback).toHaveBeenCalledWith(true)
+    await publishPromise
+    pubsub.unsubscribe('3box-pinning')
   })
 
   it('should get entropy and db from localstorage subsequent openBox calls', async () => {
@@ -175,10 +177,10 @@ describe('3Box', () => {
 
   it('should sync db updates to/from remote pinning server', async () => {
     const publishPromise = new Promise((resolve, reject) => {
-      room.once('message', msg => {
-        expect(msg.data.toString()).toEqual('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root')
+      pubsub.subscribe('3box-pinning', (topic, data) => {
+        expect(data.odbAddress).toEqual('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root')
         resolve()
-      })
+      }, () => {})
     })
     orbitdb = new OrbitDB(ipfs, './tmp/orbitdb2')
     const rootStoreAddress = box._rootStore.address.toString()
@@ -207,6 +209,7 @@ describe('3Box', () => {
     expect(box.private._sync).toHaveBeenCalledTimes(1)
     expect(box.private._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
     await publishPromise
+    pubsub.unsubscribe('3box-pinning')
   })
 
   it('should link profile on call to _linkProfile', async () => {
@@ -228,10 +231,10 @@ describe('3Box', () => {
 
   it('should handle a second address/account correctly', async () => {
     const publishPromise = new Promise((resolve, reject) => {
-      room.once('message', msg => {
-        expect(msg.data.toString()).toEqual('/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root')
+      pubsub.subscribe('3box-pinning', (topic, data) => {
+        expect(data.odbAddress).toEqual('/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root')
         resolve()
-      })
+      }, () => {})
     })
     await box.close()
     const addr = '0xabcde'
@@ -259,6 +262,7 @@ describe('3Box', () => {
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
     await publishPromise
+    pubsub.unsubscribe('3box-pinning')
   })
 
   it('should getProfile correctly', async () => {
@@ -294,7 +298,7 @@ describe('3Box', () => {
   })
 
   afterAll(async () => {
-    await room.leave()
+    await pubsub.disconnect()
     await ipfs.stop()
   })
 })
