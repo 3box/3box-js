@@ -235,8 +235,8 @@ class ThreeBox {
       console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
-      if (opts.consentCallback) opts.consentCallback(true)
       const sig = await utils.openBoxConsent(address, web3provider)
+      if (opts.consentCallback) opts.consentCallback(true)
       const entropy = sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
       console.time('muport.newIdentity')
