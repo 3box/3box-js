@@ -14,24 +14,6 @@ const utils = require('./utils')
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_SERVER = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmbgpyTLCYBy84E1HGwei6niQHiLQmRpfN6SQtfJiyNMUd'
 const IPFS_OPTIONS = {
-  config: {
-    Addresses: {
-      Swarm: [
-        '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
-      ]
-    },
-    Bootstrap: [
-      '/dns4/ams-1.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd',
-      '/dns4/lon-1.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLMeWqB7YGVLJN3pNLQpmmEk35v6wYtsMGLzSr5QBU3',
-      '/dns4/sfo-3.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLPppuBtQSGwKDZT2M73ULpjvfd3aZ6ha4oFGL1KrGM',
-      '/dns4/sgp-1.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLSafTMBsPKadTEgaXctDQVcqN88CNLHXMkTNwMKPnu',
-      '/dns4/nyc-1.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmSoLueR4xBeUbY9WZ9xGUUxunbKWcrNFTDAadQJmocnWm',
-      '/dns4/wss0.bootstrap.libp2p.io/tcp/443/wss/ipfs/QmZMxNdpMkewiVZLMRxaNxUeZpDUb34pWjZ1kZvsd16Zic',
-      '/dns4/wss1.bootstrap.libp2p.io/tcp/443/wss/ipfs/Qmbut9Ywz9YEDrz8ySBSgWyJk41Uvm2QJPhwDJzJyGFsD6',
-      '/dns4/bootstrap.osliki.net/tcp/443/wss/ipfs/QmfJB77qXfiEdJkaSxpZgiMh9kAPiDBj3ga7TxF72QdWtf',
-      '/p2p-circuit/ipfs/QmfJB77qXfiEdJkaSxpZgiMh9kAPiDBj3ga7TxF72QdWtf'
-    ]
-  },
   EXPERIMENTAL: {
     pubsub: true
   }
