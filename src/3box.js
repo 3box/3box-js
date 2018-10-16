@@ -150,7 +150,9 @@ class ThreeBox {
    *
    * @param     {String}    address                 an ethereum address
    * @param     {Object}    opts                    Optional parameters
-   * @param     {IPFS}      opts.ipfs               A custom ipfs instance
+   * @param     {String}    opts.addressServer      URL of the Address Server
+   * @param     {Object}    opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
    * @return    {Object}                            a json object with the profile for the given address
    */
   static async getProfile (address, opts = {}) {

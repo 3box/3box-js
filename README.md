@@ -182,7 +182,9 @@ Get the public profile of a given address
 | --- | --- | --- |
 | address | <code>String</code> | an ethereum address |
 | opts | <code>Object</code> | Optional parameters |
-| opts.ipfs | <code>IPFS</code> | A custom ipfs instance |
+| opts.addressServer | <code>String</code> | URL of the Address Server |
+| opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
+| opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 
 <a name="ThreeBox.openBox"></a>
 
