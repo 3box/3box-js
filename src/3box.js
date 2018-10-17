@@ -98,30 +98,29 @@ class ThreeBox {
       // console.log(this._rootStore.iterator({ limit: -1 }).collect().length)
       // console.log(await this._ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
       console.time('replicate rootStore')
-      if (!this._rootStore.iterator({ limit: -1 }).collect().length) {
-        await new Promise((resolve, reject) => {
-          this._rootStore.events.on(
-            'replicate.progress',
-            (_x, _y, _z, num, max) => {
-              if (num === max) {
-                console.timeEnd('replicate rootStore')
-                this._rootStore.events.on('replicated', resolve)
-              }
-            }
-          )
-        })
+      const entries = this._rootStore.iterator({ limit: -1 }).collect()
+      const rootStoreEmpty = !entries.length
+      const dbSyncPromise = (entry) => {
+        const odbAddress = entry.payload.value.odbAddress
+        const name = odbAddress.split('.')[1]
+        if (name === 'public') return this.public._sync(odbAddress)
+        if (name === 'private') return this.private._sync(odbAddress)
       }
       let storePromises = []
       console.time('sync stores')
-      this._rootStore.iterator({ limit: -1 }).collect().map(entry => {
-        const odbAddress = entry.payload.value.odbAddress
-        const name = odbAddress.split('.')[1]
-        if (name === 'public') {
-          storePromises.push(this.public._sync(odbAddress))
-        } else if (name === 'private') {
-          storePromises.push(this.private._sync(odbAddress))
-        }
-      })
+      if (rootStoreEmpty) {
+        await new Promise((resolve, reject) => {
+          this._rootStore.events.on('replicate.progress', (address, hash, entry, progress, have) => {
+            storePromises.push(dbSyncPromise(entry))
+            if (progress === have) {
+              resolve()
+              console.timeEnd('replicate rootStore')
+            }
+          })
+        })
+      } else {
+        entries.forEach(entry => { storePromises.push(dbSyncPromise(entry)) })
+      }
       await Promise.all(storePromises)
       console.timeEnd('sync stores')
     } else {
