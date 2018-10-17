@@ -3,7 +3,7 @@ const bip39 = require('bip39')
 const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
-const Room = require('ipfs-pubsub-room')
+const Pubsub = require('orbit-db-pubsub')
 const sha256 = require('js-sha256').sha256
 
 const PublicStore = require('./publicStore')
@@ -12,7 +12,8 @@ const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
-const PINNING_SERVER = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmbgpyTLCYBy84E1HGwei6niQHiLQmRpfN6SQtfJiyNMUd'
+const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmbgpyTLCYBy84E1HGwei6niQHiLQmRpfN6SQtfJiyNMUd'
+const PINNING_ROOM = '3box-pinning'
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
@@ -43,34 +44,32 @@ class ThreeBox {
   async _sync (opts = {}) {
     const did = this._muportDID.getDid()
     console.time('getRootStoreAddress')
-    const rootStoreAddress = await getRootStoreAddress(this._serverUrl, did)
+    let rootStoreAddress = await getRootStoreAddress(this._serverUrl, did)
     console.timeEnd('getRootStoreAddress')
     const didFingerprint = utils.sha256Multihash(did)
-    const pinningServer = opts.pinningServer || PINNING_SERVER
+    const pinningNode = opts.pinningNode || PINNING_NODE
     console.time('start ipfs')
     this._ipfs = await initIPFS(opts.ipfsOptions)
     console.timeEnd('start ipfs')
     // TODO - if connection to this peer is lost we should try to reconnect
     console.time('connect to pinning ipfs node')
-    this._ipfs.swarm.connect(pinningServer, () => {
+    this._ipfs.swarm.connect(pinningNode, () => {
       console.timeEnd('connect to pinning ipfs node')
     })
 
     // console.log(await this._ipfs.swarm.peers())
-    console.time('open room, pinning server joined')
-    this._room = Room(this._ipfs, '3box')
-    if (rootStoreAddress) {
-      this._room.on('peer joined', (peer) => {
-        console.log('Peer joined the room', peer)
-        if (peer === pinningServer.split('/').pop()) {
-          console.timeEnd('open room, pinning server joined')
-          console.log('broadcasting odb-address')
-          this._room.broadcast(rootStoreAddress)
-          // doesn't seem like the listener is removed by this for some reason.
-          this._room.removeListener('peer joined', () => {})
-        }
-      })
+    console.time('opening pinning room, pinning node joined')
+    this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
+    const onNewPeer = (topic, peer) => {
+      console.log('Peer joined the room', peer)
+      console.log(peer, pinningNode.split('/').pop())
+      if (peer === pinningNode.split('/').pop()) {
+        console.timeEnd('opening pinning room, pinning node joined')
+        console.log('broadcasting odb-address')
+        this._pubsub.publish(PINNING_ROOM, { odbAddress: rootStoreAddress })
+      }
     }
+    if (rootStoreAddress) this._pubsub.subscribe(PINNING_ROOM, () => {}, onNewPeer)
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
     console.time('new OrbitDB')
@@ -136,11 +135,12 @@ class ThreeBox {
       console.time('add PrivateStore to rootStore')
       await this._rootStore.add({ odbAddress: await this.private._sync() })
       console.timeEnd('add PrivateStore to rootStore')
+      rootStoreAddress = this._rootStore.address.toString()
       console.time('publish rootStoreAddress to address-server')
-      this._publishRootStore(this._rootStore.address.toString())
+      this._publishRootStore(rootStoreAddress)
       console.timeEnd('publish rootStoreAddress to address-server')
       console.time('broadcast rootStoreAddress over pubsub')
-      this._room.broadcast(this._rootStore.address.toString())
+      this._pubsub.subscribe(PINNING_ROOM, () => {}, onNewPeer)
       console.timeEnd('broadcast rootStoreAddress over pubsub')
     }
   }
@@ -305,7 +305,7 @@ class ThreeBox {
    */
   async close () {
     await this._orbitdb.stop()
-    await this._room.leave()
+    await this._pubsub.disconnect()
     await this._ipfs.stop()
     globalOrbitDB = null
     globalIPFS = null
