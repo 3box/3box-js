@@ -16,9 +16,9 @@ ujo.description
 ## Common entries
 There are lots of cases where it can be valuable for dapps to use the same entries/data, e.g. name and image in the profile, and email in the private store. Below are tables containing well known keys. Feel free to add more by making a PR :)
 
-### Profile Data
+### Public Data
 
-| key | Description |
+| Key | Description |
 | -- | -- |
 | name | a name chosen by the user |
 | image | an ipfs hash of a profile image |
@@ -27,7 +27,7 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 
 ### Private Data
 
-| key | Description |
+| Key | Description |
 | -- | -- |
 | email | the user's email address |
 | consensys.employment | a claim the user works at ConsenSys |
@@ -36,3 +36,20 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | ipfsUploader.files[ipfsHash].name | user given name of a file uploaded to ipfs |
 | ipfsUploader.files[ipfsHash].date | unix timestamp of file uploaded to ipfs |
 
+### Example entry data
+Here are examples of the data that are stored in the above keys.
+#### Public
+
+##### name
+A `String` e.g. `oed`
+
+##### image
+An array with data:
+```json
+[{"@type":"ImageObject","contentUrl":{"/":"QmNoyzwnzA6sGM2BGFZ1C6dVbGnjWy8QXWgQgQABRApkJk"}}]
+```
+
+#### Private
+
+##### email
+A `String` e.g. `oed@gmail.com`
