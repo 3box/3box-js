@@ -12,7 +12,7 @@ const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
-const PINNING_NODE = '/ip4/127.0.0.1/tcp/4002/ws/ipfs/QmWXxW1c3vyPTUfz7Z7EvQQ7VQYQ7UbKFct839AaFUhmjv'
+const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmbgpyTLCYBy84E1HGwei6niQHiLQmRpfN6SQtfJiyNMUd'
 const PINNING_ROOM = '3box-pinning'
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
@@ -70,7 +70,6 @@ class ThreeBox {
       }
     }
     const onMessage = async (topic, data) => {
-
       if (data.type === 'HAS_ENTRIES' && data.numEntries === 0) {
         console.log('creating the new store')
         const rootStoreName = didFingerprint + '.root'
