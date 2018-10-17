@@ -191,10 +191,10 @@ class ThreeBox {
       rootStoreAddress = this._rootStore.address.toString()
       console.time('publish rootStoreAddress to address-server')
       this._publishRootStore(rootStoreAddress)
-      // console.timeEnd('publish rootStoreAddress to address-server')
-      // console.time('broadcast rootStoreAddress over pubsub')
-      // this._pubsub.subscribe(PINNING_ROOM, () => {}, onNewPeer)
-      // console.timeEnd('broadcast rootStoreAddress over pubsub')
+      console.timeEnd('publish rootStoreAddress to address-server')
+      console.time('broadcast rootStoreAddress over pubsub')
+      this._pubsub.subscribe(PINNING_ROOM, () => {}, onNewPeer)
+      console.timeEnd('broadcast rootStoreAddress over pubsub')
     }
   }
 
