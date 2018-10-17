@@ -17,6 +17,10 @@
     "example:start": "npm run build:dist; node example/server.js",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none src/*.js >> README.md"
   },
+  "browser": {
+    "fs": false,
+    "child_process": false
+  },
   "jest": {
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
