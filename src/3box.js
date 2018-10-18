@@ -321,6 +321,16 @@ class ThreeBox {
     localstorage.remove('serializedMuDID_' + address)
     localstorage.remove('linkConsent_' + address)
   }
+
+  /**
+   * Check if the given address is logged in
+   *
+   * @param     {String}    address                 an ethereum address
+   * @return    {Boolean}                           true if the user is logged in
+   */
+  static isLoggedIn (address) {
+    return Boolean(localstorage.get('serializedMuDID_' + address))
+  }
 }
 
 async function initIPFS (ipfsOptions) {
