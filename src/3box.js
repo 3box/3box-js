@@ -156,7 +156,7 @@ class ThreeBox {
    */
   static async getProfile (address, opts = {}) {
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
-    const rootStoreAddress = await getRootStoreAddress(serverUrl, address)
+    const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
     let usingGlobalIPFS = false
     let usingGlobalOrbitDB = false
     let ipfs
