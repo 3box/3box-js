@@ -277,6 +277,11 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/0x12345', 'GET')
   })
 
+  it('should be logged in', async () => {
+    const isLoggedIn = ThreeBox.isLoggedIn('0xabcde')
+    expect(isLoggedIn).toEqual(true)
+  })
+
   it('should clear cache correctly', async () => {
     await box2.logout()
     box2 = null
@@ -284,7 +289,12 @@ describe('3Box', () => {
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     await box2._linkProfile()
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
-    await box2.close()
+    await box2.logout()
+  })
+
+  it('should be logged out', async () => {
+    const isLoggedIn = ThreeBox.isLoggedIn('0xabcde')
+    expect(isLoggedIn).toEqual(false)
   })
 
   it('should getProfile correctly when box is not open', async () => {
