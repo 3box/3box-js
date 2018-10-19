@@ -136,6 +136,7 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
     * _static_
         * [.getProfile(address, opts)](#ThreeBox.getProfile) ⇒ <code>Object</code>
         * [.openBox(address, web3provider, opts)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
+        * [.isLoggedIn(address)](#ThreeBox.isLoggedIn) ⇒ <code>Boolean</code>
 
 <a name="new_ThreeBox_new"></a>
 
@@ -210,6 +211,18 @@ Opens the user space associated with the given address
 | opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
+
+<a name="ThreeBox.isLoggedIn"></a>
+
+### ThreeBox.isLoggedIn(address) ⇒ <code>Boolean</code>
+Check if the given address is logged in
+
+**Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
+**Returns**: <code>Boolean</code> - true if the user is logged in  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | an ethereum address |
 
 <a name="KeyValueStore"></a>
 
