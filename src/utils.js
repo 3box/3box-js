@@ -3,13 +3,13 @@ const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
 
 module.exports = {
-  openBoxConsent: (fromAddress, web3provider) => {
+  openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
-      web3provider.sendAsync({
+      ethereum.sendAsync({
         method,
         params,
         fromAddress
@@ -21,7 +21,7 @@ module.exports = {
     })
   },
 
-  getLinkConsent: (fromAddress, toDID, web3provider) => {
+  getLinkConsent: (fromAddress, toDID, ethereum) => {
     const text = 'Create a new 3Box profile' +
       '\n\n' +
       '- \n' +
@@ -30,7 +30,7 @@ module.exports = {
     var params = [msg, fromAddress]
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
-      web3provider.sendAsync({
+      ethereum.sendAsync({
         method,
         params,
         fromAddress
