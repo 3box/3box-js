@@ -31,6 +31,7 @@ class ThreeBox {
     this._muportDID = muportDID
     this._web3provider = web3provider
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
+    this._onSyncDoneCB = () => {}
     /**
      * @property {KeyValueStore} public         access the profile store of the users threeBox
      */
@@ -41,12 +42,11 @@ class ThreeBox {
     this.private = null
   }
 
-  async _sync (opts = {}) {
+  async _load (opts = {}) {
     const did = this._muportDID.getDid()
-    console.time('getRootStoreAddress')
-    let rootStoreAddress = await getRootStoreAddress(this._serverUrl, did)
-    console.timeEnd('getRootStoreAddress')
     const didFingerprint = utils.sha256Multihash(did)
+    const rootStoreName = didFingerprint + '.root'
+
     const pinningNode = opts.pinningNode || PINNING_NODE
     console.time('start ipfs')
     this._ipfs = await initIPFS(opts.ipfsOptions)
@@ -57,7 +57,16 @@ class ThreeBox {
       console.timeEnd('connect to pinning ipfs node')
     })
 
-    // console.log(await this._ipfs.swarm.peers())
+    const keystore = new OrbitdbKeyAdapter(this._muportDID)
+    console.time('new OrbitDB')
+    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
+    console.timeEnd('new OrbitDB')
+    globalIPFS = this._ipfs
+    globalOrbitDB = this._orbitdb
+
+    this._rootStore = await this._orbitdb.feed(rootStoreName)
+    const rootStoreAddress = this._rootStore.address.toString()
+
     console.time('opening pinning room, pinning node joined')
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
     const onNewPeer = (topic, peer) => {
@@ -66,82 +75,49 @@ class ThreeBox {
       if (peer === pinningNode.split('/').pop()) {
         console.timeEnd('opening pinning room, pinning node joined')
         console.log('broadcasting odb-address')
-        this._pubsub.publish(PINNING_ROOM, { odbAddress: rootStoreAddress })
+        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
     }
-    if (rootStoreAddress) this._pubsub.subscribe(PINNING_ROOM, () => {}, onNewPeer)
-
-    const keystore = new OrbitdbKeyAdapter(this._muportDID)
-    console.time('new OrbitDB')
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
-    console.timeEnd('new OrbitDB')
-    globalIPFS = this._ipfs
-    globalOrbitDB = this._orbitdb
 
     this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
     this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
 
-    if (rootStoreAddress) {
-      console.time('open rootStore')
-      this._rootStore = await this._orbitdb.open(rootStoreAddress)
-      console.timeEnd('open rootStore')
-      // this._rootStore.events.on('replicate', console.log)
-      const readyPromise = new Promise((resolve, reject) => {
-        this._rootStore.events.on('ready', resolve)
-      })
-      console.time('rootStore.load')
-      this._rootStore.load()
-      await readyPromise
-      console.timeEnd('rootStore.load')
-      // console.log('p2', (await this._ipfs.swarm.peers())[0].addr.toString())
-      // console.log('p2 id', (await this._ipfs.id()).id)
-      // console.log(this._rootStore.iterator({ limit: -1 }).collect().length)
-      // console.log(await this._ipfs.pubsub.peers('/orbitdb/QmRxUAGk62v7NjUkzvcqwYkBqF3zHb8tfhfW6T3MateGje/b932fe7ab.root'))
-      console.time('replicate rootStore')
-      const entries = this._rootStore.iterator({ limit: -1 }).collect()
-      const rootStoreEmpty = !entries.length
-      const dbSyncPromise = (entry) => {
-        const odbAddress = entry.payload.value.odbAddress
-        const name = odbAddress.split('.')[1]
-        if (name === 'public') return this.public._sync(odbAddress)
-        if (name === 'private') return this.private._sync(odbAddress)
+    console.time('load stores')
+    const [pubStoreAddress, privStoreAddress] = await Promise.all([
+      this.public._load(),
+      this.private._load()
+    ])
+    console.timeEnd('load stores')
+
+    let syncPromises = []
+
+    const onMessageRes = (topic, data) => {
+      if (data.type === 'HAS_ENTRIES') {
+        if (data.odbAddress === privStoreAddress) {
+          syncPromises.push(this.private._sync(data.numEntries))
+        }
+        if (data.odbAddress === pubStoreAddress) {
+          syncPromises.push(this.public._sync(data.numEntries))
+        }
+        if (syncPromises.length === 2) Promise.all(syncPromises).then(this._onSyncDoneCB)
       }
-      let storePromises = []
-      console.time('sync stores')
-      if (rootStoreEmpty) {
-        await new Promise((resolve, reject) => {
-          this._rootStore.events.on('replicate.progress', (address, hash, entry, progress, have) => {
-            storePromises.push(dbSyncPromise(entry))
-            if (progress === have) {
-              resolve()
-              console.timeEnd('replicate rootStore')
-            }
-          })
-        })
-      } else {
-        entries.forEach(entry => { storePromises.push(dbSyncPromise(entry)) })
-      }
-      await Promise.all(storePromises)
-      console.timeEnd('sync stores')
-    } else {
-      const rootStoreName = didFingerprint + '.root'
-      console.time('create rootStore')
-      this._rootStore = await this._orbitdb.feed(rootStoreName)
-      console.timeEnd('create rootStore')
-      console.time('add PublicStore to rootStore')
-      await this._rootStore.add({ odbAddress: await this.public._sync() })
-      console.timeEnd('add PublicStore to rootStore')
-      console.time('add PrivateStore to rootStore')
-      await this._rootStore.add({ odbAddress: await this.private._sync() })
-      console.timeEnd('add PrivateStore to rootStore')
-      rootStoreAddress = this._rootStore.address.toString()
-      console.time('publish rootStoreAddress to address-server')
-      this._publishRootStore(rootStoreAddress)
-      console.timeEnd('publish rootStoreAddress to address-server')
-      console.time('broadcast rootStoreAddress over pubsub')
-      this._pubsub.subscribe(PINNING_ROOM, () => {}, onNewPeer)
-      console.timeEnd('broadcast rootStoreAddress over pubsub')
     }
+
+    this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
+
+    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, pinningNode)
+  }
+
+  async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
+    console.time('add PublicStore to rootStore')
+    await this._rootStore.add({ odbAddress: pubOdbAddress })
+    console.timeEnd('add PublicStore to rootStore')
+    console.time('add PrivateStore to rootStore')
+    await this._rootStore.add({ odbAddress: privOdbAddress })
+    console.timeEnd('add PrivateStore to rootStore')
+    console.time('publish rootStoreAddress to address-server')
+    this._publishRootStore(rootStoreAddress)
+    console.timeEnd('publish rootStoreAddress to address-server')
   }
 
   /**
@@ -247,13 +223,22 @@ class ThreeBox {
       localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
     console.time('new 3box')
-    let threeBox = new ThreeBox(muportDID, web3provider, opts)
+    const threeBox = new ThreeBox(muportDID, web3provider, opts)
     console.timeEnd('new 3box')
-    console.time('sync 3box')
-    await threeBox._sync(opts)
-    console.timeEnd('sync 3box')
+    console.time('load 3box')
+    await threeBox._load(opts)
+    console.timeEnd('load 3box')
     console.timeEnd('-- openBox --')
     return threeBox
+  }
+
+  /**
+   * Sets the callback function that will be called once when the db is fully synced.
+   *
+   * @param     {Function}      syncDone        the function that will be called
+   */
+  onSyncDone (syncDone) {
+    this._onSyncDoneCB = syncDone
   }
 
   async _publishRootStore (rootStoreAddress) {

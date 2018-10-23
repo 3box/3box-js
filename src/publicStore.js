@@ -12,7 +12,7 @@ class ProfileStore extends KeyValueStore {
   }
 
   async all () {
-    if (!this._db) throw new Error('_sync must be called before interacting with the store')
+    super._requireLoad()
     const entries = await this._db.all()
     let allSimple = {}
     Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
