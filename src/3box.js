@@ -27,9 +27,9 @@ class ThreeBox {
   /**
    * Please use the **openBox** method to instantiate a ThreeBox
    */
-  constructor (muportDID, web3provider, opts = {}) {
+  constructor (muportDID, ethereumProvider, opts = {}) {
     this._muportDID = muportDID
-    this._web3provider = web3provider
+    this._web3provider = ethereumProvider
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     this._onSyncDoneCB = () => {}
     /**
@@ -192,15 +192,15 @@ class ThreeBox {
   /**
    * Opens the user space associated with the given address
    *
-   * @param     {String}        address                 an ethereum address
-   * @param     {Web3Provider}  web3provider            A Web3 provider
-   * @param     {Object}        opts                    Optional parameters
-   * @param     {Object}        opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
-   * @param     {String}        opts.orbitPath          A custom path for orbitdb storage
-   * @param     {Function}      opts.consentCallback    A function that will be called when the user has consented to opening the box
-   * @return    {ThreeBox}                              the threeBox instance for the given address
+   * @param     {String}            address                 an ethereum address
+   * @param     {ethereumProvider}  ethereumProvider        An ethereum provider
+   * @param     {Object}            opts                    Optional parameters
+   * @param     {Object}            opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   * @return    {ThreeBox}                                  the threeBox instance for the given address
    */
-  static async openBox (address, web3provider, opts = {}) {
+  static async openBox (address, ethereumProvider, opts = {}) {
     console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + address)
@@ -210,7 +210,7 @@ class ThreeBox {
       console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
-      const sig = await utils.openBoxConsent(address, web3provider)
+      const sig = await utils.openBoxConsent(address, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
@@ -223,7 +223,7 @@ class ThreeBox {
       localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
     console.time('new 3box')
-    const threeBox = new ThreeBox(muportDID, web3provider, opts)
+    const threeBox = new ThreeBox(muportDID, ethereumProvider, opts)
     console.timeEnd('new 3box')
     console.time('load 3box')
     await threeBox._load(opts)

@@ -3,40 +3,41 @@ bopen.addEventListener('click', event => {
     console.log('Sync Complete')
     updateProfileData(window.box)
   }
+  window.ethereum.enable().then(addresses => {
+    ThreeBox.openBox(addresses[0],  window.ethereum).then(box => {
+      box.onSyncDone(syncComplete)
+      window.box = box
+      console.log(box)
 
-  ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider).then(box => {
-    box.onSyncDone(syncComplete)
-    window.box = box
-    console.log(box)
+      controlls.style.display = 'block'
+      updateProfileData(box)
 
-    controlls.style.display = 'block'
-    updateProfileData(box)
-
-    setProfile.addEventListener('click', () => {
-      box.public.set(prkey.value, prvalue.value).then(() => {
-        prkey.value = null
-        prvalue.value = null
-        updateProfileData(box)
+      setProfile.addEventListener('click', () => {
+        box.public.set(prkey.value, prvalue.value).then(() => {
+          prkey.value = null
+          prvalue.value = null
+          updateProfileData(box)
+        })
       })
-    })
 
-    setPrivateStore.addEventListener('click', () => {
-      box.private.set(pskey.value, psvalue.value).then(() => {
-        pskey.value = null
-        psvalue.value = null
+      setPrivateStore.addEventListener('click', () => {
+        box.private.set(pskey.value, psvalue.value).then(() => {
+          pskey.value = null
+          psvalue.value = null
+        })
       })
-    })
 
-    getPrivateStore.addEventListener('click', () => {
-      const key = getpskey.value
-      box.private.get(key).then(val => {
-        getpskey.value = null
-        updatePrivateData(key, val)
+      getPrivateStore.addEventListener('click', () => {
+        const key = getpskey.value
+        box.private.get(key).then(val => {
+          getpskey.value = null
+          updatePrivateData(key, val)
+        })
       })
-    })
 
-    bclose.addEventListener('click', () => {
-      logout(box)
+      bclose.addEventListener('click', () => {
+        logout(box)
+      })
     })
   })
 })
