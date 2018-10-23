@@ -13,7 +13,6 @@ const utils = require('./utils')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
-// const PINNING_NODE = '/ip4/127.0.0.1/tcp/4003/ws/ipfs/QmNxwyrobAM9rWAvzCC4QKyvRvadUwsQtGS9cqz6hVRc3a'
 const PINNING_ROOM = '3box-pinning'
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
@@ -42,7 +41,7 @@ class ThreeBox {
     this.private = null
   }
 
-  async _load (opts = {}) {
+  async _load (syncComplete, opts = {}) {
     const did = this._muportDID.getDid()
     const didFingerprint = utils.sha256Multihash(did)
     const rootStoreName = didFingerprint + '.root'
@@ -79,22 +78,30 @@ class ThreeBox {
       }
     }
 
-    this._pubsub.subscribe(PINNING_ROOM, () => {}, onNewPeer)
-
     this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
     this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
 
     console.time('init stores')
-    const [pubOdbAddress, privOdbAddress] = await Promise.all([this.public._init(), this.private._init()])
+    const [pubStoreAddress, privStoreAddress] = await Promise.all([this.public._init(), this.private._init()])
     console.timeEnd('init stores')
 
-    this._createRootStore(rootStoreAddress, privOdbAddress, pubOdbAddress, pinningNode)
-  }
+    let syncPromises = []
 
-  async _sync () {
-    console.time('sync stores')
-    await Promise.all([this.public._sync(), this.private._sync()])
-    console.timeEnd('sync stores')
+    const onMessageRes = (topic, data) => {
+      if (data.type === 'HAS_ENTRIES') {
+        if(data.odbAddress === privStoreAddress) {
+          syncPromises.push(this.private._sync(data.numEntries))
+        }
+        if(data.odbAddress === pubStoreAddress) {
+          syncPromises.push(this.public._sync(data.numEntries))
+        }
+        if (syncPromises.length === 2) Promise.all(syncPromises).then(syncComplete)
+      }
+    }
+
+    this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
+
+    this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, pinningNode)
   }
 
   async _createRootStore(rootStoreAddress, privOdbAddress, pubOdbAddress) {
@@ -190,7 +197,7 @@ class ThreeBox {
    * @param     {Function}      opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @return    {ThreeBox}                              the threeBox instance for the given address
    */
-  static async openBox (address, web3provider, opts = {}) {
+  static async openBox (address, web3provider, syncComplete, opts = {}) {
     console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + address)
@@ -213,17 +220,11 @@ class ThreeBox {
       localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
     console.time('new 3box')
-    let threeBox = new ThreeBox(muportDID, web3provider, opts)
+    const threeBox = new ThreeBox(muportDID, web3provider, opts)
     console.timeEnd('new 3box')
     console.time('load 3box')
-    await threeBox._load(opts)
+    await threeBox._load(syncComplete, opts)
     console.timeEnd('load 3box')
-    console.time('sync 3box')
-    // threeBox._sync(privOdbAddress, pubOdbAddress).then(() => {
-    //   // TODO callback here
-    // })
-    await threeBox._sync()
-    console.timeEnd('sync 3box')
     console.timeEnd('-- openBox --')
     return threeBox
   }

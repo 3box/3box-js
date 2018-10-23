@@ -1,5 +1,10 @@
 bopen.addEventListener('click', event => {
-  ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider).then(box => {
+  const syncComplete = (res) => {
+    console.log('Sync Complete')
+    updateProfileData(window.box)
+  }
+
+  ThreeBox.openBox(web3.eth.accounts[0],  web3.currentProvider, syncComplete).then(box => {
     window.box = box
     console.log(box)
 
