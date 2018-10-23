@@ -14,6 +14,7 @@ const utils = require('./utils')
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
+const IPFS_MUPORT = { protocol: 'https', host: 'ipfs.3box.io' }
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
@@ -210,7 +211,7 @@ class ThreeBox {
     let serializedMuDID = localstorage.get('serializedMuDID_' + address)
     if (serializedMuDID) {
       console.time('new Muport')
-      muportDID = new MuPort(serializedMuDID)
+      muportDID = new MuPort(serializedMuDID, { ipfsConf: IPFS_MUPORT })
       console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
@@ -220,6 +221,7 @@ class ThreeBox {
       const mnemonic = bip39.entropyToMnemonic(entropy)
       console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
+        ipfsConf: IPFS_MUPORT,
         externalMgmtKey: address,
         mnemonic
       })
