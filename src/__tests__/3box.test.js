@@ -31,6 +31,7 @@ jest.mock('../publicStore', () => {
   return jest.fn(() => {
     return {
       _sync: jest.fn(() => '/orbitdb/Qmasdf/08a7.public'),
+      _load: jest.fn(() => '/orbitdb/Qmasdf/08a7.public'),
       all: jest.fn(() => { return { name: 'oed', image: 'an awesome selfie' } }),
       close: jest.fn()
     }
@@ -38,7 +39,10 @@ jest.mock('../publicStore', () => {
 })
 jest.mock('../privateStore', () => {
   return jest.fn(() => {
-    return { _sync: jest.fn(() => '/orbitdb/Qmfdsa/08a7.private') }
+    return {
+      _sync: jest.fn(() => '/orbitdb/Qmfdsa/08a7.private'),
+      _load: jest.fn(() => '/orbitdb/Qmfdsa/08a7.private')
+    }
   })
 })
 jest.mock('../utils', () => {
@@ -102,7 +106,7 @@ const boxOpts2 = {
     },
     repo: './tmp/ipfs3/'
   },
-  orbitPath: './tmp/orbitdb1',
+  orbitPath: './tmp/orbitdb2',
   addressServer: MOCK_HASH_SERVER
 }
 
@@ -114,7 +118,7 @@ describe('3Box', () => {
   let box
   let box2
   let orbitdb
-  jest.setTimeout(25000)
+  jest.setTimeout(30000)
 
   beforeAll(async () => {
     ipfs = await testUtils.initIPFS(true)
@@ -144,33 +148,34 @@ describe('3Box', () => {
     box = await ThreeBox.openBox(addr, prov, opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
       address_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
     })
-    expect(box.public._sync).toHaveBeenCalledTimes(1)
-    expect(box.public._sync).toHaveBeenCalledWith()
-    expect(box.private._sync).toHaveBeenCalledTimes(1)
-    expect(box.private._sync).toHaveBeenCalledWith()
+    expect(box.public._load).toHaveBeenCalledTimes(1)
+    expect(box.public._load).toHaveBeenCalledWith()
+    expect(box.private._load).toHaveBeenCalledTimes(1)
+    expect(box.private._load).toHaveBeenCalledWith()
     expect(consentCallback).toHaveBeenCalledTimes(1)
     expect(consentCallback).toHaveBeenCalledWith(true)
     await publishPromise
     pubsub.unsubscribe('3box-pinning')
   })
 
-  it('should get entropy and db from localstorage subsequent openBox calls', async () => {
+  it('should get entropy from localstorage subsequent openBox calls', async () => {
     const consentCallback = jest.fn()
     const opts = { ...boxOpts, consentCallback }
     await box.close()
     box = await ThreeBox.openBox('0x12345', 'web3prov', opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
-    expect(box.public._sync).toHaveBeenCalledTimes(1)
-    expect(box.public._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
-    expect(box.private._sync).toHaveBeenCalledTimes(1)
-    expect(box.private._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
+      address_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
+    })
+    expect(box.public._load).toHaveBeenCalledTimes(1)
+    expect(box.public._load).toHaveBeenCalledWith()
+    expect(box.private._load).toHaveBeenCalledTimes(1)
+    expect(box.private._load).toHaveBeenCalledWith()
     expect(consentCallback).toHaveBeenCalledTimes(1)
     expect(consentCallback).toHaveBeenCalledWith(false)
   })
@@ -182,7 +187,7 @@ describe('3Box', () => {
         resolve()
       }, () => {})
     })
-    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb2')
+    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb3')
     const rootStoreAddress = box._rootStore.address.toString()
     const store = await orbitdb.open(rootStoreAddress)
     await new Promise((resolve, reject) => {
@@ -203,11 +208,16 @@ describe('3Box', () => {
     box = await ThreeBox.openBox('0x12345', 'web3prov', boxOpts2)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdfp98yw4t7', 'GET')
+
+    syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
+    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
+    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
+    await syncPromise
+
     expect(box.public._sync).toHaveBeenCalledTimes(1)
-    expect(box.public._sync).toHaveBeenCalledWith('/orbitdb/Qmasdf/08a7.public')
+    expect(box.public._sync).toHaveBeenCalledWith(4)
     expect(box.private._sync).toHaveBeenCalledTimes(1)
-    expect(box.private._sync).toHaveBeenCalledWith('/orbitdb/Qmfdsa/08a7.private')
+    expect(box.private._sync).toHaveBeenCalledWith(5)
     await publishPromise
     pubsub.unsubscribe('3box-pinning')
   })
@@ -243,19 +253,18 @@ describe('3Box', () => {
 
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/did:muport:Qmsdsdf87g329', 'GET')
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
       address_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
     })
-    expect(box2.public._sync).toHaveBeenCalledTimes(1)
-    expect(box2.public._sync).toHaveBeenCalledWith()
-    expect(box2.private._sync).toHaveBeenCalledTimes(1)
-    expect(box2.private._sync).toHaveBeenCalledWith()
+    expect(box2.public._load).toHaveBeenCalledTimes(1)
+    expect(box2.public._load).toHaveBeenCalledWith()
+    expect(box2.private._load).toHaveBeenCalledTimes(1)
+    expect(box2.private._load).toHaveBeenCalledWith()
 
     await box2._linkProfile()
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(3)
-    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(3, 'address-server/link', 'POST', {
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
+    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(2, 'address-server/link', 'POST', {
       consent_msg: 'I agree to stuff,did:muport:Qmsdsdf87g329',
       consent_signature: '0xSuchRealSig,0xabcde',
       linked_did: 'did:muport:Qmsdsdf87g329'

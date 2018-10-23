@@ -5,18 +5,18 @@ class KeyValueStore {
     this._store = {}
   }
   async get (key) {
-    if (!this._db) throw new Error('_sync must be called before interacting with the store')
+    this._requireLoad()
     return this._db.get(key)
   }
 
   async set (key, value) {
-    if (!this._db) throw new Error('_sync must be called before interacting with the store')
+    this._requireLoad()
     this._db.set(key, value)
     return true
   }
 
   async remove (key) {
-    if (!this._db) throw new Error('_sync must be called before interacting with the store')
+    this._requireLoad()
     this._db.remove(key)
     return true
   }
@@ -35,8 +35,12 @@ class KeyValueStore {
     return orbitAddress
   }
 
-  async close () {
+  _requireLoad () {
     if (!this._db) throw new Error('_sync must be called before interacting with the store')
+  }
+
+  async close () {
+    this._requireLoad()
   }
 
   get log () {

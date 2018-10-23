@@ -14,7 +14,7 @@ class KeyValueStore {
    * @return    {String}                            the value associated with the key
    */
   async get (key) {
-    if (!this._db) throw new Error('_init must be called before interacting with the store')
+    this._requireLoad()
     const dbGetRes = await this._db.get(key)
     return dbGetRes ? dbGetRes.value : dbGetRes
   }
@@ -27,7 +27,7 @@ class KeyValueStore {
    * @return    {Boolean}                           true if successful
    */
   async set (key, value) {
-    if (!this._db) throw new Error('_init must be called before interacting with the store')
+    this._requireLoad()
     const timeStamp = new Date().getTime()
     await this._db.put(key, { value, timeStamp })
     return true
@@ -40,22 +40,23 @@ class KeyValueStore {
    * @return    {Boolean}                           true if successful
    */
   async remove (key) {
-    if (!this._db) throw new Error('_init must be called before interacting with the store')
+    this._requireLoad()
     await this._db.del(key)
     return true
   }
 
   async _sync (numRemoteEntries) {
+    this._requireLoad()
     let toid = null
     if (numRemoteEntries === this._db._oplog.values.length) return Promise.resolve()
-    if (!numRemoteEntries) {
-      toid = setTimeout(() => {
-        this._db.events.removeAllListeners('replicated')
-        this._db.events.removeAllListeners('replicate.progress')
-        resolve()
-      }, 3000)
-    }
     await new Promise((resolve, reject) => {
+      if (!numRemoteEntries) {
+        toid = setTimeout(() => {
+          this._db.events.removeAllListeners('replicated')
+          this._db.events.removeAllListeners('replicate.progress')
+          resolve()
+        }, 3000)
+      }
       this._db.events.on('replicate.progress', (_x, _y, _z, num, max) => {
         if (toid) {
           clearTimeout(toid)
@@ -68,14 +69,18 @@ class KeyValueStore {
     return this._db.address.toString()
   }
 
-  async _init() {
+  async _load () {
     this._db = await this._orbitdb.keyvalue(this._name)
     await this._db.load()
     return this._db.address.toString()
   }
 
+  _requireLoad () {
+    if (!this._db) throw new Error('_load must be called before interacting with the store')
+  }
+
   async close () {
-    if (!this._db) throw new Error('_init must be called before interacting with the store')
+    this._requireLoad()
     await this._db.close()
   }
 

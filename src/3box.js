@@ -31,6 +31,7 @@ class ThreeBox {
     this._muportDID = muportDID
     this._web3provider = web3provider
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
+    this._onSyncDoneCB = () => {}
     /**
      * @property {KeyValueStore} public         access the profile store of the users threeBox
      */
@@ -41,7 +42,7 @@ class ThreeBox {
     this.private = null
   }
 
-  async _load (syncComplete, opts = {}) {
+  async _load (opts = {}) {
     const did = this._muportDID.getDid()
     const didFingerprint = utils.sha256Multihash(did)
     const rootStoreName = didFingerprint + '.root'
@@ -74,37 +75,40 @@ class ThreeBox {
       if (peer === pinningNode.split('/').pop()) {
         console.timeEnd('opening pinning room, pinning node joined')
         console.log('broadcasting odb-address')
-        this._pubsub.publish(PINNING_ROOM, {type: 'PIN_DB', odbAddress: rootStoreAddress })
+        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
     }
 
     this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
     this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
 
-    console.time('init stores')
-    const [pubStoreAddress, privStoreAddress] = await Promise.all([this.public._init(), this.private._init()])
-    console.timeEnd('init stores')
+    console.time('load stores')
+    const [pubStoreAddress, privStoreAddress] = await Promise.all([
+      this.public._load(),
+      this.private._load()
+    ])
+    console.timeEnd('load stores')
 
     let syncPromises = []
 
     const onMessageRes = (topic, data) => {
       if (data.type === 'HAS_ENTRIES') {
-        if(data.odbAddress === privStoreAddress) {
+        if (data.odbAddress === privStoreAddress) {
           syncPromises.push(this.private._sync(data.numEntries))
         }
-        if(data.odbAddress === pubStoreAddress) {
+        if (data.odbAddress === pubStoreAddress) {
           syncPromises.push(this.public._sync(data.numEntries))
         }
-        if (syncPromises.length === 2) Promise.all(syncPromises).then(syncComplete)
+        if (syncPromises.length === 2) Promise.all(syncPromises).then(this._onSyncDoneCB)
       }
     }
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, pinningNode)
+    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, pinningNode)
   }
 
-  async _createRootStore(rootStoreAddress, privOdbAddress, pubOdbAddress) {
+  async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
     console.time('add PublicStore to rootStore')
     await this._rootStore.add({ odbAddress: pubOdbAddress })
     console.timeEnd('add PublicStore to rootStore')
@@ -114,7 +118,6 @@ class ThreeBox {
     console.time('publish rootStoreAddress to address-server')
     this._publishRootStore(rootStoreAddress)
     console.timeEnd('publish rootStoreAddress to address-server')
-    console.time('broadcast rootStoreAddress over pubsub')
   }
 
   /**
@@ -197,7 +200,7 @@ class ThreeBox {
    * @param     {Function}      opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @return    {ThreeBox}                              the threeBox instance for the given address
    */
-  static async openBox (address, web3provider, syncComplete, opts = {}) {
+  static async openBox (address, web3provider, opts = {}) {
     console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + address)
@@ -223,10 +226,19 @@ class ThreeBox {
     const threeBox = new ThreeBox(muportDID, web3provider, opts)
     console.timeEnd('new 3box')
     console.time('load 3box')
-    await threeBox._load(syncComplete, opts)
+    await threeBox._load(opts)
     console.timeEnd('load 3box')
     console.timeEnd('-- openBox --')
     return threeBox
+  }
+
+  /**
+   * Sets the callback function that will be called once when the db is fully synced.
+   *
+   * @param     {Function}      syncDone        the function that will be called
+   */
+  onSyncDone (syncDone) {
+    this._onSyncDoneCB = syncDone
   }
 
   async _publishRootStore (rootStoreAddress) {
