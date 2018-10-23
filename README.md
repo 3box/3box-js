@@ -131,11 +131,12 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
     * _instance_
         * [.public](#ThreeBox+public)
         * [.private](#ThreeBox+private)
+        * [.onSyncDone(syncDone)](#ThreeBox+onSyncDone)
         * [.close()](#ThreeBox+close)
         * [.logout()](#ThreeBox+logout)
     * _static_
         * [.getProfile(address, opts)](#ThreeBox.getProfile) ⇒ <code>Object</code>
-        * [.openBox(address, web3provider, opts)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
+        * [.openBox(address, ethereumProvider, opts)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
         * [.isLoggedIn(address)](#ThreeBox.isLoggedIn) ⇒ <code>Boolean</code>
 
 <a name="new_ThreeBox_new"></a>
@@ -162,6 +163,17 @@ Please use the **openBox** method to instantiate a ThreeBox
 | Name | Type | Description |
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users threeBox |
+
+<a name="ThreeBox+onSyncDone"></a>
+
+### threeBox.onSyncDone(syncDone)
+Sets the callback function that will be called once when the db is fully synced.
+
+**Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| syncDone | <code>function</code> | the function that will be called |
 
 <a name="ThreeBox+close"></a>
 
@@ -197,7 +209,7 @@ Get the public profile of a given address
 
 <a name="ThreeBox.openBox"></a>
 
-### ThreeBox.openBox(address, web3provider, opts) ⇒ [<code>ThreeBox</code>](#ThreeBox)
+### ThreeBox.openBox(address, ethereumProvider, opts) ⇒ [<code>ThreeBox</code>](#ThreeBox)
 Opens the user space associated with the given address
 
 **Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
@@ -206,7 +218,7 @@ Opens the user space associated with the given address
 | Param | Type | Description |
 | --- | --- | --- |
 | address | <code>String</code> | an ethereum address |
-| web3provider | <code>Web3Provider</code> | A Web3 provider |
+| ethereumProvider | <code>ethereumProvider</code> | An ethereum provider |
 | opts | <code>Object</code> | Optional parameters |
 | opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |

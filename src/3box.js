@@ -91,7 +91,7 @@ class ThreeBox {
 
     let syncPromises = []
 
-    const onMessageRes = (topic, data) => {
+    const onMessageRes = async (topic, data) => {
       if (data.type === 'HAS_ENTRIES') {
         if (data.odbAddress === privStoreAddress) {
           syncPromises.push(this.private._sync(data.numEntries))
@@ -99,7 +99,11 @@ class ThreeBox {
         if (data.odbAddress === pubStoreAddress) {
           syncPromises.push(this.public._sync(data.numEntries))
         }
-        if (syncPromises.length === 2) Promise.all(syncPromises).then(this._onSyncDoneCB)
+        if (syncPromises.length === 2) {
+          await Promise.all(syncPromises)
+          this._onSyncDoneCB()
+          this._pubsub.unsubscribe(PINNING_ROOM)
+        }
       }
     }
 
