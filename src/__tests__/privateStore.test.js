@@ -69,7 +69,7 @@ describe('PrivateStore', () => {
     expect(address).toEqual('addr')
 
     // Check if salt was initiated correctly
-    newEncryptedSalt = privateStore._db.get('3BOX_SALT')
+    const newEncryptedSalt = privateStore._db.get('3BOX_SALT')
     expect(newEncryptedSalt).toEqual(encryptedSalt)
   })
 
@@ -112,7 +112,7 @@ describe('PrivateStore', () => {
 
     beforeEach(async () => {
       privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
-      storeAddr = await privateStore._sync()
+      const storeAddr = await privateStore._sync()
       await privateStore.set('key1', 'value1')
     })
 

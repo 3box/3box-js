@@ -23,12 +23,12 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['env'],
+            presets: ['@babel/preset-env'],
             plugins: [
-              ["transform-runtime", {
-                "polyfill": false,
-                "regenerator": true
-              }]
+              ['@babel/plugin-transform-runtime', {
+                'regenerator': true
+              }],
+              ['@babel/plugin-proposal-object-rest-spread']
             ]
           }
         }
