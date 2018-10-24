@@ -23,9 +23,9 @@ const IPFS_OPTIONS = {
 let globalIPFS
 let globalOrbitDB
 
-class ThreeBox {
+class Box {
   /**
-   * Please use the **openBox** method to instantiate a ThreeBox
+   * Please use the **openBox** method to instantiate a 3Box
    */
   constructor (muportDID, ethereumProvider, opts = {}) {
     this._muportDID = muportDID
@@ -33,11 +33,11 @@ class ThreeBox {
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     this._onSyncDoneCB = () => {}
     /**
-     * @property {KeyValueStore} public         access the profile store of the users threeBox
+     * @property {KeyValueStore} public         access the profile store of the users 3Box
      */
     this.public = null
     /**
-     * @property {KeyValueStore} private        access the private store of the users threeBox
+     * @property {KeyValueStore} private        access the private store of the users 3Box
      */
     this.private = null
   }
@@ -202,7 +202,7 @@ class ThreeBox {
    * @param     {Object}            opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
    * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
-   * @return    {ThreeBox}                                  the threeBox instance for the given address
+   * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
     console.time('-- openBox --')
@@ -227,13 +227,13 @@ class ThreeBox {
       localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
     console.time('new 3box')
-    const threeBox = new ThreeBox(muportDID, ethereumProvider, opts)
+    const box = new Box(muportDID, ethereumProvider, opts)
     console.timeEnd('new 3box')
     console.time('load 3box')
-    await threeBox._load(opts)
+    await box._load(opts)
     console.timeEnd('load 3box')
     console.timeEnd('-- openBox --')
-    return threeBox
+    return box
   }
 
   /**
@@ -351,4 +351,4 @@ async function getRootStoreAddress (serverUrl, identifier) {
   })
 }
 
-module.exports = ThreeBox
+module.exports = Box
