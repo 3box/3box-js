@@ -17,7 +17,8 @@ const PINNING_ROOM = '3box-pinning'
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
-  }
+  },
+  preload: { enabled: false }
 }
 
 let globalIPFS
