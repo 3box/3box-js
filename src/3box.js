@@ -127,7 +127,7 @@ class Box {
   /**
    * Get the public profile of a given address
    *
-   * @param     {String}    address                 an ethereum address
+   * @param     {String}    address                 An ethereum address
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.addressServer      URL of the Address Server
    * @param     {Object}    opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
@@ -196,12 +196,14 @@ class Box {
   /**
    * Opens the user space associated with the given address
    *
-   * @param     {String}            address                 an ethereum address
+   * @param     {String}            address                 An ethereum address
    * @param     {ethereumProvider}  ethereumProvider        An ethereum provider
    * @param     {Object}            opts                    Optional parameters
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
    * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
-   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   * @param     {String}            opts.addressServer      URL of the Address Server
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
@@ -239,7 +241,7 @@ class Box {
   /**
    * Sets the callback function that will be called once when the db is fully synced.
    *
-   * @param     {Function}      syncDone        the function that will be called
+   * @param     {Function}      syncDone        The function that will be called
    */
   onSyncDone (syncDone) {
     this._onSyncDoneCB = syncDone
@@ -314,7 +316,7 @@ class Box {
   /**
    * Check if the given address is logged in
    *
-   * @param     {String}    address                 an ethereum address
+   * @param     {String}    address                 An ethereum address
    * @return    {Boolean}                           true if the user is logged in
    */
   static isLoggedIn (address) {
