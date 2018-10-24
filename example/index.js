@@ -4,7 +4,7 @@ bopen.addEventListener('click', event => {
     updateProfileData(window.box)
   }
   window.ethereum.enable().then(addresses => {
-    ThreeBox.openBox(addresses[0],  window.ethereum).then(box => {
+    Box.openBox(addresses[0],  window.ethereum).then(box => {
       box.onSyncDone(syncComplete)
       window.box = box
       console.log(box)
