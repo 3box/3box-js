@@ -48,33 +48,33 @@ class Box {
     const rootStoreName = didFingerprint + '.root'
 
     const pinningNode = opts.pinningNode || PINNING_NODE
-    console.time('start ipfs')
+    // console.time('start ipfs')
     this._ipfs = await initIPFS(opts.ipfsOptions)
-    console.timeEnd('start ipfs')
+    // console.timeEnd('start ipfs')
     // TODO - if connection to this peer is lost we should try to reconnect
-    console.time('connect to pinning ipfs node')
+    // console.time('connect to pinning ipfs node')
     this._ipfs.swarm.connect(pinningNode, () => {
-      console.timeEnd('connect to pinning ipfs node')
+      // console.timeEnd('connect to pinning ipfs node')
     })
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
-    console.time('new OrbitDB')
+    // console.time('new OrbitDB')
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
-    console.timeEnd('new OrbitDB')
+    // console.timeEnd('new OrbitDB')
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
     this._rootStore = await this._orbitdb.feed(rootStoreName)
     const rootStoreAddress = this._rootStore.address.toString()
 
-    console.time('opening pinning room, pinning node joined')
+    // console.time('opening pinning room, pinning node joined')
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
     const onNewPeer = (topic, peer) => {
-      console.log('Peer joined the room', peer)
-      console.log(peer, pinningNode.split('/').pop())
+      // console.log('Peer joined the room', peer)
+      // console.log(peer, pinningNode.split('/').pop())
       if (peer === pinningNode.split('/').pop()) {
-        console.timeEnd('opening pinning room, pinning node joined')
-        console.log('broadcasting odb-address')
+        // console.timeEnd('opening pinning room, pinning node joined')
+        // console.log('broadcasting odb-address')
         this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
     }
@@ -82,12 +82,12 @@ class Box {
     this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
     this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
 
-    console.time('load stores')
+    // console.time('load stores')
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),
       this.private._load()
     ])
-    console.timeEnd('load stores')
+    // console.timeEnd('load stores')
 
     let syncPromises = []
 
@@ -113,15 +113,15 @@ class Box {
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
-    console.time('add PublicStore to rootStore')
+    // console.time('add PublicStore to rootStore')
     await this._rootStore.add({ odbAddress: pubOdbAddress })
-    console.timeEnd('add PublicStore to rootStore')
-    console.time('add PrivateStore to rootStore')
+    // console.timeEnd('add PublicStore to rootStore')
+    // console.time('add PrivateStore to rootStore')
     await this._rootStore.add({ odbAddress: privOdbAddress })
-    console.timeEnd('add PrivateStore to rootStore')
-    console.time('publish rootStoreAddress to address-server')
+    // console.timeEnd('add PrivateStore to rootStore')
+    // console.time('publish rootStoreAddress to address-server')
     this._publishRootStore(rootStoreAddress)
-    console.timeEnd('publish rootStoreAddress to address-server')
+    // console.timeEnd('publish rootStoreAddress to address-server')
   }
 
   /**
@@ -207,34 +207,34 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
-    console.time('-- openBox --')
+    // console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + address)
     if (serializedMuDID) {
-      console.time('new Muport')
+      // console.time('new Muport')
       muportDID = new MuPort(serializedMuDID)
-      console.timeEnd('new Muport')
+      // console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
       const sig = await utils.openBoxConsent(address, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
-      console.time('muport.newIdentity')
+      // console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: address,
         mnemonic
       })
-      console.timeEnd('muport.newIdentity')
+      // console.timeEnd('muport.newIdentity')
       localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
-    console.time('new 3box')
+    // console.time('new 3box')
     const box = new Box(muportDID, ethereumProvider, opts)
-    console.timeEnd('new 3box')
-    console.time('load 3box')
+    // console.timeEnd('new 3box')
+    // console.time('load 3box')
     await box._load(opts)
-    console.timeEnd('load 3box')
-    console.timeEnd('-- openBox --')
+    // console.timeEnd('load 3box')
+    // console.timeEnd('-- openBox --')
     return box
   }
 
