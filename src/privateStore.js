@@ -1,94 +1,86 @@
-const OrbitDB = require('orbit-db')
+const KeyValueStore = require('./keyValueStore')
+const utils = require('./utils')
+const nacl = require('tweetnacl')
 
-class PrivateStore {
-  /**
-   * Instantiates a PrivateStore
-   *
-   * @param     {MuPort}    muportDID                   A MuPort DID instance
-   * @param     {IPFS}      ipfs                        An instance of the ipfs api
-   * @param     {function}  updateRoot                  A callback function that is called when the store has been updated
-   * @return    {PrivateStore}                          self
-   */
-  constructor(muportDID, ipfs, updateRoot) {
+const SALT_KEY = '3BOX_SALT'
+const ENC_BLOCK_SIZE = 24
+
+class PrivateStore extends KeyValueStore {
+  constructor (muportDID, orbitdb, name) {
+    super(orbitdb, name)
     this.muportDID = muportDID
-    this.ipfs = ipfs
-    this.updateRoot = updateRoot
   }
 
-  /**
-   * Get the value of the given key
-   *
-   * @param     {String}    key                     the key
-   * @return    {String}                            the value associated with the key
-   */
   async get (key) {
-    if (!this.db) throw new Error('_sync must be called before interacting with the store')
-
-    const encryptedEntry = await this.db.get(this._genDbKey(key))
-
-    return this._decryptEntry(encryptedEntry)
+    const encryptedEntry = await super.get(this._genDbKey(key))
+    return encryptedEntry ? this._decryptEntry(encryptedEntry) : null
   }
 
-  /**
-   * Set a value for the given key
-   *
-   * @param     {String}    key                     the key
-   * @param     {String}    value                   the value
-   * @return    {Boolean}                           true if successful
-   */
   async set (key, value) {
-    if (!this.db) throw new Error('_sync must be called before interacting with the store')
-
-    const encryptedValue = this._encryptEntry(value)
-    const dbKey = this._genDbKey(key)
-
-    // TODO - error handling
-    const multihash = await this.db.put(dbKey, encryptedValue)
-
-    this.updateRoot(multihash)
-    return true
+    value = this._encryptEntry(value)
+    key = this._genDbKey(key)
+    return super.set(key, value)
   }
 
-  /**
-   * Remove the value for the given key
-   *
-   * @param     {String}    key                     the key
-   * @return    {Boolean}                           true if successful
-   */
   async remove (key) {
-    return this.set(key, null)
+    key = this._genDbKey(key)
+    return super.remove(key)
   }
 
   /**
-   * Sync the private store with the given ipfs hash
+   * Returns array of underlying log entries. In linearized order according to their Lamport clocks.
+   * Useful for generating a complete history of all operations on store. Key is hashed, so key is
+   * not available from the private store.
    *
-   * @param     {String}    hash                        The hash of the private store OrbitDB
+   *  @example
+   *  const log = store.log
+   *  const entry = log[0]
+   *  console.log(entry)
+   *  // { op: 'PUT', key: ...., value: 'Botbot', timeStamp: '1538575416068' }
+   *
+   * @return    {Array<Object>}     Array of ordered log entry objects
    */
-  async _sync (hash) {
-    // if hash === null; create a new orbitdb instance.
-    const orbitdb = new OrbitDB(this.ipfs)
-    //TODO - sync the OrbitDB key-value store
+  get log () {
+    return super.log.map(obj => {
+      return Object.assign(obj, { value: obj.value ? this._decryptEntry(obj.value) : null })
+    })
+  }
+
+  async _sync (orbitAddress) {
+    const address = await super._sync(orbitAddress)
+    let encryptedSalt = await super.get(SALT_KEY)
+    if (encryptedSalt) {
+      this._salt = this._decryptEntry(encryptedSalt)
+    } else {
+      this._salt = Buffer.from(nacl.randomBytes(16)).toString('hex')
+      encryptedSalt = this._encryptEntry(this._salt)
+      await super.set(SALT_KEY, encryptedSalt)
+    }
+    return address
   }
 
   _genDbKey (key) {
-    // return someHashFunction(key + this.salt)
+    return utils.sha256Multihash(this._salt + key)
   }
 
   _encryptEntry (entry) {
-    // TODO - use muport to encrypt entry
+    if (typeof entry === 'undefined') throw new Error('Entry to encrypt cannot be undefined')
+
+    return this.muportDID.symEncrypt(this._pad(JSON.stringify(entry)))
   }
 
-  _decryptEntry (entry) {
-    // TODO - use muport to decrypt entry
+  _decryptEntry ({ ciphertext, nonce }) {
+    return JSON.parse(this._unpad(this.muportDID.symDecrypt(ciphertext, nonce)))
+  }
+
+  _pad (val, blockSize = ENC_BLOCK_SIZE) {
+    const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
+    return `${val}${'\0'.repeat(blockDiff)}`
+  }
+
+  _unpad (padded) {
+    return padded.replace(/\0+$/, '')
   }
 }
-
-// some sample code for  creating a log store
-//orbitdb.log('hello', {replicate: false}).then(db => {
-  //db.add('asdfasdf').then(h => {
-    //const eve = db.get(h)
-    //console.log(eve)
-  //})
-//}).catch(console.log)
 
 module.exports = PrivateStore

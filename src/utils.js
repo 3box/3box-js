@@ -1,20 +1,18 @@
 const XMLHttpRequest = (typeof window !== 'undefined') ? window.XMLHttpRequest : require('xmlhttprequest').XMLHttpRequest
+const Multihash = require('multihashes')
+const sha256 = require('js-sha256').sha256
 
 module.exports = {
-  openBoxConsent: (fromAddress, web3provider) => {
-    const text = "This dApp wants to access your 3Box, to:\n"+
-            "* store public and private data about you\n"+
-            "* read public and private data about you\n"+
-            "* remove private data about you\n\n"+
-            "You are always in control of your data. Create your public profile at https://my.3Box.io";
+  openBoxConsent: (fromAddress, ethereum) => {
+    const text = 'This app wants to view and update your 3Box profile.'
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
-      web3provider.sendAsync({
+      ethereum.sendAsync({
         method,
         params,
-        fromAddress,
+        fromAddress
       }, function (err, result) {
         if (err) reject(err)
         if (result.error) reject(result.error)
@@ -23,25 +21,24 @@ module.exports = {
     })
   },
 
-  getLinkConsent: (fromAddress, toDID, web3provider) => {
-    const text = "I consent to link my address: \n"+
-      fromAddress+"\n"+
-      "to my public profile\n\n"+
-      "Disclaimer: public data is public forever and can not be unassociated from this profile. "+
-      "Even if updates, the original entries will persist."
+  getLinkConsent: (fromAddress, toDID, ethereum) => {
+    const text = 'Create a new 3Box profile' +
+      '\n\n' +
+      '- \n' +
+      'Your unique profile ID is ' + toDID
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
-      web3provider.sendAsync({
+      ethereum.sendAsync({
         method,
         params,
-        fromAddress,
+        fromAddress
       }, function (err, result) {
         if (err) reject(err)
         if (result.error) reject(result.error)
-        const out={
-          msg: msg,
+        const out = {
+          msg: text,
           sig: result.result
         }
         resolve(out)
@@ -55,20 +52,19 @@ module.exports = {
       request.onreadystatechange = () => {
         if (request.readyState === 4 && request.timeout !== 1) {
           if (request.status !== 200) {
-            console.log(request)
             reject(request.responseText)
           } else {
             try {
               resolve(JSON.parse(request.response))
             } catch (jsonError) {
-              reject(`[threeBox] while parsing data: '${String(request.responseText)}', error: ${String(jsonError)}`)
+              reject(new Error(`[threeBox] while parsing data: '${String(request.responseText)}', error: ${String(jsonError)}`))
             }
           }
         }
       }
       request.open(method, url)
       request.setRequestHeader('accept', 'application/json')
-      //request.setRequestHeader('accept', '*/*')
+      // request.setRequestHeader('accept', '*/*')
       if (method === 'POST') {
         request.setRequestHeader('Content-Type', `application/json`)
         request.send(JSON.stringify(payload))
@@ -77,5 +73,9 @@ module.exports = {
         request.send()
       }
     })
+  },
+  sha256Multihash: str => {
+    const digest = Buffer.from(sha256.digest(str))
+    return Multihash.encode(digest, 'sha2-256').toString('hex')
   }
 }

@@ -1,16 +1,33 @@
 {
   "name": "3box",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
-    "test": "jest --coverage --runInBand --testURL=\"http://localhost\"",
-    "build": "babel src --out-dir lib",
-    "build:dist": "browserify -s ThreeBox ./src/3box.js -o ./dist/3box.js",
-    "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md src/3box.js >> README.md"
+    "lint": "./node_modules/.bin/standard --verbose src/**",
+    "test": "rm -rf ./tmp ; jest --forceExit --detectOpenHandles --coverage --runInBand --testURL=\"http://localhost\"",
+    "build:es5": "./node_modules/.bin/babel src --out-dir lib --ignore=src/__tests__/,src/__mocks__/",
+    "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",
+    "build:dist:prod": "./node_modules/.bin/webpack --config webpack.config.js --mode=production --output-filename 3box.min.js",
+    "build": "npm run build:es5; npm run build:dist; npm run build:dist:prod",
+    "prepublishOnly": "npm run build; npm run generate-readme",
+    "example:start": "npm run build:dist; node example/server.js",
+    "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 src/*.js >> README.md"
+  },
+  "browser": {
+    "fs": false,
+    "child_process": false
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "node_modules",
+      "lib",
+      "<rootDir>/src/__tests__/testUtils.js"
+    ]
   },
   "repository": {
     "type": "git",
@@ -23,24 +40,32 @@
   },
   "homepage": "https://github.com/uport-project/3box-js#readme",
   "dependencies": {
-    "babel-runtime": "^6.26.0",
     "bip39": "^2.5.0",
+    "ipfs": "^0.32.2",
     "ipfs-api": "^24.0.0",
-    "muport-core": "^0.4.0",
+    "ipfs-pubsub-room": "^1.4.0",
+    "js-sha256": "^0.9.0",
+    "muport-core": "^0.4.1",
     "orbit-db": "^0.19.9",
     "store": "^2.0.12",
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.6.1",
-    "chai": "^4.1.2",
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/plugin-transform-runtime": "^7.1.0",
+    "@babel/preset-env": "^7.1.0",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/runtime": "^7.1.2",
+    "babel-core": "7.0.0-bridge.0",
+    "babel-loader": "^7.1.5",
     "ganache-cli": "^6.1.0",
-    "ipfs": "^0.31.7",
     "ipfsd-ctl": "^0.39.1",
-    "jest": "^22.4.2",
-    "jsdoc-to-markdown": "^4.0.1"
+    "jest": "^23.6.0",
+    "jsdoc-to-markdown": "^4.0.1",
+    "standard": "^12.0.1",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.2"
   }
 }

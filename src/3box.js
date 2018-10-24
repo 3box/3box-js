@@ -1,208 +1,357 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
-const store = require('store')
-const ipfsAPI = require('ipfs-api')
+const localstorage = require('store')
+const IPFS = require('ipfs')
+const OrbitDB = require('orbit-db')
+const Pubsub = require('orbit-db-pubsub')
+const sha256 = require('js-sha256').sha256
 
-const ProfileStore = require('./profileStore')
+const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
+const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
-//TODO: Put production 3box-hash-server instance here ;)
-const HASH_SERVER_URL = 'https://api.uport.space/hash-server';
+const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
+const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
+const PINNING_ROOM = '3box-pinning'
+const IPFS_OPTIONS = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  preload: { enabled: false }
+}
 
-class ThreeBox {
+let globalIPFS
+let globalOrbitDB
 
+class Box {
   /**
-   * Instantiates a threeBox
-   *
-   * @param     {MuPort}        muportDID                   A MuPort DID instance
-   * @param     {Web3Provider}  web3provider                A Web3 provider
-   * @return    {ThreeBox}                                  self
+   * Please use the **openBox** method to instantiate a 3Box
    */
-  constructor (muportDID, web3provider, opts = {}) {
-    this.muportDID = muportDID
-    this.web3provider = web3provider
-    this.rootObject = null
-    if (store.get(this.muportDID.getDid())) {
-      this.localCache = JSON.parse(store.get(this.muportDID.getDid()))
-    } else {
-      this.localCache = {}
+  constructor (muportDID, ethereumProvider, opts = {}) {
+    this._muportDID = muportDID
+    this._web3provider = ethereumProvider
+    this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
+    this._onSyncDoneCB = () => {}
+    /**
+     * @property {KeyValueStore} public         access the profile store of the users 3Box
+     */
+    this.public = null
+    /**
+     * @property {KeyValueStore} private        access the private store of the users 3Box
+     */
+    this.private = null
+  }
+
+  async _load (opts = {}) {
+    const did = this._muportDID.getDid()
+    const didFingerprint = utils.sha256Multihash(did)
+    const rootStoreName = didFingerprint + '.root'
+
+    const pinningNode = opts.pinningNode || PINNING_NODE
+    // console.time('start ipfs')
+    this._ipfs = await initIPFS(opts.ipfsOptions)
+    // console.timeEnd('start ipfs')
+    // TODO - if connection to this peer is lost we should try to reconnect
+    // console.time('connect to pinning ipfs node')
+    this._ipfs.swarm.connect(pinningNode, () => {
+      // console.timeEnd('connect to pinning ipfs node')
+    })
+
+    const keystore = new OrbitdbKeyAdapter(this._muportDID)
+    // console.time('new OrbitDB')
+    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
+    // console.timeEnd('new OrbitDB')
+    globalIPFS = this._ipfs
+    globalOrbitDB = this._orbitdb
+
+    this._rootStore = await this._orbitdb.feed(rootStoreName)
+    const rootStoreAddress = this._rootStore.address.toString()
+
+    // console.time('opening pinning room, pinning node joined')
+    this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
+    const onNewPeer = (topic, peer) => {
+      // console.log('Peer joined the room', peer)
+      // console.log(peer, pinningNode.split('/').pop())
+      if (peer === pinningNode.split('/').pop()) {
+        // console.timeEnd('opening pinning room, pinning node joined')
+        // console.log('broadcasting odb-address')
+        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
+      }
     }
-    this.ipfs = opts.ipfs || new ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
 
-    /**
-     * @property {ProfileStore} profileStore        access the profile store of the users threeBox
-     */
-    this.profileStore = new ProfileStore(this.ipfs, this._publishUpdate.bind(this, 'profile'))
-    /**
-     * @property {PrivateStore} privateStore        access the private store of the users threeBox
-     */
-    this.privateStore = new PrivateStore(muportDID, this.ipfs, this._publishUpdate.bind(this, 'datastore'))
+    this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
+    this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
+
+    // console.time('load stores')
+    const [pubStoreAddress, privStoreAddress] = await Promise.all([
+      this.public._load(),
+      this.private._load()
+    ])
+    // console.timeEnd('load stores')
+
+    let syncPromises = []
+
+    const onMessageRes = async (topic, data) => {
+      if (data.type === 'HAS_ENTRIES') {
+        if (data.odbAddress === privStoreAddress) {
+          syncPromises.push(this.private._sync(data.numEntries))
+        }
+        if (data.odbAddress === pubStoreAddress) {
+          syncPromises.push(this.public._sync(data.numEntries))
+        }
+        if (syncPromises.length === 2) {
+          await Promise.all(syncPromises)
+          this._onSyncDoneCB()
+          this._pubsub.unsubscribe(PINNING_ROOM)
+        }
+      }
+    }
+
+    this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
+
+    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, pinningNode)
+  }
+
+  async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
+    // console.time('add PublicStore to rootStore')
+    await this._rootStore.add({ odbAddress: pubOdbAddress })
+    // console.timeEnd('add PublicStore to rootStore')
+    // console.time('add PrivateStore to rootStore')
+    await this._rootStore.add({ odbAddress: privOdbAddress })
+    // console.timeEnd('add PrivateStore to rootStore')
+    // console.time('publish rootStoreAddress to address-server')
+    this._publishRootStore(rootStoreAddress)
+    // console.timeEnd('publish rootStoreAddress to address-server')
   }
 
   /**
-   * Get the public profile of the given address
+   * Get the public profile of a given address
    *
-   * @param     {String}    address                 an ethereum address
-   * @return    {Object}                         the threeBox instance for the given address
+   * @param     {String}    address                 An ethereum address
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.addressServer      URL of the Address Server
+   * @param     {Object}    opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
+   * @return    {Object}                            a json object with the profile for the given address
    */
-  static async getProfile (address) {
-    // TODO - get the hash associated with the address from the root-hash-tracker and get the profile object
-    // should be simple getting: <multi-hash>/profile from ipfs.
-    return {}
-  }
+  static async getProfile (address, opts = {}) {
+    const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
+    const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
+    let usingGlobalIPFS = false
+    let usingGlobalOrbitDB = false
+    let ipfs
+    let orbitdb
+    if (globalIPFS) {
+      ipfs = globalIPFS
+      usingGlobalIPFS = true
+    } else {
+      ipfs = await initIPFS(opts.ipfsOptions)
+    }
+    if (globalOrbitDB) {
+      orbitdb = globalOrbitDB
+      usingGlobalIPFS = true
+    } else {
+      orbitdb = new OrbitDB(ipfs, opts.orbitPath)
+    }
+    const publicStore = new PublicStore(orbitdb)
 
-  /**
-   * Get the public activity of the given address
-   *
-   * @param     {String}    address                 an ethereum address
-   * @return    {Object}                         the threeBox instance for the given address
-   */
-  static async getActivity (address) {
-    return {}
+    if (rootStoreAddress) {
+      const rootStore = await orbitdb.open(rootStoreAddress)
+      const readyPromise = new Promise((resolve, reject) => {
+        rootStore.events.on('ready', resolve)
+      })
+      rootStore.load()
+      await readyPromise
+      if (!rootStore.iterator({ limit: -1 }).collect().length) {
+        await new Promise((resolve, reject) => {
+          rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {
+            if (num === max) {
+              rootStore.events.on('replicated', resolve)
+            }
+          })
+        })
+      }
+      const profileEntry = rootStore
+        .iterator({ limit: -1 })
+        .collect()
+        .find(entry => {
+          return entry.payload.value.odbAddress.split('.')[1] === 'public'
+        })
+      await publicStore._sync(profileEntry.payload.value.odbAddress)
+      const profile = publicStore.all()
+      const closeAll = async () => {
+        await rootStore.close()
+        await publicStore.close()
+        if (!usingGlobalOrbitDB) await orbitdb.stop()
+        if (!usingGlobalIPFS) await ipfs.stop()
+      }
+      // close but don't wait for it
+      closeAll()
+      return profile
+    } else {
+      return null
+    }
   }
 
   /**
    * Opens the user space associated with the given address
    *
-   * @param     {String}    address                 an ethereum address
-   * @return    {ThreeBox}                         the threeBox instance for the given address
+   * @param     {String}            address                 An ethereum address
+   * @param     {ethereumProvider}  ethereumProvider        An ethereum provider
+   * @param     {Object}            opts                    Optional parameters
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
+   * @param     {Object}            opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
+   * @param     {String}            opts.addressServer      URL of the Address Server
+   * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, web3provider, opts = {}) {
-    console.log('user', address)
+  static async openBox (address, ethereumProvider, opts = {}) {
+    // console.time('-- openBox --')
     let muportDID
-    let serializedMuDID = store.get('serializedMuDID_' + address)
+    let serializedMuDID = localstorage.get('serializedMuDID_' + address)
     if (serializedMuDID) {
+      // console.time('new Muport')
       muportDID = new MuPort(serializedMuDID)
+      // console.timeEnd('new Muport')
+      if (opts.consentCallback) opts.consentCallback(false)
     } else {
-      const entropy = (await utils.openBoxConsent(address, web3provider)).slice(2, 34)
+      const sig = await utils.openBoxConsent(address, ethereumProvider)
+      if (opts.consentCallback) opts.consentCallback(true)
+      const entropy = sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
+      // console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: address,
         mnemonic
       })
-      store.set('serializedMuDID_' + address, muportDID.serializeState())
+      // console.timeEnd('muport.newIdentity')
+      localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
-    console.log('3box opened with', muportDID.getDid())
-    let threeBox = new ThreeBox(muportDID, web3provider)
-    await threeBox._sync()
-    return threeBox
+    // console.time('new 3box')
+    const box = new Box(muportDID, ethereumProvider, opts)
+    // console.timeEnd('new 3box')
+    // console.time('load 3box')
+    await box._load(opts)
+    // console.timeEnd('load 3box')
+    // console.timeEnd('-- openBox --')
+    return box
   }
 
-  async _sync () {
-
-    var rootHash;
-    try{
-      const did = this.muportDID.getDid()
-      //read root ipld object from 3box-hash-server
-      const rootHashRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash/' + did, 'GET')).data;
-      console.log(rootHashRes)
-      rootHash = rootHashRes.hash
-    }catch(err){
-      console.error(err)
-    }
-
-    //rootHash = 'QmeWkxbpY34yp13gen5L2wRkV8Vd1nDbP1kuoJVkuztyku' //TEST ONLY
-    console.log(typeof rootHash);
-
-    if(rootHash != undefined){
-      //Get root ipld object from IPFS
-      const ipfsRes=await this.ipfs.cat(rootHash);
-      const rootObject = JSON.parse(ipfsRes.toString('utf8'));
-      console.log(rootObject);
-      this.rootObject = rootObject;
-    }else{
-      this.rootObject = {}
-    }
-
-
-    //Sync profile and privateStore
-    //TODO: both can run in parallel.
-    await this.profileStore._sync(this.rootObject.profile)
-    await this.privateStore._sync(this.rootObject.datastore)
+  /**
+   * Sets the callback function that will be called once when the db is fully synced.
+   *
+   * @param     {Function}      syncDone        The function that will be called
+   */
+  onSyncDone (syncDone) {
+    this._onSyncDoneCB = syncDone
   }
 
-  async _publishUpdate (store, hash) {
-    console.log("publishUpdate ("+store+"):"+hash);
-
-    if(store=='profile'){
-      await this._linkProfile();
+  async _publishRootStore (rootStoreAddress) {
+    // Sign rootStoreAddress
+    const addressToken = await this._muportDID.signJWT({ rootStoreAddress })
+    // Store odbAddress on 3box-address-server
+    try {
+      await utils.httpRequest(this._serverUrl + '/odbAddress', 'POST', {
+        address_token: addressToken
+      })
+    } catch (err) {
+      throw new Error(err)
     }
-
-
-    //Update rootObject
-    this.rootObject[store]={"/": hash};
-    console.log(this.rootObject);
-
-    //Store rootObject on IPFS
-    //QUESTION: Shoudn't we store the rootObject directly in 3box-hash-server
-    const rootObjectStr = JSON.stringify(this.rootObject)
-    const ipfsRes=await this.ipfs.add(new Buffer(rootObjectStr));
-    const rootHash = ipfsRes[0].hash;
-    console.log("rootHash: "+rootHash)
-
-    //Sign rootHash
-    const hashToken = await this.muportDID.signJWT({hash: rootHash});
-    console.log("hashToken: "+hashToken);
-
-    //Store hash on 3box-hash-server
-    const servRes= (await utils.httpRequest(HASH_SERVER_URL+'/hash', 'POST', {hash_token: hashToken})).data;
-    console.log(servRes)
-
-    //TODO: Verify servRes.hash == rootHash;
+    return true
   }
 
   async _linkProfile () {
-    if(!store.get("lastConsent")){
-
-      const address = this.muportDID.getDidDocument().managementKey;
-      const did=this.muportDID.getDid();
-      console.log("3box._linkProfile: "+address +"->"+did)
-
-      const consent = await utils.getLinkConsent(address, did, this.web3provider)
-
-      const linkData={
+    const address = this._muportDID.getDidDocument().managementKey
+    if (!localstorage.get('linkConsent_' + address)) {
+      const did = this._muportDID.getDid()
+      const consent = await utils.getLinkConsent(
+        address,
+        did,
+        this._web3provider
+      )
+      const linkData = {
         consent_msg: consent.msg,
         consent_signature: consent.sig,
         linked_did: did
       }
-      console.log(linkData);
+      // Send consentSignature to 3box-address-server to link profile with ethereum address
+      await utils.httpRequest(this._serverUrl + '/link', 'POST', linkData)
 
-
-      //Send consentSignature to root-hash-tracker to link profile with ethereum address
-      const linkRes= (await utils.httpRequest(HASH_SERVER_URL+'/link', 'POST', linkData)).data;
-
-      //TOOD: check if did == linkRes.did and address == linkRes.address;
-      console.log(linkRes);
-
-      //Store lastConsent into localstorage
-      const lastConsent={
+      // Store linkConsent into localstorage
+      const linkConsent = {
         address: address,
         did: did,
         consent: consent
       }
-      store.set("lastConsent",lastConsent)
-
-    }else{
-      console.log("profile linked");
+      localstorage.set('linkConsent_' + address, linkConsent)
     }
-
-
   }
 
-  _clearCache () {
-    store.remove('serializedMuDID_' + this.muportDID.getDidDocument().managementKey)
+  /**
+   * Closes the 3box instance without clearing the local cache.
+   * Should be called after you are done using the 3Box instance,
+   * but without logging the user out.
+   */
+  async close () {
+    await this._orbitdb.stop()
+    await this._pubsub.disconnect()
+    await this._ipfs.stop()
+    globalOrbitDB = null
+    globalIPFS = null
   }
 
-  //async postEvent (payload) {
-    //const encrypted = this.muportDID.symEncrypt(JSON.stringify(payload))
-    //const event_token = await this.muportDID.signJWT({
-      //previous: this.previous,
-      //event: encrypted.ciphertext + '.' + encrypted.nonce
-    //})
-    //this.previous = (await utils.httpRequest(CALEUCHE_URL, 'POST', {event_token})).data.id
-    //console.log('added event with id', this.previous)
-  //}
+  /**
+   * Closes the 3box instance and clears local cache. If you call this,
+   * users will need to sign a consent message to log in the next time
+   * you call openBox.
+   */
+  async logout () {
+    await this.close()
+    const address = this._muportDID.getDidDocument().managementKey
+    localstorage.remove('serializedMuDID_' + address)
+    localstorage.remove('linkConsent_' + address)
+  }
+
+  /**
+   * Check if the given address is logged in
+   *
+   * @param     {String}    address                 An ethereum address
+   * @return    {Boolean}                           true if the user is logged in
+   */
+  static isLoggedIn (address) {
+    return Boolean(localstorage.get('serializedMuDID_' + address))
+  }
 }
 
-module.exports = ThreeBox
+async function initIPFS (ipfsOptions) {
+  return new Promise((resolve, reject) => {
+    let ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
+    ipfs.on('error', error => {
+      console.error(error)
+      reject(error)
+    })
+    ipfs.on('ready', () => resolve(ipfs))
+  })
+}
+
+async function getRootStoreAddress (serverUrl, identifier) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // read orbitdb root store address from the 3box-address-server
+      const res = await utils.httpRequest(
+        serverUrl + '/odbAddress/' + identifier,
+        'GET'
+      )
+      resolve(res.data.rootStoreAddress)
+    } catch (err) {
+      if (JSON.parse(err).message === 'root store address not found') {
+        resolve(null)
+      }
+      reject(err)
+    }
+  })
+}
+
+module.exports = Box

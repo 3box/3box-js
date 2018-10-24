@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: ~/3box-js
     docker:
-      - image: circleci/node:10
+      - image: circleci/node:9
     steps:
       - checkout
 
@@ -21,6 +21,10 @@ jobs:
       - run:
           name: test
           command: npm test && codecov
+
+      - run:
+          name: lint
+          command: npm run lint
 
       - run:
           name: code-coverage
