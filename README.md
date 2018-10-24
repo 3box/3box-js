@@ -5,7 +5,7 @@
 [![Codecov](https://img.shields.io/codecov/c/github/uport-project/3box-js.svg?style=for-the-badge)](https://codecov.io/gh/uport-project/3box-js)
 [![Twitter Follow](https://img.shields.io/twitter/follow/3boxdb.svg?style=for-the-badge&label=Twitter)](https://twitter.com/3boxdb)
 
-[Install](#install) | [Usage](#usage) | [Example](#example) | [API Docs](#api)
+[Install](#install) | [Usage](#usage) | [Dapp data](#dappdata) | [Example](#example) | [API Docs](#api)
 
 # 3box-js
 
@@ -16,14 +16,14 @@ This is a library which allows you to set, get, and remove private and public da
 ## <a name="install"></a>Installation
 Install 3box in your npm project:
 ```
-$ npm install 3box@next
+$ npm install 3box
 ```
 
 ## <a name="usage"></a>Usage
 ### Import 3Box into your project
 Import the 3box module
 ```js
-const ThreeBox = require('3box')
+const Box = require('3box')
 ```
 or use the dist build in your html code
 ```js
@@ -31,37 +31,44 @@ or use the dist build in your html code
 ```
 
 ### Get the public profile of an address
-3Box allows users to create a public profile. In your dapp you might have multiple ethereum addresses that you would like to display a name and picture for. The `getProfile` method allows you to retrieve the profile of any ethereum address (if it has one). This is a *static* method so you can call it directly from the **ThreeBox** object.
+3Box allows users to create a public profile. In your dapp you might have multiple ethereum addresses that you would like to display a name and picture for. The `getProfile` method allows you to retrieve the profile of any ethereum address (if it has one). This is a *static* method so you can call it directly from the **Box** object.
 
 Using `async/await`
 ```js
-const profile = await ThreeBox.getProfile('0x12345abcde')
+const profile = await Box.getProfile('0x12345abcde')
 console.log(profile)
 ```
 or using `.then`
 ```js
-ThreeBox.getProfile('0x12345abcde').then(profile => {
+Box.getProfile('0x12345abcde').then(profile => {
   console.log(profile)
 })
 ```
 
 ### Get, set, and remove data
-To get or modify data in a user's 3Box, first open their 3Box by calling the openBox method. This method prompts the user to authenticate your dapp and returns a promise with a threeBox instance. You can only set, get, and remove data of users that are currently interacting with your dapp. Below `web3provider` refers to the object that you would get from `web3.currentProvider`, or request directly from the web3 browser, e.g. MetaMask.
+To get or modify data in a user's 3Box, first open their 3Box by calling the openBox method. This method prompts the user to authenticate your dapp and returns a promise with a threeBox instance. You can only set, get, and remove data of users that are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
 #### Open 3Box session
 Using `async/await`
 ```js
-const box = await ThreeBox.openBox('0x12345abcde', web3provider)
+const box = await Box.openBox('0x12345abcde', ethereumProvider)
 ```
 or using `.then`
 ```js
-ThreeBox.openBox('0x12345abcde', web3provider).then(box => {
+Box.openBox('0x12345abcde', ethereumProvider).then(box => {
   // interact with 3Box data
 })
 ```
 
+#### Network sync
+When you first open the box in your dapp all data might not be synced from the network yet. You should therefore add a listener using the `onSyncDone` method. This will allow you to know when all the users data is available to you. We advice against *setting* any data before this has happened.
+```js
+box.onSyncDone(yourCallbackFunction)
+```
+
+
 #### Interact with 3Box data
-You can now use the `box` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`. [**What keys can I use?**](./KEY-USAGE.md)
+You can now use the `box` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`.
 
 Using `async/await`
 ```js
@@ -110,7 +117,10 @@ box.private.get('email').then(email => {
 })
 ```
 
-# <a name="example"></a> Example
+## <a name="dappdata"></a> Dapp data
+Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](./KEY-CONVENTIONS.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
+
+## <a name="example"></a> Example
 
 You can quickly run and interact with some code by looking at the files in the `/example` folder. You run the example with the following command:
 
@@ -120,125 +130,127 @@ $ npm run example:start
 
 This runs a simple server at `http://localhost:3000/` that serves the static `example/index.html` file. This allows it easily interact with metamask. You can edit the `example/index.html` file to try differnt code.
 
-# <a name="api"></a> API Documentation
-<a name="ThreeBox"></a>
+## <a name="api"></a> API Documentation
+<a name="Box"></a>
 
-## ThreeBox
+### Box
 **Kind**: global class  
 
-* [ThreeBox](#ThreeBox)
-    * [new ThreeBox()](#new_ThreeBox_new)
+* [Box](#Box)
+    * [new Box()](#new_Box_new)
     * _instance_
-        * [.public](#ThreeBox+public)
-        * [.private](#ThreeBox+private)
-        * [.onSyncDone(syncDone)](#ThreeBox+onSyncDone)
-        * [.close()](#ThreeBox+close)
-        * [.logout()](#ThreeBox+logout)
+        * [.public](#Box+public)
+        * [.private](#Box+private)
+        * [.onSyncDone(syncDone)](#Box+onSyncDone)
+        * [.close()](#Box+close)
+        * [.logout()](#Box+logout)
     * _static_
-        * [.getProfile(address, opts)](#ThreeBox.getProfile) ⇒ <code>Object</code>
-        * [.openBox(address, ethereumProvider, opts)](#ThreeBox.openBox) ⇒ [<code>ThreeBox</code>](#ThreeBox)
-        * [.isLoggedIn(address)](#ThreeBox.isLoggedIn) ⇒ <code>Boolean</code>
+        * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
+        * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
+        * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
 
-<a name="new_ThreeBox_new"></a>
+<a name="new_Box_new"></a>
 
-### new ThreeBox()
-Please use the **openBox** method to instantiate a ThreeBox
+#### new Box()
+Please use the **openBox** method to instantiate a 3Box
 
-<a name="ThreeBox+public"></a>
+<a name="Box+public"></a>
 
-### threeBox.public
-**Kind**: instance property of [<code>ThreeBox</code>](#ThreeBox)  
+#### box.public
+**Kind**: instance property of [<code>Box</code>](#Box)  
 **Properties**
 
 | Name | Type | Description |
 | --- | --- | --- |
-| public | [<code>KeyValueStore</code>](#KeyValueStore) | access the profile store of the users threeBox |
+| public | [<code>KeyValueStore</code>](#KeyValueStore) | access the profile store of the users 3Box |
 
-<a name="ThreeBox+private"></a>
+<a name="Box+private"></a>
 
-### threeBox.private
-**Kind**: instance property of [<code>ThreeBox</code>](#ThreeBox)  
+#### box.private
+**Kind**: instance property of [<code>Box</code>](#Box)  
 **Properties**
 
 | Name | Type | Description |
 | --- | --- | --- |
-| private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users threeBox |
+| private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users 3Box |
 
-<a name="ThreeBox+onSyncDone"></a>
+<a name="Box+onSyncDone"></a>
 
-### threeBox.onSyncDone(syncDone)
+#### box.onSyncDone(syncDone)
 Sets the callback function that will be called once when the db is fully synced.
 
-**Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
+**Kind**: instance method of [<code>Box</code>](#Box)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| syncDone | <code>function</code> | the function that will be called |
+| syncDone | <code>function</code> | The function that will be called |
 
-<a name="ThreeBox+close"></a>
+<a name="Box+close"></a>
 
-### threeBox.close()
+#### box.close()
 Closes the 3box instance without clearing the local cache.
 Should be called after you are done using the 3Box instance,
 but without logging the user out.
 
-**Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
-<a name="ThreeBox+logout"></a>
+**Kind**: instance method of [<code>Box</code>](#Box)  
+<a name="Box+logout"></a>
 
-### threeBox.logout()
+#### box.logout()
 Closes the 3box instance and clears local cache. If you call this,
 users will need to sign a consent message to log in the next time
 you call openBox.
 
-**Kind**: instance method of [<code>ThreeBox</code>](#ThreeBox)  
-<a name="ThreeBox.getProfile"></a>
+**Kind**: instance method of [<code>Box</code>](#Box)  
+<a name="Box.getProfile"></a>
 
-### ThreeBox.getProfile(address, opts) ⇒ <code>Object</code>
+#### Box.getProfile(address, opts) ⇒ <code>Object</code>
 Get the public profile of a given address
 
-**Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
+**Kind**: static method of [<code>Box</code>](#Box)  
 **Returns**: <code>Object</code> - a json object with the profile for the given address  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | an ethereum address |
+| address | <code>String</code> | An ethereum address |
 | opts | <code>Object</code> | Optional parameters |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
 | opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 
-<a name="ThreeBox.openBox"></a>
+<a name="Box.openBox"></a>
 
-### ThreeBox.openBox(address, ethereumProvider, opts) ⇒ [<code>ThreeBox</code>](#ThreeBox)
+#### Box.openBox(address, ethereumProvider, opts) ⇒ [<code>Box</code>](#Box)
 Opens the user space associated with the given address
 
-**Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
-**Returns**: [<code>ThreeBox</code>](#ThreeBox) - the threeBox instance for the given address  
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: [<code>Box</code>](#Box) - the 3Box instance for the given address  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | an ethereum address |
+| address | <code>String</code> | An ethereum address |
 | ethereumProvider | <code>ethereumProvider</code> | An ethereum provider |
 | opts | <code>Object</code> | Optional parameters |
+| opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
+| opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
 | opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
-| opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
+| opts.addressServer | <code>String</code> | URL of the Address Server |
 
-<a name="ThreeBox.isLoggedIn"></a>
+<a name="Box.isLoggedIn"></a>
 
-### ThreeBox.isLoggedIn(address) ⇒ <code>Boolean</code>
+#### Box.isLoggedIn(address) ⇒ <code>Boolean</code>
 Check if the given address is logged in
 
-**Kind**: static method of [<code>ThreeBox</code>](#ThreeBox)  
+**Kind**: static method of [<code>Box</code>](#Box)  
 **Returns**: <code>Boolean</code> - true if the user is logged in  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | an ethereum address |
+| address | <code>String</code> | An ethereum address |
 
 <a name="KeyValueStore"></a>
 
-## KeyValueStore
+### KeyValueStore
 **Kind**: global class  
 
 * [KeyValueStore](#KeyValueStore)
@@ -250,12 +262,12 @@ Check if the given address is logged in
 
 <a name="new_KeyValueStore_new"></a>
 
-### new KeyValueStore()
-Please use **threeBox.profileStore** or **threeBox.profileStore** to get the instance of this class
+#### new KeyValueStore()
+Please use **box.profileStore** or **box.profileStore** to get the instance of this class
 
 <a name="KeyValueStore+log"></a>
 
-### keyValueStore.log ⇒ <code>Array.&lt;Object&gt;</code>
+#### keyValueStore.log ⇒ <code>Array.&lt;Object&gt;</code>
 Returns array of underlying log entries. In linearized order according to their Lamport clocks.
 Useful for generating a complete history of all operations on store.
 
@@ -270,7 +282,7 @@ const log = store.log
 ```
 <a name="KeyValueStore+get"></a>
 
-### keyValueStore.get(key) ⇒ <code>String</code>
+#### keyValueStore.get(key) ⇒ <code>String</code>
 Get the value of the given key
 
 **Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
@@ -282,7 +294,7 @@ Get the value of the given key
 
 <a name="KeyValueStore+set"></a>
 
-### keyValueStore.set(key, value) ⇒ <code>Boolean</code>
+#### keyValueStore.set(key, value) ⇒ <code>Boolean</code>
 Set a value for the given key
 
 **Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
@@ -295,7 +307,7 @@ Set a value for the given key
 
 <a name="KeyValueStore+remove"></a>
 
-### keyValueStore.remove(key) ⇒ <code>Boolean</code>
+#### keyValueStore.remove(key) ⇒ <code>Boolean</code>
 Remove the value for the given key
 
 **Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  

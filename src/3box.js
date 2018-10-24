@@ -23,9 +23,9 @@ const IPFS_OPTIONS = {
 let globalIPFS
 let globalOrbitDB
 
-class ThreeBox {
+class Box {
   /**
-   * Please use the **openBox** method to instantiate a ThreeBox
+   * Please use the **openBox** method to instantiate a 3Box
    */
   constructor (muportDID, ethereumProvider, opts = {}) {
     this._muportDID = muportDID
@@ -33,11 +33,11 @@ class ThreeBox {
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     this._onSyncDoneCB = () => {}
     /**
-     * @property {KeyValueStore} public         access the profile store of the users threeBox
+     * @property {KeyValueStore} public         access the profile store of the users 3Box
      */
     this.public = null
     /**
-     * @property {KeyValueStore} private        access the private store of the users threeBox
+     * @property {KeyValueStore} private        access the private store of the users 3Box
      */
     this.private = null
   }
@@ -127,7 +127,7 @@ class ThreeBox {
   /**
    * Get the public profile of a given address
    *
-   * @param     {String}    address                 an ethereum address
+   * @param     {String}    address                 An ethereum address
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.addressServer      URL of the Address Server
    * @param     {Object}    opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
@@ -196,13 +196,15 @@ class ThreeBox {
   /**
    * Opens the user space associated with the given address
    *
-   * @param     {String}            address                 an ethereum address
+   * @param     {String}            address                 An ethereum address
    * @param     {ethereumProvider}  ethereumProvider        An ethereum provider
    * @param     {Object}            opts                    Optional parameters
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
    * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
-   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
-   * @return    {ThreeBox}                                  the threeBox instance for the given address
+   * @param     {String}            opts.addressServer      URL of the Address Server
+   * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
     console.time('-- openBox --')
@@ -227,19 +229,19 @@ class ThreeBox {
       localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
     }
     console.time('new 3box')
-    const threeBox = new ThreeBox(muportDID, ethereumProvider, opts)
+    const box = new Box(muportDID, ethereumProvider, opts)
     console.timeEnd('new 3box')
     console.time('load 3box')
-    await threeBox._load(opts)
+    await box._load(opts)
     console.timeEnd('load 3box')
     console.timeEnd('-- openBox --')
-    return threeBox
+    return box
   }
 
   /**
    * Sets the callback function that will be called once when the db is fully synced.
    *
-   * @param     {Function}      syncDone        the function that will be called
+   * @param     {Function}      syncDone        The function that will be called
    */
   onSyncDone (syncDone) {
     this._onSyncDoneCB = syncDone
@@ -314,7 +316,7 @@ class ThreeBox {
   /**
    * Check if the given address is logged in
    *
-   * @param     {String}    address                 an ethereum address
+   * @param     {String}    address                 An ethereum address
    * @return    {Boolean}                           true if the user is logged in
    */
   static isLoggedIn (address) {
@@ -351,4 +353,4 @@ async function getRootStoreAddress (serverUrl, identifier) {
   })
 }
 
-module.exports = ThreeBox
+module.exports = Box

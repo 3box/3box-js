@@ -110,7 +110,7 @@ const boxOpts2 = {
   addressServer: MOCK_HASH_SERVER
 }
 
-const ThreeBox = require('../3box')
+const Box = require('../3box')
 
 describe('3Box', () => {
   let ipfs
@@ -145,7 +145,7 @@ describe('3Box', () => {
     const prov = 'web3prov'
     const consentCallback = jest.fn()
     const opts = { ...boxOpts, consentCallback }
-    box = await ThreeBox.openBox(addr, prov, opts)
+    box = await Box.openBox(addr, prov, opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
@@ -166,7 +166,7 @@ describe('3Box', () => {
     const consentCallback = jest.fn()
     const opts = { ...boxOpts, consentCallback }
     await box.close()
-    box = await ThreeBox.openBox('0x12345', 'web3prov', opts)
+    box = await Box.openBox('0x12345', 'web3prov', opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
@@ -205,7 +205,7 @@ describe('3Box', () => {
     // console.log('p1', (await ipfs.swarm.peers())[0].addr.toString())
     // console.log('p1', await ipfs.pubsub.ls())
     // Something weird happens when using the same ipfs repo using boxOpts2 for now.
-    box = await ThreeBox.openBox('0x12345', 'web3prov', boxOpts2)
+    box = await Box.openBox('0x12345', 'web3prov', boxOpts2)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
 
@@ -249,7 +249,7 @@ describe('3Box', () => {
     await box.close()
     const addr = '0xabcde'
     const prov = 'web3prov'
-    box2 = await ThreeBox.openBox(addr, prov, boxOpts)
+    box2 = await Box.openBox(addr, prov, boxOpts)
 
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
@@ -277,7 +277,7 @@ describe('3Box', () => {
   it('should getProfile correctly', async () => {
     await box._rootStore.drop()
     // awaitbox2._ruotStore.drop()
-    const profile = await ThreeBox.getProfile('0x12345', boxOpts)
+    const profile = await Box.getProfile('0x12345', boxOpts)
     expect(profile).toEqual({
       name: 'oed',
       image: 'an awesome selfie'
@@ -287,14 +287,14 @@ describe('3Box', () => {
   })
 
   it('should be logged in', async () => {
-    const isLoggedIn = ThreeBox.isLoggedIn('0xabcde')
+    const isLoggedIn = Box.isLoggedIn('0xabcde')
     expect(isLoggedIn).toEqual(true)
   })
 
   it('should clear cache correctly', async () => {
     await box2.logout()
     box2 = null
-    box2 = await ThreeBox.openBox('0xabcde', 'web3prov', boxOpts)
+    box2 = await Box.openBox('0xabcde', 'web3prov', boxOpts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     await box2._linkProfile()
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
@@ -302,12 +302,12 @@ describe('3Box', () => {
   })
 
   it('should be logged out', async () => {
-    const isLoggedIn = ThreeBox.isLoggedIn('0xabcde')
+    const isLoggedIn = Box.isLoggedIn('0xabcde')
     expect(isLoggedIn).toEqual(false)
   })
 
   it('should getProfile correctly when box is not open', async () => {
-    const profile = await ThreeBox.getProfile('0x12345', boxOpts)
+    const profile = await Box.getProfile('0x12345', boxOpts)
     expect(profile).toEqual({
       name: 'oed',
       image: 'an awesome selfie'
