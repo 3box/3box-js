@@ -6,7 +6,7 @@ module.exports = {
   output: {
     filename: '3box.js',
     path: path.resolve(__dirname, 'dist'),
-    library: 'ThreeBox',
+    library: 'Box',
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
