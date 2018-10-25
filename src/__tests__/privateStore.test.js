@@ -17,11 +17,16 @@ describe('PrivateStore', () => {
       }
     },
     symDecrypt: (ciphertext, nonce) => ciphertext.split('!')[1],
-    getDid: () => 'did:muport:Qmsdfwerg'
+    getDid: () => 'did:muport:Qmsdfwerg',
+    keyring: { signingKey: { deriveChild: () => { return { _hdkey: { _privateKey: Buffer.from('bf821847abe8434c96c0740ee0ae4779dbc93d9da8a25e4efdc4ecad6fc68c23') } } } } }
   }
 
   beforeAll(async () => {
     privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
+  })
+
+  it('should be initialized correctly', async () => {
+    expect(privateStore._salt).toEqual('f97f0d1ced93052700d740e23666ad9ff8b32366e3ce28696d3c9684f448142e')
   })
 
   it('should encrypt and decrypt correctly', async () => {
@@ -40,7 +45,8 @@ describe('PrivateStore', () => {
         expect(cleartext.length % 24).toEqual(0)
       },
       symDecrypt: () => paddedVal,
-      getDid: () => 'did:muport:Qmsdfwerg'
+      getDid: () => 'did:muport:Qmsdfwerg',
+    keyring: { signingKey: { deriveChild: () => { return { _hdkey: { _privateKey: Buffer.from('bf821847abe8434c96c0740ee0ae4779dbc93d9da8a25e4efdc4ecad6fc68c23') } } } } }
     }
     const privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
 
@@ -50,30 +56,13 @@ describe('PrivateStore', () => {
   })
 
   it('should throw if not synced', async () => {
-    expect(privateStore.set('key', 'value')).rejects.toThrow(/_sync must/)
-    expect(privateStore.get('key')).rejects.toThrow(/_sync must/)
-    expect(privateStore.remove('key')).rejects.toThrow(/_sync must/)
-  })
-
-  it('should create a salt on first _sync', async () => {
-    const address = await privateStore._sync('addr')
-    expect(address).toEqual('addr')
-
-    // Check if salt was initiated correctly
-    encryptedSalt = privateStore._db.get('3BOX_SALT')
-    expect(encryptedSalt).toBeDefined()
-  })
-
-  it('should not generate new salt on subsequent _sync', async () => {
-    const address = await privateStore._sync('addr')
-    expect(address).toEqual('addr')
-
-    // Check if salt was initiated correctly
-    const newEncryptedSalt = privateStore._db.get('3BOX_SALT')
-    expect(newEncryptedSalt).toEqual(encryptedSalt)
+    expect(privateStore.set('key', 'value')).rejects.toThrow(/_load must/)
+    expect(privateStore.get('key')).rejects.toThrow(/_load must/)
+    expect(privateStore.remove('key')).rejects.toThrow(/_load must/)
   })
 
   it('should set values correctly', async () => {
+    await privateStore._load()
     await privateStore.set('key1', 'value1')
     let dbkey = privateStore._genDbKey('key1')
     let retreived = privateStore._db.get(dbkey)
@@ -112,7 +101,7 @@ describe('PrivateStore', () => {
 
     beforeEach(async () => {
       privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
-      const storeAddr = await privateStore._sync()
+      const storeAddr = await privateStore._load()
       await privateStore.set('key1', 'value1')
     })
 

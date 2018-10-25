@@ -13,11 +13,11 @@ describe('PublicStore', () => {
   })
 
   it('should throw if not synced', async () => {
-    expect(publicStore.all('key', 'value')).rejects.toThrow(/_sync must/)
+    expect(publicStore.all('key', 'value')).rejects.toThrow(/_load must/)
   })
 
   it('should call linkProfile when set is called', async () => {
-    await publicStore._sync()
+    await publicStore._load()
     let ret = await publicStore.set('key1', 'value1')
     expect(ret).toEqual(true)
     expect(linkProfile).toHaveBeenCalledTimes(1)
