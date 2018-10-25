@@ -1,14 +1,13 @@
 const KeyValueStore = require('./keyValueStore')
 const utils = require('./utils')
-const nacl = require('tweetnacl')
 
-const SALT_KEY = '3BOX_SALT'
 const ENC_BLOCK_SIZE = 24
 
 class PrivateStore extends KeyValueStore {
   constructor (muportDID, orbitdb, name) {
     super(orbitdb, name)
     this.muportDID = muportDID
+    this._salt = this._generateSalt()
   }
 
   async get (key) {
@@ -46,17 +45,9 @@ class PrivateStore extends KeyValueStore {
     })
   }
 
-  async _sync (orbitAddress) {
-    const address = await super._sync(orbitAddress)
-    let encryptedSalt = await super.get(SALT_KEY)
-    if (encryptedSalt) {
-      this._salt = this._decryptEntry(encryptedSalt)
-    } else {
-      this._salt = Buffer.from(nacl.randomBytes(16)).toString('hex')
-      encryptedSalt = this._encryptEntry(this._salt)
-      await super.set(SALT_KEY, encryptedSalt)
-    }
-    return address
+  _generateSalt () {
+    const saltData = this.muportDID.keyring.signingKey.deriveChild(0)._hdkey._privateKey.toString('hex')
+    return utils.sha256(saltData)
   }
 
   _genDbKey (key) {

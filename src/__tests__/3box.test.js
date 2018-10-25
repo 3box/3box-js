@@ -46,6 +46,7 @@ jest.mock('../privateStore', () => {
   })
 })
 jest.mock('../utils', () => {
+  const sha256 = require('js-sha256').sha256
   let addressMap = {}
   let linkmap = {}
   return {
@@ -84,7 +85,8 @@ jest.mock('../utils', () => {
     sha256Multihash: jest.fn(str => {
       if (str === 'did:muport:Qmsdsdf87g329') return 'ab8c73d8f'
       return 'b932fe7ab'
-    })
+    }),
+    sha256
   }
 })
 const mockedUtils = require('../utils')

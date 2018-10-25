@@ -21,7 +21,11 @@ class KeyValueStore {
     return true
   }
 
-  async _sync (orbitAddress) {
+  async _sync (numRemoteEntries) {
+    return '/orbitdb/myodbaddr'
+  }
+
+  _load () {
     this._db = {
       all: () => {
         let allObj = {}
@@ -32,11 +36,11 @@ class KeyValueStore {
       get: (k) => this._store[k],
       remove: k => delete this._store[k]
     }
-    return orbitAddress
+    return '/orbitdb/myodbaddr'
   }
 
   _requireLoad () {
-    if (!this._db) throw new Error('_sync must be called before interacting with the store')
+    if (!this._db) throw new Error('_load must be called before interacting with the store')
   }
 
   async close () {
