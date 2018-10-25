@@ -177,7 +177,8 @@ class Box {
         .find(entry => {
           return entry.payload.value.odbAddress.split('.')[1] === 'public'
         })
-      await publicStore._sync(profileEntry.payload.value.odbAddress)
+      await publicStore._load(profileEntry.payload.value.odbAddress)
+      await publicStore._sync()
       const profile = publicStore.all()
       const closeAll = async () => {
         await rootStore.close()
