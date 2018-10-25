@@ -4,7 +4,6 @@ const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
-const sha256 = require('js-sha256').sha256
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
@@ -219,7 +218,7 @@ class Box {
     } else {
       const sig = await utils.openBoxConsent(address, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
-      const entropy = sha256(sig.slice(2))
+      const entropy = utils.sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
       // console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {

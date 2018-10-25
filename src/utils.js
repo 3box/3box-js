@@ -77,5 +77,6 @@ module.exports = {
   sha256Multihash: str => {
     const digest = Buffer.from(sha256.digest(str))
     return Multihash.encode(digest, 'sha2-256').toString('hex')
-  }
+  },
+  sha256
 }
