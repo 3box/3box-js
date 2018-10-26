@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.0.3 - 2018-10-25
+Fixed bug in getProfile
+
 ## v1.0.2 - 2018-10-25
 Fixed bug where private data was disappearing after being added.
 
