@@ -69,8 +69,8 @@ class KeyValueStore {
     return this._db.address.toString()
   }
 
-  async _load () {
-    this._db = await this._orbitdb.keyvalue(this._name)
+  async _load (odbAddress) {
+    this._db = await this._orbitdb.keyvalue(odbAddress || this._name)
     await this._db.load()
     return this._db.address.toString()
   }
