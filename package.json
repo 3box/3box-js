@@ -40,6 +40,7 @@
   },
   "homepage": "https://github.com/uport-project/3box-js#readme",
   "dependencies": {
+    "@babel/runtime": "^7.1.2",
     "bip39": "^2.5.0",
     "ipfs": "^0.32.2",
     "ipfs-api": "^24.0.0",
@@ -57,7 +58,6 @@
     "@babel/plugin-transform-runtime": "^7.1.0",
     "@babel/preset-env": "^7.1.0",
     "@babel/preset-react": "^7.0.0",
-    "@babel/runtime": "^7.1.2",
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "^7.1.5",
     "ganache-cli": "^6.1.0",
