@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.0.4 - 2018-11-05
+Fixed dependency bug build
+
 ## v1.0.3 - 2018-10-25
 Fixed bug in getProfile
 
