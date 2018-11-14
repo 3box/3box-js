@@ -153,6 +153,10 @@ class Box {
     } else {
       orbitdb = new OrbitDB(ipfs, opts.orbitPath)
     }
+
+    const pinningNode = opts.pinningNode || PINNING_NODE
+    ipfs.swarm.connect(pinningNode, () => {})
+
     const publicStore = new PublicStore(orbitdb)
 
     if (rootStoreAddress) {
