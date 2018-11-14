@@ -153,6 +153,10 @@ class Box {
     } else {
       orbitdb = new OrbitDB(ipfs, opts.orbitPath)
     }
+
+    const pinningNode = opts.pinningNode || PINNING_NODE
+    ipfs.swarm.connect(pinningNode, () => {})
+
     const publicStore = new PublicStore(orbitdb)
 
     if (rootStoreAddress) {
@@ -208,26 +212,27 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
+    const normalizedAddress = address.toLowerCase()
     // console.time('-- openBox --')
     let muportDID
-    let serializedMuDID = localstorage.get('serializedMuDID_' + address)
+    let serializedMuDID = localstorage.get('serializedMuDID_' + normalizedAddress)
     if (serializedMuDID) {
       // console.time('new Muport')
       muportDID = new MuPort(serializedMuDID)
       // console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
-      const sig = await utils.openBoxConsent(address, ethereumProvider)
+      const sig = await utils.openBoxConsent(normalizedAddress, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = utils.sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
       // console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
-        externalMgmtKey: address,
+        externalMgmtKey: normalizedAddress,
         mnemonic
       })
       // console.timeEnd('muport.newIdentity')
-      localstorage.set('serializedMuDID_' + address, muportDID.serializeState())
+      localstorage.set('serializedMuDID_' + normalizedAddress, muportDID.serializeState())
     }
     // console.time('new 3box')
     const box = new Box(muportDID, ethereumProvider, opts)
@@ -321,7 +326,7 @@ class Box {
    * @return    {Boolean}                           true if the user is logged in
    */
   static isLoggedIn (address) {
-    return Boolean(localstorage.get('serializedMuDID_' + address))
+    return Boolean(localstorage.get('serializedMuDID_' + address.toLowerCase()))
   }
 }
 

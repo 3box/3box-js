@@ -42,6 +42,16 @@ bopen.addEventListener('click', event => {
   })
 })
 
+getProfile.addEventListener('click', () => {
+  console.log(ethAddr.value)
+  Box.getProfile(ethAddr.value).then(profile => {
+    console.log(profile)
+    Object.entries(profile).map(kv => {
+      getProfileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+    })
+  })
+})
+
 function updateProfileData(box) {
   profileData.innerHTML = ''
   box.public.all().then(profile => {
