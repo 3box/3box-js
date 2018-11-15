@@ -49,6 +49,7 @@ jest.mock('../utils', () => {
   const sha256 = require('js-sha256').sha256
   let addressMap = {}
   let linkmap = {}
+  let firstLink = true
   return {
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
     httpRequest: jest.fn(async (url, method, payload) => {
@@ -61,10 +62,15 @@ jest.mock('../utils', () => {
           addressMap[did] = hash
           return { status: 'success', data: { hash } }
         case 'link': // make a link
-          did = payload.consent_msg.split(',')[1]
-          const address = payload.consent_signature.split(',')[1]
-          linkmap[address] = did
-          return { status: 'success', data: { did, address } }
+          if (firstLink) {
+            firstLink = false
+            return Promise.reject('{ status: "error", message: "an error" }')
+          } else {
+            did = payload.consent_msg.split(',')[1]
+            const address = payload.consent_signature.split(',')[1]
+            linkmap[address] = did
+            return { status: 'success', data: { did, address } }
+          }
           break
         default: // default is GET odbAddress
           if (addressMap[lastPart]) {
@@ -222,6 +228,20 @@ describe('3Box', () => {
     expect(box.private._sync).toHaveBeenCalledWith(5)
     await publishPromise
     pubsub.unsubscribe('3box-pinning')
+  })
+
+  it('should handle error and not link profile on first call to _linkProfile', async () => {
+    // first call in our mock will throw an error
+    global.console.error = jest.fn()
+    await box._linkProfile()
+    expect(global.console.error).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(1, 'address-server/link', 'POST', {
+      consent_msg: 'I agree to stuff,did:muport:Qmsdfp98yw4t7',
+      consent_signature: '0xSuchRealSig,0x12345',
+      linked_did: 'did:muport:Qmsdfp98yw4t7'
+    })
+    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
   })
 
   it('should link profile on call to _linkProfile', async () => {
