@@ -55,7 +55,7 @@ module.exports = {
             reject(request.responseText)
           } else {
             try {
-              resolve(JSON.parse(request.response))
+              resolve(JSON.parse(request.responseText))
             } catch (jsonError) {
               reject(new Error(`[threeBox] while parsing data: '${String(request.responseText)}', error: ${String(jsonError)}`))
             }
