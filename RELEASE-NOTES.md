@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.5 - 2018-11-14
+Added example for getProfile
+Some bug fixes:
+* getProfile can now handle mixed case addresses
+* getProfile now connects to the pinning node directly
+
 ## v1.0.4 - 2018-11-05
 Fixed dependency bug build
 
