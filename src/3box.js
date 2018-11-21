@@ -1,9 +1,11 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
 const localstorage = require('store')
-const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
+const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
+const OrbitDBCache = require('orbit-db-cache')
+const { createProxyClient } = require('ipfs-postmsg-proxy')
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
@@ -23,8 +25,18 @@ const IPFS_OPTIONS = {
   }
 }
 
-let globalIPFS
-let globalOrbitDB
+let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
+
+if (typeof window !== 'undefined') {
+  const iframe = document.createElement('iframe')
+  iframe.src = 'http://localhost:30001/'   // TODO may want pass arg, but also want anticipate default and load iframe as soon as page loads since loading ipfs takes a bit
+  iframe.style = 'width:0; height:0; border:0; border:none !important'
+  document.body.appendChild(iframe)
+  // Create proxy clients that talks to the iframe
+  const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
+  ipfsProxy = createProxyClient({ postMessage })
+  cacheProxy = OrbitDBCacheProxy({ postMessage })
+}
 
 class Box {
   /**
@@ -52,7 +64,7 @@ class Box {
 
     const pinningNode = opts.pinningNode || PINNING_NODE
     // console.time('start ipfs')
-    this._ipfs = await initIPFS(opts.ipfsOptions)
+    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
     // console.timeEnd('start ipfs')
     // TODO - if connection to this peer is lost we should try to reconnect
     // console.time('connect to pinning ipfs node')
@@ -62,7 +74,8 @@ class Box {
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
     // console.time('new OrbitDB')
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
+    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : OrbitDBCache
+    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
     // console.timeEnd('new OrbitDB')
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
@@ -134,11 +147,12 @@ class Box {
    * @param     {String}    address                 An ethereum address
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.addressServer      URL of the Address Server
-   * @param     {Object}    opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
+   * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Object}                            a json object with the profile for the given address
    */
-  static async getProfile (address, opts = {}) {
+  static async getProfile (address, opts = {iframeStore: true}) {
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
     let usingGlobalIPFS = false
@@ -149,13 +163,14 @@ class Box {
       ipfs = globalIPFS
       usingGlobalIPFS = true
     } else {
-      ipfs = await initIPFS(opts.ipfsOptions)
+      ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
     }
     if (globalOrbitDB) {
       orbitdb = globalOrbitDB
       usingGlobalIPFS = true
     } else {
-      orbitdb = new OrbitDB(ipfs, opts.orbitPath)
+      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : OrbitDBCache
+      orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
     }
 
     const pinningNode = opts.pinningNode || PINNING_NODE
@@ -210,14 +225,15 @@ class Box {
    * @param     {Object}            opts                    Optional parameters
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
-   * @param     {Object}            opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
    * @param     {String}            opts.addressServer      URL of the Address Server
+   * @param     {Boolean}           opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts = {}) {
+  static async openBox (address, ethereumProvider, opts = {iframeStore: true}) {
     const normalizedAddress = address.toLowerCase()
-    // console.time('-- openBox --')
+    console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + normalizedAddress)
     if (serializedMuDID) {
@@ -241,10 +257,10 @@ class Box {
     // console.time('new 3box')
     const box = new Box(muportDID, ethereumProvider, opts)
     // console.timeEnd('new 3box')
-    // console.time('load 3box')
+    console.time('load 3box')
     await box._load(opts)
-    // console.timeEnd('load 3box')
-    // console.timeEnd('-- openBox --')
+    console.timeEnd('load 3box')
+    console.timeEnd('-- openBox --')
     return box
   }
 
@@ -344,14 +360,17 @@ class Box {
   }
 }
 
-async function initIPFS (ipfsOptions) {
+async function initIPFS (ipfs, iframeStore) {
   return new Promise((resolve, reject) => {
-    let ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
-    ipfs.on('error', error => {
-      console.error(error)
-      reject(error)
-    })
-    ipfs.on('ready', () => resolve(ipfs))
+    if (!ipfs && !ipfsProxy) reject(new Error('No IPFS object configured and no default available for environment'))
+    if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
+    ipfs ? resolve(ipfs) : resolve(ipfsProxy)
+    // ipfs.on('error', error => {
+    //   console.error(error)
+    //   reject(error)
+    // })
+    // TODO need to pass message to iframe to wait until ready
+    // ipfs.on('ready', () => resolve(ipfs))
   })
 }
 

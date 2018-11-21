@@ -223,8 +223,9 @@ Get the public profile of a given address
 | address | <code>String</code> | An ethereum address |
 | opts | <code>Object</code> | Optional parameters |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
-| opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
+| opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
+| opts.iframeStore | <code>Boolean</code> | Use iframe for storage, allows shared store across domains. Default true when run in browser. |
 
 <a name="Box.openBox"></a>
 
@@ -241,9 +242,10 @@ Opens the user space associated with the given address
 | opts | <code>Object</code> | Optional parameters |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 | opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
-| opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
+| opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
+| opts.iframeStore | <code>Boolean</code> | Use iframe for storage, allows shared store across domains. Default true when run in browser. |
 
 <a name="Box.isLoggedIn"></a>
 
