@@ -15,19 +15,10 @@ const utils = require('./utils')
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
-const IPFS_OPTIONS = {
-  EXPERIMENTAL: {
-    pubsub: true
-  },
-  preload: { enabled: false },
-  config: {
-    Bootstrap: [ ]
-  }
-}
 
 let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const iframe = document.createElement('iframe')
   iframe.src = 'http://localhost:30001/'   // TODO may want pass arg, but also want anticipate default and load iframe as soon as page loads since loading ipfs takes a bit
   iframe.style = 'width:0; height:0; border:0; border:none !important'
@@ -364,13 +355,16 @@ async function initIPFS (ipfs, iframeStore) {
   return new Promise((resolve, reject) => {
     if (!ipfs && !ipfsProxy) reject(new Error('No IPFS object configured and no default available for environment'))
     if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
-    ipfs ? resolve(ipfs) : resolve(ipfsProxy)
+    if (ipfs) {
+       ipfs.on('ready', () => resolve(ipfs))
+    } else {
+      // TODO get is ready from iframe
+      resolve(ipfsProxy)
+    }
     // ipfs.on('error', error => {
     //   console.error(error)
     //   reject(error)
     // })
-    // TODO need to pass message to iframe to wait until ready
-    // ipfs.on('ready', () => resolve(ipfs))
   })
 }
 

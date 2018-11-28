@@ -1,10 +1,21 @@
 bopen.addEventListener('click', event => {
+
+  const IPFS_OPTIONS = {
+    EXPERIMENTAL: {
+      pubsub: true
+    },
+    preload: { enabled: false }
+  }
+
+  const ipfs = new window.Ipfs(IPFS_OPTIONS)
+  const opts = { ipfs, iframeStore: false }
+
   const syncComplete = (res) => {
     console.log('Sync Complete')
     updateProfileData(window.box)
   }
   window.ethereum.enable().then(addresses => {
-    Box.openBox(addresses[0],  window.ethereum).then(box => {
+    Box.openBox(addresses[0],  window.ethereum, opts).then(box => {
       box.onSyncDone(syncComplete)
       window.box = box
       console.log(box)
@@ -44,7 +55,7 @@ bopen.addEventListener('click', event => {
 
 getProfile.addEventListener('click', () => {
   console.log(ethAddr.value)
-  Box.getProfile(ethAddr.value).then(profile => {
+  Box.getProfile(ethAddr.value, opts).then(profile => {
     console.log(profile)
     Object.entries(profile).map(kv => {
       getProfileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'

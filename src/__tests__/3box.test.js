@@ -2,6 +2,7 @@ const testUtils = require('./testUtils')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const jsdom = require('jsdom')
+const IPFS = require('ipfs')
 global.window = new jsdom.JSDOM().window
 
 jest.mock('muport-core', () => {
@@ -99,25 +100,40 @@ jest.mock('../utils', () => {
 })
 const mockedUtils = require('../utils')
 const MOCK_HASH_SERVER = 'address-server'
-const boxOpts = {
-  ipfsOptions: {
-    EXPERIMENTAL: {
-      pubsub: true
-    },
-    repo: './tmp/ipfs1/'
+
+const IPFS_OPTIONS = {
+  EXPERIMENTAL: {
+    pubsub: true
   },
+  preload: { enabled: false },
+  repo: './tmp/ipfs1/'
+}
+
+
+const IPFS_OPTIONS_2 = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  preload: { enabled: false },
+  repo: './tmp/ipfs3/'
+}
+
+const ipfs = new IPFS(IPFS_OPTIONS)
+const ipfs2 = new IPFS(IPFS_OPTIONS_2)
+const opts = { ipfs, iframeStore: false }
+
+
+const boxOpts = {
+  ipfs: ipfs,
   orbitPath: './tmp/orbitdb1',
-  addressServer: MOCK_HASH_SERVER
+  addressServer: MOCK_HASH_SERVER,
+  iframeStore: false
 }
 const boxOpts2 = {
-  ipfsOptions: {
-    EXPERIMENTAL: {
-      pubsub: true
-    },
-    repo: './tmp/ipfs3/'
-  },
+  ipfs: ipfs2,
   orbitPath: './tmp/orbitdb2',
-  addressServer: MOCK_HASH_SERVER
+  addressServer: MOCK_HASH_SERVER,
+  iframeStore: false
 }
 
 const Box = require('../3box')
