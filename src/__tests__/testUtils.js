@@ -4,8 +4,19 @@ const CONF = {
   EXPERIMENTAL: {
     pubsub: true
   },
-  repo: './tmp/ipfs1/'
+  repo: './tmp/ipfs4/',
+  config: {
+    Addresses: {
+      Swarm: [
+        '/ip4/127.0.0.1/tcp/4006',
+        '/ip4/127.0.0.1/tcp/4007/ws'
+      ],
+      API: '/ip4/127.0.0.1/tcp/5004',
+      Gateway: '/ip4/127.0.0.1/tcp/9092'
+    }
+  }
 }
+
 const ALT_CONF = {
   EXPERIMENTAL: {
     pubsub: true

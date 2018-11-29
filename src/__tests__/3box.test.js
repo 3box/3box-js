@@ -3,6 +3,7 @@ const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const jsdom = require('jsdom')
 const IPFS = require('ipfs')
+const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 
 jest.mock('muport-core', () => {
@@ -101,64 +102,43 @@ jest.mock('../utils', () => {
 const mockedUtils = require('../utils')
 const MOCK_HASH_SERVER = 'address-server'
 
-const IPFS_OPTIONS = {
-  EXPERIMENTAL: {
-    pubsub: true
-  },
-  preload: { enabled: false },
-  repo: './tmp/ipfs1/'
-}
-
-
-const IPFS_OPTIONS_2 = {
-  EXPERIMENTAL: {
-    pubsub: true
-  },
-  preload: { enabled: false },
-  repo: './tmp/ipfs3/'
-}
-
-const ipfs = new IPFS(IPFS_OPTIONS)
-const ipfs2 = new IPFS(IPFS_OPTIONS_2)
-const opts = { ipfs, iframeStore: false }
-
-
-const boxOpts = {
-  ipfs: ipfs,
-  orbitPath: './tmp/orbitdb1',
-  addressServer: MOCK_HASH_SERVER,
-  iframeStore: false
-}
-const boxOpts2 = {
-  ipfs: ipfs2,
-  orbitPath: './tmp/orbitdb2',
-  addressServer: MOCK_HASH_SERVER,
-  iframeStore: false
-}
-
-const Box = require('../3box')
-
 describe('3Box', () => {
-  let ipfs
-  let pubsub
-  let box
-  let box2
-  let orbitdb
-  jest.setTimeout(30000)
+  let ipfs, pubsub, boxOpts, ipfsBox, box
 
-  beforeAll(async () => {
-    ipfs = await testUtils.initIPFS(true)
+  beforeEach(async () => {
+    if (!ipfs) ipfs = await testUtils.initIPFS(true)
     const ipfsMultiAddr = (await ipfs.id()).addresses[0]
-    boxOpts.pinningNode = ipfsMultiAddr
-    boxOpts2.pinningNode = ipfsMultiAddr
-    pubsub = new Pubsub(ipfs, (await ipfs.id()).id)
-  })
+    if (!pubsub) pubsub = new Pubsub(ipfs, (await ipfs.id()).id)
 
-  beforeEach(() => {
+    const IPFS_OPTIONS = {
+      EXPERIMENTAL: {
+        pubsub: true
+      }
+    }
+
+    if (!ipfsBox) {
+      ipfsBox = new IPFS(IPFS_OPTIONS)
+      await new Promise((resolve, reject) => { ipfsBox.on('ready', () => resolve() )})
+    }
+
+    boxOpts = {
+      ipfs: ipfsBox,
+      orbitPath: './tmp/orbitdb1',
+      addressServer: MOCK_HASH_SERVER,
+      iframeStore: false,
+      pinningNode: ipfsMultiAddr
+    }
+
     mockedUtils.openBoxConsent.mockClear()
     mockedUtils.httpRequest.mockClear()
     mockedUtils.getLinkConsent.mockClear()
   })
+
+  afterAll(async () => {
+  await pubsub.disconnect()
+  await ipfs.stop()
+})
+
 
   it('should get entropy from signature first time openBox is called', async () => {
     const publishPromise = new Promise((resolve, reject) => {
@@ -196,6 +176,7 @@ describe('3Box', () => {
     pubsub.unsubscribe('3box-pinning')
   })
 
+
   it('should get entropy from localstorage subsequent openBox calls', async () => {
     const consentCallback = jest.fn()
     const opts = { ...boxOpts, consentCallback }
@@ -221,7 +202,9 @@ describe('3Box', () => {
         resolve()
       }, () => {})
     })
-    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb3')
+
+    // TODO end after all
+    const orbitdb = new OrbitDB(ipfs, './tmp/orbitdb3')
     const rootStoreAddress = box._rootStore.address.toString()
     const store = await orbitdb.open(rootStoreAddress)
     await new Promise((resolve, reject) => {
@@ -229,17 +212,11 @@ describe('3Box', () => {
         if (num === max) resolve()
       })
     })
-    // console.log('p1 id', (await ipfs.id()).id)
-    // console.log('serverPeers', await ipfs.pubsub.peers('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root'))
-    // console.log(await ipfs.id())
+
     await box._rootStore.drop()
     await box.close()
-    // console.log(await ipfs.pubsub.peers('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root'))
-    // await ipfs.pubsub.subscribe('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root', console.log)
-    // console.log('p1', (await ipfs.swarm.peers())[0].addr.toString())
-    // console.log('p1', await ipfs.pubsub.ls())
-    // Something weird happens when using the same ipfs repo using boxOpts2 for now.
-    box = await Box.openBox('0x12345', 'web3prov', boxOpts2)
+
+    box = await Box.openBox('0x12345', 'web3prov', boxOpts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
 
@@ -271,6 +248,7 @@ describe('3Box', () => {
       linked_did: 'did:muport:Qmsdfp98yw4t7'
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
+
   })
 
   it('should link profile on call to _linkProfile', async () => {
@@ -291,41 +269,41 @@ describe('3Box', () => {
   })
 
   it('should handle a second address/account correctly', async () => {
-    const publishPromise = new Promise((resolve, reject) => {
-      pubsub.subscribe('3box-pinning', (topic, data) => {
-        expect(data.odbAddress).toEqual('/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root')
-        resolve()
-      }, () => {})
-    })
-    await box.close()
-    const addr = '0xabcde'
-    const prov = 'web3prov'
-    box2 = await Box.openBox(addr, prov, boxOpts)
+     const publishPromise = new Promise((resolve, reject) => {
+       pubsub.subscribe('3box-pinning', (topic, data) => {
+         expect(data.odbAddress).toEqual('/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root')
+         resolve()
+       }, () => {})
+     })
+     await box.close()
+     const addr = '0xabcde'
+     const prov = 'web3prov'
+     box = await Box.openBox(addr, prov, boxOpts)
 
-    expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
-      address_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
-    })
-    expect(box2.public._load).toHaveBeenCalledTimes(1)
-    expect(box2.public._load).toHaveBeenCalledWith()
-    expect(box2.private._load).toHaveBeenCalledTimes(1)
-    expect(box2.private._load).toHaveBeenCalledWith()
+     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
+     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
+     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
+     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress', 'POST', {
+       address_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
+     })
+     expect(box.public._load).toHaveBeenCalledTimes(1)
+     expect(box.public._load).toHaveBeenCalledWith()
+     expect(box.private._load).toHaveBeenCalledTimes(1)
+     expect(box.private._load).toHaveBeenCalledWith()
 
-    await box2._linkProfile()
-    expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
-    expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(2, 'address-server/link', 'POST', {
-      consent_msg: 'I agree to stuff,did:muport:Qmsdsdf87g329',
-      consent_signature: '0xSuchRealSig,0xabcde',
-      linked_did: 'did:muport:Qmsdsdf87g329'
-    })
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
-    await publishPromise
-    pubsub.unsubscribe('3box-pinning')
-  })
+     await box._linkProfile()
+     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(2)
+     expect(mockedUtils.httpRequest).toHaveBeenNthCalledWith(2, 'address-server/link', 'POST', {
+       consent_msg: 'I agree to stuff,did:muport:Qmsdsdf87g329',
+       consent_signature: '0xSuchRealSig,0xabcde',
+       linked_did: 'did:muport:Qmsdsdf87g329'
+     })
+     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
+     await publishPromise
+     pubsub.unsubscribe('3box-pinning')
+   })
 
-  it('should getProfile correctly', async () => {
+   it('should getProfile correctly', async () => {
     await box._rootStore.drop()
     // awaitbox2._ruotStore.drop()
     const profile = await Box.getProfile('0x12345', boxOpts)
@@ -343,13 +321,13 @@ describe('3Box', () => {
   })
 
   it('should clear cache correctly', async () => {
-    await box2.logout()
-    box2 = null
-    box2 = await Box.openBox('0xabcde', 'web3prov', boxOpts)
+    await box.logout()
+    box = null
+    box = await Box.openBox('0xabcde', 'web3prov', boxOpts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
-    await box2._linkProfile()
+    await box._linkProfile()
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
-    await box2.logout()
+    await box.logout()
   })
 
   it('should be logged out', async () => {
@@ -367,8 +345,4 @@ describe('3Box', () => {
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/0x12345', 'GET')
   })
 
-  afterAll(async () => {
-    await pubsub.disconnect()
-    await ipfs.stop()
-  })
 })

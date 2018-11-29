@@ -20,7 +20,7 @@ let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const iframe = document.createElement('iframe')
-  iframe.src = 'http://localhost:30001/'   // TODO may want pass arg, but also want anticipate default and load iframe as soon as page loads since loading ipfs takes a bit
+  iframe.src = 'http://localhost:30001/' // TODO may want pass arg, but also want anticipate default and load iframe as soon as page loads since loading ipfs takes a bit
   iframe.style = 'width:0; height:0; border:0; border:none !important'
   document.body.appendChild(iframe)
   // Create proxy clients that talks to the iframe
@@ -82,6 +82,7 @@ class Box {
       if (peer === pinningNode.split('/').pop()) {
         // console.timeEnd('opening pinning room, pinning node joined')
         // console.log('broadcasting odb-address')
+
         this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
     }
@@ -143,7 +144,7 @@ class Box {
    * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Object}                            a json object with the profile for the given address
    */
-  static async getProfile (address, opts = {iframeStore: true}) {
+  static async getProfile (address, opts = { iframeStore: true }) {
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
     let usingGlobalIPFS = false
@@ -222,7 +223,7 @@ class Box {
    * @param     {Boolean}           opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts = {iframeStore: true}) {
+  static async openBox (address, ethereumProvider, opts = { iframeStore: true }) {
     const normalizedAddress = address.toLowerCase()
     console.time('-- openBox --')
     let muportDID
@@ -323,7 +324,7 @@ class Box {
   async close () {
     await this._orbitdb.stop()
     await this._pubsub.disconnect()
-    await this._ipfs.stop()
+    // await this._ipfs.stop()
     globalOrbitDB = null
     globalIPFS = null
   }
@@ -356,9 +357,11 @@ async function initIPFS (ipfs, iframeStore) {
     if (!ipfs && !ipfsProxy) reject(new Error('No IPFS object configured and no default available for environment'))
     if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
     if (ipfs) {
-       ipfs.on('ready', () => resolve(ipfs))
+      resolve(ipfs)
+      // TODO assume reayd object??
+      // ipfs.on('ready', () => resolve(ipfs))
     } else {
-      // TODO get is ready from iframe
+      // TODO is this already from iframe? does it wait to return messages until ready?
       resolve(ipfsProxy)
     }
     // ipfs.on('error', error => {
