@@ -32,6 +32,8 @@ jest.mock('../publicStore', () => {
     return {
       _sync: jest.fn(() => '/orbitdb/Qmasdf/08a7.public'),
       _load: jest.fn(() => '/orbitdb/Qmasdf/08a7.public'),
+      get: jest.fn(),
+      set: jest.fn(),
       all: jest.fn(() => { return { name: 'oed', image: 'an awesome selfie' } }),
       close: jest.fn()
     }
@@ -167,6 +169,14 @@ describe('3Box', () => {
     expect(consentCallback).toHaveBeenCalledTimes(1)
     expect(consentCallback).toHaveBeenCalledWith(true)
     await publishPromise
+
+    const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
+    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
+    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
+    await syncPromise
+    expect(box.public.get).toHaveBeenCalledWith('did')
+    expect(box.public.set).toHaveBeenCalledWith('did', 'did:muport:Qmsdfp98yw4t7')
+
     pubsub.unsubscribe('3box-pinning')
   })
 
@@ -217,10 +227,13 @@ describe('3Box', () => {
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
 
+    box.public.get = jest.fn(() => 'did:test:myid')
     const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
+    expect(box.public.get).toHaveBeenCalledWith('did')
+    expect(box.public.set).toHaveBeenCalledTimes(0)
 
     expect(box.public._sync).toHaveBeenCalledTimes(1)
     expect(box.public._sync).toHaveBeenCalledWith(4)
