@@ -15,12 +15,13 @@ const utils = require('./utils')
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
+const IFRAME_STORE_URL = 'http://localhost:30001/'
 
 let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const iframe = document.createElement('iframe')
-  iframe.src = 'http://localhost:30001/' // TODO may want pass arg, but also want anticipate default and load iframe as soon as page loads since loading ipfs takes a bit
+  iframe.src = IFRAME_STORE_URL
   iframe.style = 'width:0; height:0; border:0; border:none !important'
   document.body.appendChild(iframe)
   // Create proxy clients that talks to the iframe

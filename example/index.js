@@ -7,6 +7,12 @@ bopen.addEventListener('click', event => {
     preload: { enabled: false }
   }
 
+  /**
+   *  This uses a local ipfs-js instance and local orbitdb cache instead of the
+   *  shared iframe storage available at 3box.io. Easier for testing and differing
+   *  configs. But in production you will get the best performance by using the
+   *  default iframe configuration.
+   */
   const ipfs = new window.Ipfs(IPFS_OPTIONS)
   const opts = { ipfs, iframeStore: false }
 
@@ -14,6 +20,7 @@ bopen.addEventListener('click', event => {
     console.log('Sync Complete')
     updateProfileData(window.box)
   }
+
   window.ethereum.enable().then(addresses => {
     Box.openBox(addresses[0],  window.ethereum, opts).then(box => {
       box.onSyncDone(syncComplete)
