@@ -25,9 +25,20 @@ Import the 3box module
 ```js
 const Box = require('3box')
 ```
-or use the dist build in your html code
+Import using the dist build in your html code
 ```js
 <script type="text/javascript" src="../dist/3box.js"></script>
+```
+
+Or optionally by loading remote copy from [unpkg](https://unpkg.com/) CDN.
+
+```html
+<!-- The most recent version  -->
+<script src="https://unpkg.com/3box/dist/3box.js"></script>
+<!-- The most recent minified version  -->
+<script src="https://unpkg.com/3box/dist/3box.min.js"></script>
+<!-- Load specific versions by specifying the version as follows -->
+<script src="https://unpkg.com/3box@<version>/dist/3box.js"></script>
 ```
 
 ### Get the public profile of an address
@@ -316,4 +327,3 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
-
