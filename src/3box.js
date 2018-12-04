@@ -101,6 +101,7 @@ class Box {
         }
         if (syncPromises.length === 2) {
           await Promise.all(syncPromises)
+          await this._ensureDIDPublished()
           this._onSyncDoneCB()
           this._pubsub.unsubscribe(PINNING_ROOM)
         }
@@ -295,6 +296,12 @@ class Box {
       } catch (err) {
         console.error(err)
       }
+    }
+  }
+
+  async _ensureDIDPublished () {
+    if (!(await this.public.get('did'))) {
+      await this.public.set('did', this._muportDID.getDid())
     }
   }
 
