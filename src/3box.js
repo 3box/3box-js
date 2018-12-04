@@ -17,7 +17,10 @@ const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
   },
-  preload: { enabled: false }
+  preload: { enabled: false },
+  config: {
+    Bootstrap: [ ]
+  }
 }
 
 let globalIPFS
@@ -101,6 +104,7 @@ class Box {
         }
         if (syncPromises.length === 2) {
           await Promise.all(syncPromises)
+          await this._ensureDIDPublished()
           this._onSyncDoneCB()
           this._pubsub.unsubscribe(PINNING_ROOM)
         }
@@ -282,15 +286,25 @@ class Box {
         linked_did: did
       }
       // Send consentSignature to 3box-address-server to link profile with ethereum address
-      await utils.httpRequest(this._serverUrl + '/link', 'POST', linkData)
+      try {
+        await utils.httpRequest(this._serverUrl + '/link', 'POST', linkData)
 
-      // Store linkConsent into localstorage
-      const linkConsent = {
-        address: address,
-        did: did,
-        consent: consent
+        // Store linkConsent into localstorage
+        const linkConsent = {
+          address: address,
+          did: did,
+          consent: consent
+        }
+        localstorage.set('linkConsent_' + address, linkConsent)
+      } catch (err) {
+        console.error(err)
       }
-      localstorage.set('linkConsent_' + address, linkConsent)
+    }
+  }
+
+  async _ensureDIDPublished () {
+    if (!(await this.public.get('did'))) {
+      await this.public.set('did', this._muportDID.getDid())
     }
   }
 
