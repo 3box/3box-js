@@ -4,7 +4,6 @@ const localstorage = require('store')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
-const OrbitDBCache = require('orbit-db-cache')
 const { createProxyClient } = require('ipfs-postmsg-proxy')
 
 const PublicStore = require('./publicStore')
@@ -66,7 +65,7 @@ class Box {
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
     // console.time('new OrbitDB')
-    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : OrbitDBCache
+    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
     // console.timeEnd('new OrbitDB')
     globalIPFS = this._ipfs
@@ -162,7 +161,7 @@ class Box {
       orbitdb = globalOrbitDB
       usingGlobalIPFS = true
     } else {
-      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : OrbitDBCache
+      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
       orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
     }
 
