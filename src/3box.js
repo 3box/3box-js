@@ -14,7 +14,8 @@ const utils = require('./utils')
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
-const IFRAME_STORE_URL = 'http://localhost:30001/'
+const IFRAME_STORE_VERSION = '0.0.2'
+const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 
 let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
 
@@ -144,7 +145,8 @@ class Box {
    * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Object}                            a json object with the profile for the given address
    */
-  static async getProfile (address, opts = { iframeStore: true }) {
+  static async getProfile (address, opts) {
+    opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
     let usingGlobalIPFS = false
@@ -223,9 +225,10 @@ class Box {
    * @param     {Boolean}           opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts = { iframeStore: true }) {
+  static async openBox (address, ethereumProvider, opts) {
+    opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
-    console.time('-- openBox --')
+    // console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + normalizedAddress)
     if (serializedMuDID) {
@@ -249,10 +252,10 @@ class Box {
     // console.time('new 3box')
     const box = new Box(muportDID, ethereumProvider, opts)
     // console.timeEnd('new 3box')
-    console.time('load 3box')
+    // console.time('load 3box')
     await box._load(opts)
-    console.timeEnd('load 3box')
-    console.timeEnd('-- openBox --')
+    // console.timeEnd('load 3box')
+    // console.timeEnd('-- openBox --')
     return box
   }
 

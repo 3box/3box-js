@@ -104,6 +104,7 @@ const MOCK_HASH_SERVER = 'address-server'
 
 describe('3Box', () => {
   let ipfs, pubsub, boxOpts, ipfsBox, box
+  jest.setTimeout(30000)
 
   beforeEach(async () => {
     if (!ipfs) ipfs = await testUtils.initIPFS(true)
