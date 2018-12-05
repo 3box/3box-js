@@ -33,7 +33,7 @@
     "type": "git",
     "url": "git+https://github.com/uport-project/3box-js.git"
   },
-  "author": "uPort <team@uport.me>",
+  "author": "3box <team@3box.io>",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/uport-project/3box-js/issues"
@@ -42,7 +42,6 @@
   "dependencies": {
     "@babel/runtime": "^7.1.2",
     "bip39": "^2.5.0",
-    "ipfs": "^0.32.2",
     "ipfs-postmsg-proxy": "^3.1.1",
     "js-sha256": "^0.9.0",
     "muport-core": "^0.4.1",
@@ -61,10 +60,12 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "^7.1.5",
     "ganache-cli": "^6.1.0",
+    "ipfs": "^0.32.2",
     "ipfsd-ctl": "^0.39.1",
     "jest": "^23.6.0",
     "jsdoc-to-markdown": "^4.0.1",
     "standard": "^12.0.1",
+    "uglifyjs-webpack-plugin": "^2.0.1",
     "webpack": "^4.20.2",
     "webpack-cli": "^3.1.2"
   }

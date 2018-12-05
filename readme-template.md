@@ -1,4 +1,4 @@
-[![CircleCI](https://img.shields.io/circleci/project/github/uport-project/3box-js.svg?style=for-the-badge)](https://circleci.com/gh/uport-project/3box-js)
+[![CircleCI](https://img.shields.io/circleci/project/github/3box/3box-js/master.svg?style=for-the-badge)](https://circleci.com/gh/3box/3box-js)
 [![Discord](https://img.shields.io/discord/484729862368526356.svg?style=for-the-badge)](https://discordapp.com/invite/Z3f3Cxy)
 [![npm](https://img.shields.io/npm/dt/3box.svg?style=for-the-badge)](https://www.npmjs.com/package/3box)
 [![npm](https://img.shields.io/npm/v/3box.svg?style=for-the-badge)](https://www.npmjs.com/package/3box)
@@ -8,8 +8,6 @@
 [Install](#install) | [Usage](#usage) | [Dapp data](#dappdata) | [Example](#example) | [API Docs](#api)
 
 # 3box-js
-
-**Warning:** This project is under active development, APIs are subject to change.
 
 This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. Currently it supports one shared space which all dapps can access. In the future there will be support for more granular access control using namespaces.
 
@@ -25,9 +23,20 @@ Import the 3box module
 ```js
 const Box = require('3box')
 ```
-or use the dist build in your html code
+Import using the dist build in your html code
 ```js
 <script type="text/javascript" src="../dist/3box.js"></script>
+```
+
+Or optionally by loading remote copy from [unpkg](https://unpkg.com/) CDN.
+
+```html
+<!-- The most recent version  -->
+<script src="https://unpkg.com/3box/dist/3box.js"></script>
+<!-- The most recent minified version  -->
+<script src="https://unpkg.com/3box/dist/3box.min.js"></script>
+<!-- Load specific versions by specifying the version as follows -->
+<script src="https://unpkg.com/3box@<version>/dist/3box.js"></script>
 ```
 
 ### Get the public profile of an address
