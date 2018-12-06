@@ -23,7 +23,6 @@ bopen.addEventListener('click', event => {
       })
       verifyGithub.addEventListener('click', () => {
         box.verified.addGithub(gisturl.value).then(() => {
-          alert("github verification completed");
           updateProfileData(box)
         }).catch(error => {
           githubUser.innerHTML = error;
@@ -71,6 +70,7 @@ function updateProfileData(box) {
     })
   })
   updateGithubUser(box)
+  updateVerifiedAccounts(box)
 }
 
 function updatePrivateData(key, value) {
@@ -93,5 +93,15 @@ function updateGithubUser(box) {
     githubUser.innerHTML = username
   }).catch(error => {
     githubUser.innerHTML = error
+  })
+}
+
+
+function updateVerifiedAccounts(box) {
+  verifiedAccounts.innerHTML = ''
+  box.verified.getVerifiedAccounts().then(accounts => {
+    Object.entries(accounts).map(kv => {
+      verifiedAccounts.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+    })
   })
 }

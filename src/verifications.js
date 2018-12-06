@@ -77,7 +77,7 @@ class Verifications {
    * @return    {String}                                    The twitter handle of the user
    */
   async twitter () {
-    return ''
+    throw new Error("Not implemented")
   }
 
   /**
@@ -89,6 +89,24 @@ class Verifications {
    */
   async addTwitter (tweetUrl) {
     return false
+  }
+
+  /**
+   * Returns all the verified accounts 
+   */
+  async getVerifiedAccounts () {
+    let result = {};
+    try {
+      result.github = await this.github();
+    }
+    catch(error) {};
+
+    try {
+      result.twitter = await this.twitter();
+    }
+    catch(error) {};
+
+    return result;
   }
 }
 
