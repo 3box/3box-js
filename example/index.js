@@ -21,6 +21,14 @@ bopen.addEventListener('click', event => {
           updateProfileData(box)
         })
       })
+      verifyGithub.addEventListener('click', () => {
+        box.verified.addGithub(gisturl.value).then(() => {
+          alert("github verification completed");
+          updateProfileData(box)
+        }).catch(error => {
+          githubUser.innerHTML = error;
+        })
+      })
 
       setPrivateStore.addEventListener('click', () => {
         box.private.set(pskey.value, psvalue.value).then(() => {
@@ -62,6 +70,7 @@ function updateProfileData(box) {
       profileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
     })
   })
+  updateGithubUser(box)
 }
 
 function updatePrivateData(key, value) {
@@ -74,5 +83,15 @@ function logout(box){
     privateStoreData.innerHTML = ''
     profileData.innerHTML = ''
     controlls.style.display = 'none'
+  })
+}
+
+function updateGithubUser(box) {
+  githubUser.innerHTML = ''
+  box.verified.github().then(username => {
+    console.log(username)
+    githubUser.innerHTML = username
+  }).catch(error => {
+    githubUser.innerHTML = error
   })
 }

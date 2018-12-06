@@ -9,10 +9,22 @@ module.exports = {
    * @param     {Object}            gistUrl                 URL of the proof
    * @return    {String}                                    The github handle of the user
    */
-  verifyGithub: (did, gistUrl) => {
-    return ''
-  },
+  verifyGithub: async (did, gistUrl) => {
+    console.log({did, gistUrl});
+    if (!gistUrl || gistUrl.trim() === "") {
+      throw new Error("The proof of your Github is not available");
+    }
+    if (!did || did.trim() === "") {
+      throw new Error("DID parameter not provided");
+    }
+    let gistFileContent = await (await fetch(gistUrl)).text();
+    if (gistFileContent.trim() !== did) {
+      throw new Error("Gist File provided does not contain the correct DID of the user");
+    }
 
+    const githubUsername = gistUrl.replace("https://gist.githubusercontent.com/", "").split("/")[0];
+    return githubUsername;
+  },
   /**
    * Verifies that the tweet contains the given muportDID and returns the users twitter handle.
    * Throws an error otherwise.
