@@ -22,7 +22,7 @@ module.exports = {
       throw new Error("Gist File provided does not contain the correct DID of the user");
     }
 
-    const githubUsername = gistUrl.replace("https://gist.githubusercontent.com/", "").split("/")[0];
+    const githubUsername = gistUrl.split("/")[3]
     return githubUsername;
   },
   /**
