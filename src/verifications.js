@@ -45,7 +45,6 @@ class Verifications {
   async _getVerifiedPublicAccount(key, verificationFunction) {
     this._requireBox();
     const proof = await this._box.public.get("proof_" + key);
-    console.log(proof);
     return await verificationFunction(this._did, proof);
   }
 
