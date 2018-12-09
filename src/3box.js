@@ -13,10 +13,14 @@ const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
-const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
+// const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
+const PINNING_NODE = '/ip4/127.0.0.1/tcp/4003/ws/ipfs/QmcHUWf1YemBYrezctp6cSyZpSAANz2deFb9As3EMZnuXf'
 const PINNING_ROOM = '3box-pinning'
 const IFRAME_STORE_VERSION = '0.0.2'
 const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+
+
+const PROFILE_SERVER_URL = 'http://127.0.0.1:7000'
 
 let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
 
@@ -79,6 +83,9 @@ class Box {
 
     this._rootStore = await this._orbitdb.feed(rootStoreName)
     const rootStoreAddress = this._rootStore.address.toString()
+
+    console.log('rootStoreAddress')
+    console.log(rootStoreAddress)
 
     // console.time('opening pinning room, pinning node joined')
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
@@ -151,69 +158,79 @@ class Box {
    * @return    {Object}                            a json object with the profile for the given address
    */
   static async getProfile (address, opts) {
+    // TODO include both orbitdb sync and fetch and or only use api, or maybe some combination of both would be most effective
+
+
     opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
-    let usingGlobalIPFS = false
-    let usingGlobalOrbitDB = false
-    let ipfs
-    let orbitdb
-    if (globalIPFS) {
-      ipfs = globalIPFS
-      usingGlobalIPFS = true
-    } else {
-      ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
-    }
-    if (globalOrbitDB) {
-      orbitdb = globalOrbitDB
-      usingGlobalIPFS = true
-    } else {
-      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-      orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
-    }
+    const profileServerUrl =  opts.profileServer || PROFILE_SERVER_URL
+    const profile = await getProfileAPI(profileServerUrl, rootStoreAddress)
+    return profile
 
-    const pinningNode = opts.pinningNode || PINNING_NODE
-    ipfs.swarm.connect(pinningNode, () => {})
 
-    const publicStore = new PublicStore(orbitdb)
 
-    if (rootStoreAddress) {
-      const rootStore = await orbitdb.open(rootStoreAddress)
-      const readyPromise = new Promise((resolve, reject) => {
-        rootStore.events.on('ready', resolve)
-      })
-      rootStore.load()
-      await readyPromise
-      if (!rootStore.iterator({ limit: -1 }).collect().length) {
-        await new Promise((resolve, reject) => {
-          rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {
-            if (num === max) {
-              rootStore.events.on('replicated', resolve)
-            }
-          })
-        })
-      }
-      const profileEntry = rootStore
-        .iterator({ limit: -1 })
-        .collect()
-        .find(entry => {
-          return entry.payload.value.odbAddress.split('.')[1] === 'public'
-        })
-      await publicStore._load(profileEntry.payload.value.odbAddress)
-      await publicStore._sync()
-      const profile = publicStore.all()
-      const closeAll = async () => {
-        await rootStore.close()
-        await publicStore.close()
-        if (!usingGlobalOrbitDB) await orbitdb.stop()
-        if (!usingGlobalIPFS) await ipfs.stop()
-      }
-      // close but don't wait for it
-      closeAll()
-      return profile
-    } else {
-      return null
-    }
+
+    // let usingGlobalIPFS = false
+    // let usingGlobalOrbitDB = false
+    // let ipfs
+    // let orbitdb
+    // if (globalIPFS) {
+    //   ipfs = globalIPFS
+    //   usingGlobalIPFS = true
+    // } else {
+    //   ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
+    // }
+    // if (globalOrbitDB) {
+    //   orbitdb = globalOrbitDB
+    //   usingGlobalIPFS = true
+    // } else {
+    //   const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    //   orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
+    // }
+    //
+    // const pinningNode = opts.pinningNode || PINNING_NODE
+    // ipfs.swarm.connect(pinningNode, () => {})
+    //
+    // const publicStore = new PublicStore(orbitdb)
+    //
+    // if (rootStoreAddress) {
+    //   const rootStore = await orbitdb.open(rootStoreAddress)
+    //   const readyPromise = new Promise((resolve, reject) => {
+    //     rootStore.events.on('ready', resolve)
+    //   })
+    //   rootStore.load()
+    //   await readyPromise
+    //   if (!rootStore.iterator({ limit: -1 }).collect().length) {
+    //     await new Promise((resolve, reject) => {
+    //       rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {
+    //         if (num === max) {
+    //           rootStore.events.on('replicated', resolve)
+    //         }
+    //       })
+    //     })
+    //   }
+    //   const profileEntry = rootStore
+    //     .iterator({ limit: -1 })
+    //     .collect()
+    //     .find(entry => {
+    //       return entry.payload.value.odbAddress.split('.')[1] === 'public'
+    //     })
+    //   await publicStore._load(profileEntry.payload.value.odbAddress)
+    //   await publicStore._sync()
+    //   const profile = publicStore.all()
+    //   const closeAll = async () => {
+    //     await rootStore.close()
+    //     await publicStore.close()
+    //     if (!usingGlobalOrbitDB) await orbitdb.stop()
+    //     if (!usingGlobalIPFS) await ipfs.stop()
+    //   }
+    //   // close but don't wait for it
+    //   closeAll()
+    //   return profile
+    // } else {
+    //   return null
+    // }
   }
 
   /**
@@ -394,6 +411,21 @@ async function getRootStoreAddress (serverUrl, identifier) {
       if (JSON.parse(err).message === 'root store address not found') {
         resolve(null)
       }
+      reject(err)
+    }
+  })
+}
+
+async function getProfileAPI (serverUrl, rootStoreAddress) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.httpRequest(
+        serverUrl + '/profile/' + encodeURIComponent(rootStoreAddress),
+        'GET'
+      )
+      // console.log(res)
+      resolve(res)
+    } catch (err) {
       reject(err)
     }
   })
