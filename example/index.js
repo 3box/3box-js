@@ -61,7 +61,19 @@ getProfile.addEventListener('click', () => {
   })
 })
 
-function updateProfileData (box) {
+profileGraphQL.addEventListener('click', () => {
+  const query = profileGraphQLQuery.value
+  console.log(query)
+  Box.profileGraphQL(query).then(res => {
+    console.log(res)
+    profileGraphQLData.innerHTML = ''
+    Object.entries(res.profile).map(kv => {
+      profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+    })
+  })
+})
+
+function updateProfileData(box) {
   profileData.innerHTML = ''
   box.public.all().then(profile => {
     console.log(profile)

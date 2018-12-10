@@ -5,6 +5,8 @@ const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 const { createProxyClient } = require('ipfs-postmsg-proxy')
+const graphQLRequest = require('graphql-request').request
+
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
@@ -19,7 +21,7 @@ const PINNING_ROOM = '3box-pinning'
 const IFRAME_STORE_VERSION = '0.0.2'
 const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 
-
+const GRAPHQL_SERVER_URL = 'http://127.0.0.1:4000'
 const PROFILE_SERVER_URL = 'http://127.0.0.1:7000'
 
 let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
@@ -158,8 +160,7 @@ class Box {
    * @return    {Object}                            a json object with the profile for the given address
    */
   static async getProfile (address, opts) {
-    // TODO include both orbitdb sync and fetch and or only use api, or maybe some combination of both would be most effective
-
+    // TODO include both orbitdb sync and fetch and or only use api, or maybe some combination of both would be most effective, since there are tradeoffs
 
     opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
@@ -167,9 +168,6 @@ class Box {
     const profileServerUrl =  opts.profileServer || PROFILE_SERVER_URL
     const profile = await getProfileAPI(profileServerUrl, rootStoreAddress)
     return profile
-
-
-
 
     // let usingGlobalIPFS = false
     // let usingGlobalOrbitDB = false
@@ -231,6 +229,17 @@ class Box {
     // } else {
     //   return null
     // }
+  }
+
+  static async profileGraphQL (query, opts ={}) {
+    const address = query.match(/"(.*?)"/)[1]
+    console.log(address)
+    const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
+    const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
+    query = query.replace(/"(.*?)"/, `"${rootStoreAddress}"`);
+    console.log(query)
+    // const graphQLServer = opts.graphQLServer || GRAPHQL_SERVER_URL
+    return await graphQLRequest( GRAPHQL_SERVER_URL, query)
   }
 
   /**
