@@ -25,7 +25,7 @@ bopen.addEventListener('click', event => {
         box.verified.addGithub(gisturl.value).then(() => {
           updateProfileData(box)
         }).catch(error => {
-          githubUser.innerHTML = error;
+          githubUser.innerHTML = error
         })
       })
 
@@ -56,29 +56,28 @@ getProfile.addEventListener('click', () => {
   Box.getProfile(ethAddr.value, {}).then(profile => {
     console.log(profile)
     Object.entries(profile).map(kv => {
-      getProfileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+      getProfileData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
     })
   })
 })
 
-function updateProfileData(box) {
+function updateProfileData (box) {
   profileData.innerHTML = ''
   box.public.all().then(profile => {
     console.log(profile)
     Object.entries(profile).map(kv => {
-      profileData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+      profileData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
     })
   })
   updateGithubUser(box)
-  updateVerifiedAccounts(box)
 }
 
-function updatePrivateData(key, value) {
+function updatePrivateData (key, value) {
   privateStoreData.innerHTML = ''
-  privateStoreData.innerHTML  = key + ': ' + value
+  privateStoreData.innerHTML = key + ': ' + value
 }
 
-function logout(box){
+function logout (box) {
   box.logout().then(() => {
     privateStoreData.innerHTML = ''
     profileData.innerHTML = ''
@@ -86,22 +85,12 @@ function logout(box){
   })
 }
 
-function updateGithubUser(box) {
+function updateGithubUser (box) {
   githubUser.innerHTML = ''
   box.verified.github().then(username => {
     console.log(username)
     githubUser.innerHTML = username
   }).catch(error => {
     githubUser.innerHTML = error
-  })
-}
-
-
-function updateVerifiedAccounts(box) {
-  verifiedAccounts.innerHTML = ''
-  box.verified.getVerifiedAccounts().then(accounts => {
-    Object.entries(accounts).map(kv => {
-      verifiedAccounts.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
-    })
   })
 }
