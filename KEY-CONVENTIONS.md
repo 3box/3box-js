@@ -24,6 +24,10 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | image | an ipfs hash of a profile image |
 | attestari.skills | array of skills (object) listed on attestari.me |
 | attestari.attestations | object containing all the attestations received by skill via attestari.me |
+| linked-ref.hireDate | hire date on linkedref.io |
+| linked-ref.department | department on linkedref.io |
+| linked-ref.dob | date of birth on linkedref.io |
+| linked-ref.gender | gender on linkedref.io |
 
 ### Private Data
 
@@ -35,6 +39,7 @@ There are lots of cases where it can be valuable for dapps to use the same entri
 | ipfsUploader.files | up to date array of ipfs file hashes uploaded by the user |
 | ipfsUploader.files[ipfsHash].name | user given name of a file uploaded to ipfs |
 | ipfsUploader.files[ipfsHash].date | unix timestamp of file uploaded to ipfs |
+| linked-ref.phoneNumber | phone number on linkedref.io |
 
 ### Example entry data
 Here are examples of the data that are stored in the above keys.
