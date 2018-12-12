@@ -1,8 +1,3 @@
-const testUtils = require('./testUtils')
-const Pubsub = require('orbit-db-pubsub')
-const jsdom = require('jsdom')
-global.window = new jsdom.JSDOM().window
-
 const Verifications = require('../verifications')
 const Box = require('../3box')
 
