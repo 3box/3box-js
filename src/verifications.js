@@ -10,13 +10,6 @@ class Verifications {
   }
 
   /**
-   * Internal function to prevent using the methods without having been initialized with a 3Box
-   */
-  _requireBox () {
-    if (!this._box) throw new Error('_requireBox: 3Box is not available')
-  }
-
-  /**
    * Internal method used to call the verification function with the DID and the proof.
    * If verification is successful, proof is stored in the public store.
    * Throws an error if verification is not successful.
@@ -28,7 +21,6 @@ class Verifications {
    *                                                          This function should return the username to be stored in the 3box profile
    */
   async _addVerifiedPublicAccount (key, proof, verificationFunction) {
-    this._requireBox()
     await verificationFunction(this._did, proof)
     await this._box.public.set('proof_' + key, proof)
     return true
@@ -42,7 +34,6 @@ class Verifications {
    * This function should return the username of the user that will be compared to the value stored  in the 3box profile.
    */
   async _getVerifiedPublicAccount (key, verificationFunction) {
-    this._requireBox()
     const proof = await this._box.public.get('proof_' + key)
     return verificationFunction(this._did, proof)
   }

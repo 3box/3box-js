@@ -16,8 +16,6 @@ module.exports = {
     
     let gistFileContent = await (await fetch(gistUrl)).text()
 
-    // let gistFileContent = await httpRequest(gistUrl, "GET");
-
     if (gistFileContent.trim() !== did) {
       throw new Error('Gist File provided does not contain the correct DID of the user')
     }
