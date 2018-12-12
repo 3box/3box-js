@@ -13,9 +13,7 @@ module.exports = {
     if (!gistUrl || gistUrl.trim() === '') {
       throw new Error('The proof of your Github is not available')
     }
-    if (!did || did.trim() === '') {
-      throw new Error('DID parameter not provided')
-    }
+    
     let gistFileContent = await (await fetch(gistUrl)).text()
 
     // let gistFileContent = await httpRequest(gistUrl, "GET");
