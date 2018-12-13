@@ -219,7 +219,7 @@ class Box {
   /**
    * Verifies the proofs of social accounts that is present in the profile.
    *
-   * @param     {Object}            profile                 URL of the Address Server
+   * @param     {Object}            profile                 A user profile object
    * @return    {Object}                                    An object containing the accounts that have been verified
    */
   static async getVerifiedAccounts (profile) {

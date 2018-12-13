@@ -1,5 +1,3 @@
-const { httpRequest } = require('../utils')
-
 module.exports = {
   /**
    * Verifies that the gist contains the given muportDID and returns the users github handle.
@@ -13,10 +11,10 @@ module.exports = {
     if (!gistUrl || gistUrl.trim() === '') {
       throw new Error('The proof of your Github is not available')
     }
-    
+
     let gistFileContent = await (await fetch(gistUrl)).text()
 
-    if (gistFileContent.trim() !== did) {
+    if (gistFileContent.indexOf(did) === -1) {
       throw new Error('Gist File provided does not contain the correct DID of the user')
     }
 

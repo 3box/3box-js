@@ -2,7 +2,7 @@ const Verifications = require('../verifications')
 const Box = require('../3box')
 
 const GITHUB_LINK1_URL = "https://gist.githubusercontent.com/user1/12345"
-const GITHUB_LINK1_CONTENT = "did:muport:0x12345"
+const GITHUB_LINK1_CONTENT = "some random text did:muport:0x12345 more random text"
 const GITHUB_LINK1_USER = "user1"
 const GITHUB_LINK2_URL = "https://gist.githubusercontent.com/user1/wrongLink"
 const GITHUB_LINK2_CONTENT = "wrong did"

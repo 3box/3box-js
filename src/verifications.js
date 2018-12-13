@@ -9,30 +9,12 @@ class Verifications {
     this._did = box._muportDID.getDid()
   }
 
-  /**
-   * Internal method used to call the verification function with the DID and the proof.
-   * If verification is successful, proof is stored in the public store.
-   * Throws an error if verification is not successful.
-   *
-   * @param     {Sting}               key                     Account key to be stored in the public profile
-   * @param     {String/Object}       proof                   This param will be sent to the verification function and stored in the 3box
-   *                                                          profile for future verification
-   * @param     {Function}            verificationFunction    Function receiving the user DID and the proof received as param.
-   *                                                          This function should return the username to be stored in the 3box profile
-   */
   async _addVerifiedPublicAccount (key, proof, verificationFunction) {
     await verificationFunction(this._did, proof)
     await this._box.public.set('proof_' + key, proof)
     return true
   }
 
-  /**
-   * Internal method to retrieve the verified value for a given key. It will verifiy if the proof is still valid
-   *
-   * @param {sting}     key - Account key to be retireved from the public profile
-   * @param {function}  verificationFunction - Function receiving the user DID and the proof received as param.
-   * This function should return the username of the user that will be compared to the value stored  in the 3box profile.
-   */
   async _getVerifiedPublicAccount (key, verificationFunction) {
     const proof = await this._box.public.get('proof_' + key)
     return verificationFunction(this._did, proof)
@@ -66,7 +48,7 @@ class Verifications {
    * @return    {String}                                    The twitter handle of the user
    */
   async twitter () {
-    throw new Error('Not implemented')
+    throw new Error('Not implemented yet')
   }
 
   /**
@@ -77,7 +59,7 @@ class Verifications {
    * @return    {String}                                    The twitter handle of the user
    */
   async addTwitter (tweetUrl) {
-    return false
+    throw new Error('Not implemented yet')
   }
 }
 
