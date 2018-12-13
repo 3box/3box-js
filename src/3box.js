@@ -8,6 +8,7 @@ const { createProxyClient } = require('ipfs-postmsg-proxy')
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
+const Verifications = require('./verifications')
 const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
@@ -47,6 +48,10 @@ class Box {
      * @property {KeyValueStore} private        access the private store of the users 3Box
      */
     this.private = null
+    /**
+     * @property {Verifications} verified       check and create verifications
+     */
+    this.verified = new Verifications(this)
   }
 
   async _load (opts = {}) {
@@ -209,6 +214,15 @@ class Box {
     } else {
       return null
     }
+  }
+
+  /**
+   * Verifies the proofs of social accounts that is present in the profile.
+   *
+   * @param     {Object}            profile                 A user profile object
+   * @return    {Object}                                    An object containing the accounts that have been verified
+   */
+  static async getVerifiedAccounts (profile) {
   }
 
   /**
