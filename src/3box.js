@@ -300,27 +300,20 @@ class Box {
     const address = this._muportDID.getDidDocument().managementKey
     if (!localstorage.get('linkConsent_' + address)) {
       const did = this._muportDID.getDid()
-      const consent = await utils.getLinkConsent(
-        address,
-        did,
-        this._web3provider
-      )
-      const linkData = {
-        consent_msg: consent.msg,
-        consent_signature: consent.sig,
-        linked_did: did
+      let linkData = await this.public.get('ethereum_proof')
+      if (!linkData) {
+        const consent = await utils.getLinkConsent(address, did, this._web3provider)
+        linkData = {
+          consent_msg: consent.msg,
+          consent_signature: consent.sig,
+          linked_did: did
+        }
+        await this.public.set('ethereum_proof', linkData)
       }
       // Send consentSignature to 3box-address-server to link profile with ethereum address
       try {
         await utils.httpRequest(this._serverUrl + '/link', 'POST', linkData)
-
-        // Store linkConsent into localstorage
-        const linkConsent = {
-          address: address,
-          did: did,
-          consent: consent
-        }
-        localstorage.set('linkConsent_' + address, linkConsent)
+        localstorage.set('linkConsent_' + address, true)
       } catch (err) {
         console.error(err)
       }
