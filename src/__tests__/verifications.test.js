@@ -8,6 +8,26 @@ const GITHUB_LINK2_URL = "https://gist.githubusercontent.com/user1/wrongLink"
 const GITHUB_LINK2_CONTENT = "wrong did"
 
 jest.mock('../3box')
+jest.mock('../utils', () => {
+  const GITHUB_LINK1_URL = "https://gist.githubusercontent.com/user1/12345"
+  const GITHUB_LINK1_CONTENT = "some random text did:muport:0x12345 more random text"
+  const GITHUB_LINK1_USER = "user1"
+  const GITHUB_LINK2_URL = "https://gist.githubusercontent.com/user1/wrongLink"
+  const GITHUB_LINK2_CONTENT = "wrong did"
+  return {
+    fetchText: jest.fn(async url => {
+        if (url === GITHUB_LINK1_URL) {
+          return GITHUB_LINK1_CONTENT
+        }
+        else if(url === GITHUB_LINK2_URL) {
+          return GITHUB_LINK2_CONTENT
+        }
+        else {
+          throw new Error("ERROR");
+        }
+    })
+  }
+})
 
 describe('Verifications', () => {
   let box
@@ -16,21 +36,6 @@ describe('Verifications', () => {
   beforeAll(async () => {
     box = await Box.openBox("0x12345", "web3prov");
     verifications = new Verifications(box)
-
-    global.fetch = jest.fn().mockImplementation((url) => {
-      var p = new Promise((resolve, reject) => {
-        if(url === GITHUB_LINK1_URL) {
-          resolve({text: () => GITHUB_LINK1_CONTENT})
-        }
-        else if(url === GITHUB_LINK2_URL) {
-          resolve({text: () => GITHUB_LINK2_CONTENT})
-        }
-        else {
-          resolve("ERROR");
-        }
-      })
-      return p;
-  });
   })
 
 
