@@ -174,6 +174,21 @@ class Box {
     return profile
   }
 
+  /**
+   * Get a list of public profiles for given addresses. This relies on 3Box profile API.
+   *
+   * @param     {Array}     address                 An array of ethereum addresses
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Object}                            a json object with each key an address and value the profile
+   */
+
+  static async getProfiles(addressArray, opts = {}) {
+    const profileServerUrl =  opts.profileServer || PROFILE_SERVER_URL
+    const req = { addressList: addressArray }
+    return await utils.httpRequest(profileServerUrl  + '/profileList', 'POST', req)
+  }
+
   static async _getProfileOrbit(address, opts = {}) {
     opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
