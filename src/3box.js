@@ -15,14 +15,14 @@ const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
-// const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
-const PINNING_NODE = '/ip4/127.0.0.1/tcp/4003/ws/ipfs/QmcHUWf1YemBYrezctp6cSyZpSAANz2deFb9As3EMZnuXf'
+const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
+// const PINNING_NODE = '/ip4/127.0.0.1/tcp/4003/ws/ipfs/QmcHUWf1YemBYrezctp6cSyZpSAANz2deFb9As3EMZnuXf'
 const PINNING_ROOM = '3box-pinning'
 const IFRAME_STORE_VERSION = '0.0.2'
 const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 
-const GRAPHQL_SERVER_URL = 'http://127.0.0.1:4000'
-const PROFILE_SERVER_URL = 'http://127.0.0.1:7000'
+const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
+const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
 
 let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
 
@@ -157,89 +157,101 @@ class Box {
    * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
    * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
+   * @param     {Boolean}   opts.api                Use 3Box API to fetch profile instead of OrbitDB. Default true.
    * @return    {Object}                            a json object with the profile for the given address
    */
-  static async getProfile (address, opts) {
-    // TODO include both orbitdb sync and fetch and or only use api, or maybe some combination of both would be most effective, since there are tradeoffs
 
+  static async getProfile (address, opts = {}) {
+    const normalizedAddress = address.toLowerCase()
+    opts = Object.assign({ iframeStore: true, api: true }, opts)
+    let profile
+    if (api) {
+      const profileServerUrl =  opts.profileServer || PROFILE_SERVER_URL
+      profile = await getProfileAPI(normalizedAddress, profileServerUrl)
+    } else {
+      profile = await this._getProfileOrbit(normalizedAddress, opts)
+    }
+    return profile
+  }
+
+  static async _getProfileOrbit(address, opts = {}) {
     opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
-    const profileServerUrl =  opts.profileServer || PROFILE_SERVER_URL
-    const profile = await getProfileAPI(profileServerUrl, rootStoreAddress)
-    return profile
+    let usingGlobalIPFS = false
+    let usingGlobalOrbitDB = false
+    let ipfs
+    let orbitdb
+    if (globalIPFS) {
+      ipfs = globalIPFS
+      usingGlobalIPFS = true
+    } else {
+      ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
+    }
+    if (globalOrbitDB) {
+      orbitdb = globalOrbitDB
+      usingGlobalIPFS = true
+    } else {
+      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+      orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
+    }
 
-    // let usingGlobalIPFS = false
-    // let usingGlobalOrbitDB = false
-    // let ipfs
-    // let orbitdb
-    // if (globalIPFS) {
-    //   ipfs = globalIPFS
-    //   usingGlobalIPFS = true
-    // } else {
-    //   ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
-    // }
-    // if (globalOrbitDB) {
-    //   orbitdb = globalOrbitDB
-    //   usingGlobalIPFS = true
-    // } else {
-    //   const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    //   orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
-    // }
-    //
-    // const pinningNode = opts.pinningNode || PINNING_NODE
-    // ipfs.swarm.connect(pinningNode, () => {})
-    //
-    // const publicStore = new PublicStore(orbitdb)
-    //
-    // if (rootStoreAddress) {
-    //   const rootStore = await orbitdb.open(rootStoreAddress)
-    //   const readyPromise = new Promise((resolve, reject) => {
-    //     rootStore.events.on('ready', resolve)
-    //   })
-    //   rootStore.load()
-    //   await readyPromise
-    //   if (!rootStore.iterator({ limit: -1 }).collect().length) {
-    //     await new Promise((resolve, reject) => {
-    //       rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {
-    //         if (num === max) {
-    //           rootStore.events.on('replicated', resolve)
-    //         }
-    //       })
-    //     })
-    //   }
-    //   const profileEntry = rootStore
-    //     .iterator({ limit: -1 })
-    //     .collect()
-    //     .find(entry => {
-    //       return entry.payload.value.odbAddress.split('.')[1] === 'public'
-    //     })
-    //   await publicStore._load(profileEntry.payload.value.odbAddress)
-    //   await publicStore._sync()
-    //   const profile = publicStore.all()
-    //   const closeAll = async () => {
-    //     await rootStore.close()
-    //     await publicStore.close()
-    //     if (!usingGlobalOrbitDB) await orbitdb.stop()
-    //     if (!usingGlobalIPFS) await ipfs.stop()
-    //   }
-    //   // close but don't wait for it
-    //   closeAll()
-    //   return profile
-    // } else {
-    //   return null
-    // }
+    const pinningNode = opts.pinningNode || PINNING_NODE
+    ipfs.swarm.connect(pinningNode, () => {})
+
+    const publicStore = new PublicStore(orbitdb)
+
+    if (rootStoreAddress) {
+      const rootStore = await orbitdb.open(rootStoreAddress)
+      const readyPromise = new Promise((resolve, reject) => {
+        rootStore.events.on('ready', resolve)
+      })
+      rootStore.load()
+      await readyPromise
+      if (!rootStore.iterator({ limit: -1 }).collect().length) {
+        await new Promise((resolve, reject) => {
+          rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {
+            if (num === max) {
+              rootStore.events.on('replicated', resolve)
+            }
+          })
+        })
+      }
+      const profileEntry = rootStore
+        .iterator({ limit: -1 })
+        .collect()
+        .find(entry => {
+          return entry.payload.value.odbAddress.split('.')[1] === 'public'
+        })
+      await publicStore._load(profileEntry.payload.value.odbAddress)
+      await publicStore._sync()
+      const profile = publicStore.all()
+      const closeAll = async () => {
+        await rootStore.close()
+        await publicStore.close()
+        if (!usingGlobalOrbitDB) await orbitdb.stop()
+        if (!usingGlobalIPFS) await ipfs.stop()
+      }
+      // close but don't wait for it
+      closeAll()
+      return profile
+    } else {
+      return null
+    }
   }
 
+  /**
+   * GraphQL for 3Box profile API
+   *
+   * @param     {Object}    query               A graphQL query object.
+   * @param     {Object}    opts                Optional parameters
+   * @param     {String}    opts.graphql        URL of graphQL 3Box profile service
+   * @return    {Object}                        a json object with each key an address and value the profile
+   */
+
   static async profileGraphQL (query, opts ={}) {
-    const address = query.match(/"(.*?)"/)[1]
-    console.log(address)
-    const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
-    const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
-    query = query.replace(/"(.*?)"/, `"${rootStoreAddress}"`);
-    console.log(query)
-    // const graphQLServer = opts.graphQLServer || GRAPHQL_SERVER_URL
-    return await graphQLRequest( GRAPHQL_SERVER_URL, query)
+    const graphql = opts.graphql || GRAPHQL_SERVER_URL
+    return await graphQLRequest(graphql, query)
   }
 
   /**
@@ -425,14 +437,13 @@ async function getRootStoreAddress (serverUrl, identifier) {
   })
 }
 
-async function getProfileAPI (serverUrl, rootStoreAddress) {
+async function getProfileAPI (rootStoreAddress, serverUrl) {
   return new Promise(async (resolve, reject) => {
     try {
       const res = await utils.httpRequest(
-        serverUrl + '/profile/' + encodeURIComponent(rootStoreAddress),
+        serverUrl + '/profile?address=' + encodeURIComponent(rootStoreAddress),
         'GET'
       )
-      // console.log(res)
       resolve(res)
     } catch (err) {
       reject(err)
