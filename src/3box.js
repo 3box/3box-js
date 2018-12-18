@@ -181,7 +181,7 @@ class Box {
   static async getProfiles (addressArray, opts = {}) {
     const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
     const req = { addressList: addressArray }
-    return utils.httpRequest(profileServerUrl + '/profileList', 'POST', req)
+    return utils.fetchJson(profileServerUrl + '/profileList', req)
   }
 
   static async _getProfileOrbit (address, opts = {}) {
@@ -334,7 +334,7 @@ class Box {
     const addressToken = await this._muportDID.signJWT({ rootStoreAddress })
     // Store odbAddress on 3box-address-server
     try {
-      await utils.httpRequest(this._serverUrl + '/odbAddress', 'POST', {
+      await utils.fetchJson(this._serverUrl + '/odbAddress', {
         address_token: addressToken
       })
     } catch (err) {
@@ -359,7 +359,7 @@ class Box {
       }
       // Send consentSignature to 3box-address-server to link profile with ethereum address
       try {
-        await utils.httpRequest(this._serverUrl + '/link', 'POST', linkData)
+        await utils.fetchJson(this._serverUrl + '/link', linkData)
         localstorage.set('linkConsent_' + address, true)
       } catch (err) {
         console.error(err)
@@ -429,30 +429,19 @@ async function initIPFS (ipfs, iframeStore) {
 }
 
 async function getRootStoreAddress (serverUrl, identifier) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // read orbitdb root store address from the 3box-address-server
-      const res = await utils.httpRequest(
-        serverUrl + '/odbAddress/' + identifier,
-        'GET'
-      )
-      resolve(res.data.rootStoreAddress)
-    } catch (err) {
-      if (JSON.parse(err).message === 'root store address not found') {
-        resolve(null)
-      }
-      reject(err)
-    }
-  })
+  // read orbitdb root store address from the 3box-address-server
+  const res = await utils.fetchJson(serverUrl + '/odbAddress/' + identifier)
+  if (res.status === 'success') {
+    return res.data.rootStoreAddress
+  } else {
+    throw new Error(res.message)
+  }
 }
 
 async function getProfileAPI (rootStoreAddress, serverUrl) {
   return new Promise(async (resolve, reject) => {
     try {
-      const res = await utils.httpRequest(
-        serverUrl + '/profile?address=' + encodeURIComponent(rootStoreAddress),
-        'GET'
-      )
+      const res = await utils.fetchJson(serverUrl + '/profile?address=' + encodeURIComponent(rootStoreAddress))
       resolve(res)
     } catch (err) {
       reject(err)
