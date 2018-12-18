@@ -157,6 +157,8 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
         * [.logout()](#Box+logout)
     * _static_
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
+        * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
+        * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
         * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
@@ -239,6 +241,35 @@ Get the public profile of a given address
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 | opts.iframeStore | <code>Boolean</code> | Use iframe for storage, allows shared store across domains. Default true when run in browser. |
+| opts.useCacheService | <code>Boolean</code> | Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true. |
+
+<a name="Box.getProfiles"></a>
+
+#### Box.getProfiles(address, opts) ⇒ <code>Object</code>
+Get a list of public profiles for given addresses. This relies on 3Box profile API.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>Array</code> | An array of ethereum addresses |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.profileGraphQL"></a>
+
+#### Box.profileGraphQL(query, opts) ⇒ <code>Object</code>
+GraphQL for 3Box profile API
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| query | <code>Object</code> | A graphQL query object. |
+| opts | <code>Object</code> | Optional parameters |
+| opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
 
 <a name="Box.getVerifiedAccounts"></a>
 
