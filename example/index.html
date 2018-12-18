@@ -76,24 +76,22 @@
       </div>
     </div>
 
-    <div style="padding: 5px 100px;">
+    <div style="padding: 5px 100px; width: 100%;">
       <!-- Get Profile GraphQL Div -->
       <div style="padding: 0px 0px 25px 0px;">
         <h2> Get Profile GraphQL </h2>
-
-
-
-        <textarea id="profileGraphQLQuery" rows="12" cols="75">
-          {
-            profile(id: "0xE3b281F3Dd2b87c7b3EAcC0402a4FD7d827F2956") {
-              Name
-              did
-              email
-              website
+        <div style="width: 100%;">
+          <textarea id="profileGraphQLQuery" rows="9" cols="70">
+            {
+              profile(id: "PUT_AN_ADDRESS_HERE") {
+                name
+                did
+                email
+                website
+              }
             }
-          }
           </textarea>
-
+        </div>
 
         <button id="profileGraphQL" type="button" class="btn btn-primary">Query Profiles </button>
 

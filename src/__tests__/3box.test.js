@@ -126,7 +126,7 @@ describe('3Box', () => {
       EXPERIMENTAL: {
         pubsub: true
       },
-      repo: './.js-ipfs'
+      repo: './tmp/ipfs1/'
     }
 
     if (!ipfsBox) {
@@ -349,7 +349,7 @@ describe('3Box', () => {
    it('should getProfile correctly (when profile API is not used)', async () => {
     await box._rootStore.drop()
     // awaitbox2._ruotStore.drop()
-    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {api: false}))
+    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
     expect(profile).toEqual({
       name: 'oed',
       image: 'an awesome selfie'
@@ -397,7 +397,7 @@ describe('3Box', () => {
   })
 
   it('should getProfile correctly when profile API is not used and box is not open', async () => {
-    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {api: false}))
+    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
     expect(profile).toEqual({
       name: 'oed',
       image: 'an awesome selfie'

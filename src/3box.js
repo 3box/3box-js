@@ -15,7 +15,6 @@ const utils = require('./utils')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
-// const PINNING_NODE = '/ip4/127.0.0.1/tcp/4003/ws/ipfs/QmcHUWf1YemBYrezctp6cSyZpSAANz2deFb9As3EMZnuXf'
 const PINNING_ROOM = '3box-pinning'
 const IFRAME_STORE_VERSION = '0.0.2'
 const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
@@ -85,9 +84,6 @@ class Box {
     this._rootStore = await this._orbitdb.feed(rootStoreName)
     const rootStoreAddress = this._rootStore.address.toString()
 
-    console.log('rootStoreAddress')
-    console.log(rootStoreAddress)
-
     // console.time('opening pinning room, pinning node joined')
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
     const onNewPeer = (topic, peer) => {
@@ -156,15 +152,15 @@ class Box {
    * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
    * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
-   * @param     {Boolean}   opts.api                Use 3Box API to fetch profile instead of OrbitDB. Default true.
+   * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
    * @return    {Object}                            a json object with the profile for the given address
    */
 
   static async getProfile (address, opts = {}) {
     const normalizedAddress = address.toLowerCase()
-    opts = Object.assign({ iframeStore: true, api: true }, opts)
+    opts = Object.assign({ iframeStore: true, useCacheService: true }, opts)
     let profile
-    if (opts.api) {
+    if (opts.useCacheService) {
       const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
       profile = await getProfileAPI(normalizedAddress, profileServerUrl)
     } else {
@@ -185,8 +181,7 @@ class Box {
   static async getProfiles (addressArray, opts = {}) {
     const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
     const req = { addressList: addressArray }
-    const profile = await utils.httpRequest(profileServerUrl + '/profileList', 'POST', req)
-    return profile
+    return utils.httpRequest(profileServerUrl + '/profileList', 'POST', req)
   }
 
   static async _getProfileOrbit (address, opts = {}) {
@@ -260,14 +255,12 @@ class Box {
    *
    * @param     {Object}    query               A graphQL query object.
    * @param     {Object}    opts                Optional parameters
-   * @param     {String}    opts.graphql        URL of graphQL 3Box profile service
+   * @param     {String}    opts.graphqlServer  URL of graphQL 3Box profile service
    * @return    {Object}                        a json object with each key an address and value the profile
    */
 
   static async profileGraphQL (query, opts = {}) {
-    const graphql = opts.graphql || GRAPHQL_SERVER_URL
-    const res = await graphQLRequest(graphql, query)
-    return res
+    return graphQLRequest(opts.graphqlServer || GRAPHQL_SERVER_URL, query)
   }
 
   /**
