@@ -76,7 +76,17 @@ jest.mock('../utils', () => {
             return { status: 'success', data: { did, address } }
           }
           break
-        default: // default is GET odbAddress
+        default:
+          // TODO: add test for more cases, and failure cases against API
+          // post profiles from profile api
+          if(method === 'POST' && /profileList/.test(lastPart)) {
+            return {'0x12345': { name: 'zfer', email: 'zfer@mail.com' }}
+          }
+          // get profile from profile api
+          if(/profile/.test(lastPart)) {
+            return { name: 'zfer', email: 'zfer@mail.com' }
+          }
+          // default is GET odbAddress
           if (addressMap[lastPart]) {
             return { status: 'success', data: { rootStoreAddress: addressMap[lastPart] } }
           } else if (addressMap[linkmap[lastPart]]) {
@@ -101,6 +111,7 @@ jest.mock('../utils', () => {
 })
 const mockedUtils = require('../utils')
 const MOCK_HASH_SERVER = 'address-server'
+const MOCK_PROFILE_SERVER = 'profile-server'
 
 describe('3Box', () => {
   let ipfs, pubsub, boxOpts, ipfsBox, box
@@ -114,7 +125,8 @@ describe('3Box', () => {
     const IPFS_OPTIONS = {
       EXPERIMENTAL: {
         pubsub: true
-      }
+      },
+      repo: './tmp/ipfs1/'
     }
 
     if (!ipfsBox) {
@@ -126,6 +138,7 @@ describe('3Box', () => {
       ipfs: ipfsBox,
       orbitPath: './tmp/orbitdb1',
       addressServer: MOCK_HASH_SERVER,
+      profileServer: MOCK_PROFILE_SERVER,
       iframeStore: false,
       pinningNode: ipfsMultiAddr
     }
@@ -333,16 +346,34 @@ describe('3Box', () => {
      pubsub.unsubscribe('3box-pinning')
    })
 
-   it('should getProfile correctly', async () => {
+   it('should getProfile correctly (when profile API is not used)', async () => {
     await box._rootStore.drop()
     // awaitbox2._ruotStore.drop()
-    const profile = await Box.getProfile('0x12345', boxOpts)
+    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
     expect(profile).toEqual({
       name: 'oed',
       image: 'an awesome selfie'
     })
     expect(mockedUtils.httpRequest).toHaveBeenCalledTimes(1)
     expect(mockedUtils.httpRequest).toHaveBeenCalledWith('address-server/odbAddress/0x12345', 'GET')
+  })
+
+  it('should get profile (when API is used)', async () => {
+    const profile = await Box.getProfile('0x12345', boxOpts)
+    expect(profile).toEqual({
+      name: 'zfer',
+      email: 'zfer@mail.com'
+    })
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('profile-server/profile?address=0x12345', 'GET')
+  })
+
+  it('should get profiles (profileList) ', async () => {
+    const profiles = await Box.getProfiles(['0x12345'], boxOpts)
+    expect(profiles['0x12345']).toEqual({
+      name: 'zfer',
+      email: 'zfer@mail.com'
+    })
+    expect(mockedUtils.httpRequest).toHaveBeenCalledWith('profile-server/profileList', 'POST', { addressList: ['0x12345'] })
   })
 
   it('should be logged in', async () => {
@@ -365,8 +396,8 @@ describe('3Box', () => {
     expect(isLoggedIn).toEqual(false)
   })
 
-  it('should getProfile correctly when box is not open', async () => {
-    const profile = await Box.getProfile('0x12345', boxOpts)
+  it('should getProfile correctly when profile API is not used and box is not open', async () => {
+    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
     expect(profile).toEqual({
       name: 'oed',
       image: 'an awesome selfie'

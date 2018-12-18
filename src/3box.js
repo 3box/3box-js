@@ -5,6 +5,7 @@ const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 const { createProxyClient } = require('ipfs-postmsg-proxy')
+const graphQLRequest = require('graphql-request').request
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
@@ -17,6 +18,9 @@ const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQG
 const PINNING_ROOM = '3box-pinning'
 const IFRAME_STORE_VERSION = '0.0.2'
 const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+
+const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
+const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
 
 let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
 
@@ -148,9 +152,39 @@ class Box {
    * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
    * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
+   * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
    * @return    {Object}                            a json object with the profile for the given address
    */
-  static async getProfile (address, opts) {
+
+  static async getProfile (address, opts = {}) {
+    const normalizedAddress = address.toLowerCase()
+    opts = Object.assign({ iframeStore: true, useCacheService: true }, opts)
+    let profile
+    if (opts.useCacheService) {
+      const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
+      profile = await getProfileAPI(normalizedAddress, profileServerUrl)
+    } else {
+      profile = await this._getProfileOrbit(normalizedAddress, opts)
+    }
+    return profile
+  }
+
+  /**
+   * Get a list of public profiles for given addresses. This relies on 3Box profile API.
+   *
+   * @param     {Array}     address                 An array of ethereum addresses
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Object}                            a json object with each key an address and value the profile
+   */
+
+  static async getProfiles (addressArray, opts = {}) {
+    const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
+    const req = { addressList: addressArray }
+    return utils.httpRequest(profileServerUrl + '/profileList', 'POST', req)
+  }
+
+  static async _getProfileOrbit (address, opts = {}) {
     opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
@@ -214,6 +248,19 @@ class Box {
     } else {
       return null
     }
+  }
+
+  /**
+   * GraphQL for 3Box profile API
+   *
+   * @param     {Object}    query               A graphQL query object.
+   * @param     {Object}    opts                Optional parameters
+   * @param     {String}    opts.graphqlServer  URL of graphQL 3Box profile service
+   * @return    {Object}                        a json object with each key an address and value the profile
+   */
+
+  static async profileGraphQL (query, opts = {}) {
+    return graphQLRequest(opts.graphqlServer || GRAPHQL_SERVER_URL, query)
   }
 
   /**
@@ -394,6 +441,20 @@ async function getRootStoreAddress (serverUrl, identifier) {
       if (JSON.parse(err).message === 'root store address not found') {
         resolve(null)
       }
+      reject(err)
+    }
+  })
+}
+
+async function getProfileAPI (rootStoreAddress, serverUrl) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.httpRequest(
+        serverUrl + '/profile?address=' + encodeURIComponent(rootStoreAddress),
+        'GET'
+      )
+      resolve(res)
+    } catch (err) {
       reject(err)
     }
   })
