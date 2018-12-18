@@ -7,7 +7,6 @@ const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 const { createProxyClient } = require('ipfs-postmsg-proxy')
 const graphQLRequest = require('graphql-request').request
 
-
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const Verifications = require('./verifications')
@@ -165,8 +164,8 @@ class Box {
     const normalizedAddress = address.toLowerCase()
     opts = Object.assign({ iframeStore: true, api: true }, opts)
     let profile
-    if (api) {
-      const profileServerUrl =  opts.profileServer || PROFILE_SERVER_URL
+    if (opts.api) {
+      const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
       profile = await getProfileAPI(normalizedAddress, profileServerUrl)
     } else {
       profile = await this._getProfileOrbit(normalizedAddress, opts)
@@ -183,13 +182,14 @@ class Box {
    * @return    {Object}                            a json object with each key an address and value the profile
    */
 
-  static async getProfiles(addressArray, opts = {}) {
-    const profileServerUrl =  opts.profileServer || PROFILE_SERVER_URL
+  static async getProfiles (addressArray, opts = {}) {
+    const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
     const req = { addressList: addressArray }
-    return await utils.httpRequest(profileServerUrl  + '/profileList', 'POST', req)
+    const profile = await utils.httpRequest(profileServerUrl + '/profileList', 'POST', req)
+    return profile
   }
 
-  static async _getProfileOrbit(address, opts = {}) {
+  static async _getProfileOrbit (address, opts = {}) {
     opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
@@ -264,9 +264,10 @@ class Box {
    * @return    {Object}                        a json object with each key an address and value the profile
    */
 
-  static async profileGraphQL (query, opts ={}) {
+  static async profileGraphQL (query, opts = {}) {
     const graphql = opts.graphql || GRAPHQL_SERVER_URL
-    return await graphQLRequest(graphql, query)
+    const res = await graphQLRequest(graphql, query)
+    return res
   }
 
   /**
