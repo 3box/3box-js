@@ -48,7 +48,7 @@
     "muport-core": "^0.4.1",
     "node-fetch": "^2.3.0",
     "orbit-db": "git://github.com/orbitdb/orbit-db.git#dddb271",
-    "orbit-db-cache-postmsg-proxy": "0.1.0",
+    "orbit-db-cache-postmsg-proxy": "^0.1.1",
     "store": "^2.0.12"
   },
   "devDependencies": {

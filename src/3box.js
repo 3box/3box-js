@@ -16,18 +16,23 @@ const utils = require('./utils')
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
-const IFRAME_STORE_VERSION = '0.0.2'
+const IFRAME_STORE_VERSION = '0.0.3'
 const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 
 const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
 const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
 
-let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy
+let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy, iframeLoadedPromise
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const iframe = document.createElement('iframe')
   iframe.src = IFRAME_STORE_URL
   iframe.style = 'width:0; height:0; border:0; border:none !important'
+
+  iframeLoadedPromise = new Promise((resolve, reject) => {
+    iframe.onload = () => { resolve() }
+  })
+
   document.body.appendChild(iframe)
   // Create proxy clients that talks to the iframe
   const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
@@ -287,6 +292,9 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts) {
+    if (iframeLoadedPromise) {
+      await iframeLoadedPromise
+    }
     opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
     // console.time('-- openBox --')
