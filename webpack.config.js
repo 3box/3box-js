@@ -1,5 +1,4 @@
 const path = require('path');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
   entry: './src/3box.js',
@@ -10,11 +9,6 @@ module.exports = {
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
-  optimization: {
-   minimizer: [
-     new UglifyJsPlugin()
-   ]
- },
   module: {
     rules: [
       {
