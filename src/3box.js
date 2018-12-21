@@ -292,9 +292,6 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts) {
-    if (iframeLoadedPromise) {
-      await iframeLoadedPromise
-    }
     opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
     // console.time('-- openBox --')
@@ -426,7 +423,7 @@ async function initIPFS (ipfs, iframeStore) {
       // TODO assume reayd object??
       // ipfs.on('ready', () => resolve(ipfs))
     } else {
-      // TODO is this already from iframe? does it wait to return messages until ready?
+      await iframeLoadedPromise
       resolve(ipfsProxy)
     }
     // ipfs.on('error', error => {
