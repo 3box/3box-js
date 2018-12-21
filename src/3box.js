@@ -415,22 +415,18 @@ class Box {
 }
 
 async function initIPFS (ipfs, iframeStore) {
-  return new Promise((resolve, reject) => {
-    if (!ipfs && !ipfsProxy) reject(new Error('No IPFS object configured and no default available for environment'))
-    if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
-    if (ipfs) {
-      resolve(ipfs)
-      // TODO assume reayd object??
-      // ipfs.on('ready', () => resolve(ipfs))
-    } else {
-      await iframeLoadedPromise
-      resolve(ipfsProxy)
-    }
-    // ipfs.on('error', error => {
-    //   console.error(error)
-    //   reject(error)
-    // })
-  })
+  if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
+  if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
+  if (ipfs) {
+    return ipfs
+  } else {
+    await iframeLoadedPromise
+    return ipfsProxy
+  }
+  // ipfs.on('error', error => {
+  //   console.error(error)
+  //   reject(error)
+  // })
 }
 
 async function getRootStoreAddress (serverUrl, identifier) {
