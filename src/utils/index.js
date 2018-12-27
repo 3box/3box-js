@@ -1,4 +1,4 @@
-const XMLHttpRequest = (typeof window !== 'undefined') ? window.XMLHttpRequest : require('xmlhttprequest').XMLHttpRequest
+const fetch = (typeof window !== 'undefined') ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
 
@@ -46,34 +46,18 @@ module.exports = {
     })
   },
 
-  httpRequest: (url, method, payload) => {
-    return new Promise((resolve, reject) => {
-      const request = new XMLHttpRequest()
-      request.onreadystatechange = () => {
-        if (request.readyState === 4 && request.timeout !== 1) {
-          if (request.status !== 200) {
-            reject(request.responseText)
-          } else {
-            try {
-              resolve(JSON.parse(request.responseText))
-            } catch (jsonError) {
-              reject(new Error(`[threeBox] while parsing data: '${String(request.responseText)}', error: ${String(jsonError)}`))
-            }
-          }
-        }
-      }
-      request.open(method, url)
-      request.setRequestHeader('accept', 'application/json')
-      // request.setRequestHeader('accept', '*/*')
-      if (method === 'POST') {
-        request.setRequestHeader('Content-Type', `application/json`)
-        request.send(JSON.stringify(payload))
-      } else {
-        request.setRequestHeader('Authorization', `Bearer ${payload}`)
-        request.send()
-      }
-    })
+  fetchJson: async (url, body) => {
+    let opts
+    if (body) {
+      opts = { body: JSON.stringify(body), method: 'POST', headers: { 'Content-Type': 'application/json' } }
+    }
+    return (await fetch(url, opts)).json()
   },
+
+  fetchText: async (url, opts) => {
+    return (await fetch(url, opts)).text()
+  },
+
   sha256Multihash: str => {
     const digest = Buffer.from(sha256.digest(str))
     return Multihash.encode(digest, 'sha2-256').toString('hex')

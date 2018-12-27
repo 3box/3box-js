@@ -1,9 +1,10 @@
-[![CircleCI](https://img.shields.io/circleci/project/github/3box/3box-js/master.svg?style=for-the-badge)](https://circleci.com/gh/3box/3box-js)
+[![CircleCI](https://img.shields.io/circleci/project/github/3box/3box-js.svg?style=for-the-badge)](https://circleci.com/gh/3box/3box-js)
 [![Discord](https://img.shields.io/discord/484729862368526356.svg?style=for-the-badge)](https://discordapp.com/invite/Z3f3Cxy)
 [![npm](https://img.shields.io/npm/dt/3box.svg?style=for-the-badge)](https://www.npmjs.com/package/3box)
 [![npm](https://img.shields.io/npm/v/3box.svg?style=for-the-badge)](https://www.npmjs.com/package/3box)
 [![Codecov](https://img.shields.io/codecov/c/github/uport-project/3box-js.svg?style=for-the-badge)](https://codecov.io/gh/uport-project/3box-js)
 [![Twitter Follow](https://img.shields.io/twitter/follow/3boxdb.svg?style=for-the-badge&label=Twitter)](https://twitter.com/3boxdb)
+[![Greenkeeper badge](https://badges.greenkeeper.io/3box/3box-js.svg)](https://greenkeeper.io/)
 
 [Install](#install) | [Usage](#usage) | [Dapp data](#dappdata) | [Example](#example) | [API Docs](#api)
 
@@ -155,6 +156,8 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
         * [.logout()](#Box+logout)
     * _static_
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
+        * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
+        * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
 
@@ -223,8 +226,38 @@ Get the public profile of a given address
 | address | <code>String</code> | An ethereum address |
 | opts | <code>Object</code> | Optional parameters |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
-| opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
+| opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
+| opts.iframeStore | <code>Boolean</code> | Use iframe for storage, allows shared store across domains. Default true when run in browser. |
+| opts.useCacheService | <code>Boolean</code> | Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true. |
+
+<a name="Box.getProfiles"></a>
+
+#### Box.getProfiles(address, opts) ⇒ <code>Object</code>
+Get a list of public profiles for given addresses. This relies on 3Box profile API.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>Array</code> | An array of ethereum addresses |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.profileGraphQL"></a>
+
+#### Box.profileGraphQL(query, opts) ⇒ <code>Object</code>
+GraphQL for 3Box profile API
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| query | <code>Object</code> | A graphQL query object. |
+| opts | <code>Object</code> | Optional parameters |
+| opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
 
 <a name="Box.openBox"></a>
 
@@ -241,9 +274,10 @@ Opens the user space associated with the given address
 | opts | <code>Object</code> | Optional parameters |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 | opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
-| opts.ipfsOptions | <code>Object</code> | A ipfs options object to pass to the js-ipfs constructor |
+| opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
+| opts.iframeStore | <code>Boolean</code> | Use iframe for storage, allows shared store across domains. Default true when run in browser. |
 
 <a name="Box.isLoggedIn"></a>
 
@@ -325,3 +359,4 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
+

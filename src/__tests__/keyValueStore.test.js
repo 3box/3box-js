@@ -118,8 +118,8 @@ describe('KeyValueStore', () => {
     })
   })
 
-  afterAll(async () => {
-    await orbitdb.stop()
-    await ipfs.stop()
-  })
+  // afterAll(async () => {
+  //   await orbitdb.stop()
+  //   await ipfs.stop()
+  // })
 })

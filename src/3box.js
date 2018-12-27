@@ -1,30 +1,44 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
 const localstorage = require('store')
-const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
+const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
+const { createProxyClient } = require('ipfs-postmsg-proxy')
+const graphQLRequest = require('graphql-request').request
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
+const Verifications = require('./verifications')
 const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
-const IPFS_OPTIONS = {
-  EXPERIMENTAL: {
-    pubsub: true
-  },
-  preload: { enabled: false },
-  config: {
-    Bootstrap: [ ]
-  }
-}
+const IFRAME_STORE_VERSION = '0.0.3'
+const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 
-let globalIPFS
-let globalOrbitDB
+const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
+const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
+
+let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy, iframeLoadedPromise
+
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const iframe = document.createElement('iframe')
+  iframe.src = IFRAME_STORE_URL
+  iframe.style = 'width:0; height:0; border:0; border:none !important'
+
+  iframeLoadedPromise = new Promise((resolve, reject) => {
+    iframe.onload = () => { resolve() }
+  })
+
+  document.body.appendChild(iframe)
+  // Create proxy clients that talks to the iframe
+  const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
+  ipfsProxy = createProxyClient({ postMessage })
+  cacheProxy = OrbitDBCacheProxy({ postMessage })
+}
 
 class Box {
   /**
@@ -43,6 +57,11 @@ class Box {
      * @property {KeyValueStore} private        access the private store of the users 3Box
      */
     this.private = null
+    /**
+     * @private
+     * @property {Verifications} verified       check and create verifications
+     */
+    this.verified = new Verifications(this)
   }
 
   async _load (opts = {}) {
@@ -52,7 +71,7 @@ class Box {
 
     const pinningNode = opts.pinningNode || PINNING_NODE
     // console.time('start ipfs')
-    this._ipfs = await initIPFS(opts.ipfsOptions)
+    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
     // console.timeEnd('start ipfs')
     // TODO - if connection to this peer is lost we should try to reconnect
     // console.time('connect to pinning ipfs node')
@@ -62,7 +81,8 @@ class Box {
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
     // console.time('new OrbitDB')
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore })
+    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
     // console.timeEnd('new OrbitDB')
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
@@ -78,6 +98,7 @@ class Box {
       if (peer === pinningNode.split('/').pop()) {
         // console.timeEnd('opening pinning room, pinning node joined')
         // console.log('broadcasting odb-address')
+
         this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
     }
@@ -134,11 +155,43 @@ class Box {
    * @param     {String}    address                 An ethereum address
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.addressServer      URL of the Address Server
-   * @param     {Object}    opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
+   * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
+   * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
    * @return    {Object}                            a json object with the profile for the given address
    */
+
   static async getProfile (address, opts = {}) {
+    const normalizedAddress = address.toLowerCase()
+    opts = Object.assign({ iframeStore: true, useCacheService: true }, opts)
+    let profile
+    if (opts.useCacheService) {
+      const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
+      profile = await getProfileAPI(normalizedAddress, profileServerUrl)
+    } else {
+      profile = await this._getProfileOrbit(normalizedAddress, opts)
+    }
+    return profile
+  }
+
+  /**
+   * Get a list of public profiles for given addresses. This relies on 3Box profile API.
+   *
+   * @param     {Array}     address                 An array of ethereum addresses
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Object}                            a json object with each key an address and value the profile
+   */
+
+  static async getProfiles (addressArray, opts = {}) {
+    const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
+    const req = { addressList: addressArray }
+    return utils.fetchJson(profileServerUrl + '/profileList', req)
+  }
+
+  static async _getProfileOrbit (address, opts = {}) {
+    opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
     let usingGlobalIPFS = false
@@ -149,13 +202,14 @@ class Box {
       ipfs = globalIPFS
       usingGlobalIPFS = true
     } else {
-      ipfs = await initIPFS(opts.ipfsOptions)
+      ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
     }
     if (globalOrbitDB) {
       orbitdb = globalOrbitDB
       usingGlobalIPFS = true
     } else {
-      orbitdb = new OrbitDB(ipfs, opts.orbitPath)
+      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+      orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
     }
 
     const pinningNode = opts.pinningNode || PINNING_NODE
@@ -203,6 +257,29 @@ class Box {
   }
 
   /**
+   * GraphQL for 3Box profile API
+   *
+   * @param     {Object}    query               A graphQL query object.
+   * @param     {Object}    opts                Optional parameters
+   * @param     {String}    opts.graphqlServer  URL of graphQL 3Box profile service
+   * @return    {Object}                        a json object with each key an address and value the profile
+   */
+
+  static async profileGraphQL (query, opts = {}) {
+    return graphQLRequest(opts.graphqlServer || GRAPHQL_SERVER_URL, query)
+  }
+
+  /**
+   * Verifies the proofs of social accounts that is present in the profile.
+   *
+   * @private
+   * @param     {Object}            profile                 A user profile object
+   * @return    {Object}                                    An object containing the accounts that have been verified
+   */
+  static async getVerifiedAccounts (profile) {
+  }
+
+  /**
    * Opens the user space associated with the given address
    *
    * @param     {String}            address                 An ethereum address
@@ -210,12 +287,14 @@ class Box {
    * @param     {Object}            opts                    Optional parameters
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
-   * @param     {Object}            opts.ipfsOptions        A ipfs options object to pass to the js-ipfs constructor
+   * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
    * @param     {String}            opts.addressServer      URL of the Address Server
+   * @param     {Boolean}           opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts = {}) {
+  static async openBox (address, ethereumProvider, opts) {
+    opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
     // console.time('-- openBox --')
     let muportDID
@@ -262,7 +341,7 @@ class Box {
     const addressToken = await this._muportDID.signJWT({ rootStoreAddress })
     // Store odbAddress on 3box-address-server
     try {
-      await utils.httpRequest(this._serverUrl + '/odbAddress', 'POST', {
+      await utils.fetchJson(this._serverUrl + '/odbAddress', {
         address_token: addressToken
       })
     } catch (err) {
@@ -275,27 +354,20 @@ class Box {
     const address = this._muportDID.getDidDocument().managementKey
     if (!localstorage.get('linkConsent_' + address)) {
       const did = this._muportDID.getDid()
-      const consent = await utils.getLinkConsent(
-        address,
-        did,
-        this._web3provider
-      )
-      const linkData = {
-        consent_msg: consent.msg,
-        consent_signature: consent.sig,
-        linked_did: did
+      let linkData = await this.public.get('ethereum_proof')
+      if (!linkData) {
+        const consent = await utils.getLinkConsent(address, did, this._web3provider)
+        linkData = {
+          consent_msg: consent.msg,
+          consent_signature: consent.sig,
+          linked_did: did
+        }
+        await this.public.set('ethereum_proof', linkData)
       }
       // Send consentSignature to 3box-address-server to link profile with ethereum address
       try {
-        await utils.httpRequest(this._serverUrl + '/link', 'POST', linkData)
-
-        // Store linkConsent into localstorage
-        const linkConsent = {
-          address: address,
-          did: did,
-          consent: consent
-        }
-        localstorage.set('linkConsent_' + address, linkConsent)
+        await utils.fetchJson(this._serverUrl + '/link', linkData)
+        localstorage.set('linkConsent_' + address, true)
       } catch (err) {
         console.error(err)
       }
@@ -316,7 +388,7 @@ class Box {
   async close () {
     await this._orbitdb.stop()
     await this._pubsub.disconnect()
-    await this._ipfs.stop()
+    // await this._ipfs.stop()
     globalOrbitDB = null
     globalIPFS = null
   }
@@ -344,30 +416,37 @@ class Box {
   }
 }
 
-async function initIPFS (ipfsOptions) {
-  return new Promise((resolve, reject) => {
-    let ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
-    ipfs.on('error', error => {
-      console.error(error)
-      reject(error)
-    })
-    ipfs.on('ready', () => resolve(ipfs))
-  })
+async function initIPFS (ipfs, iframeStore) {
+  if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
+  if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
+  if (ipfs) {
+    return ipfs
+  } else {
+    await iframeLoadedPromise
+    return ipfsProxy
+  }
+  // ipfs.on('error', error => {
+  //   console.error(error)
+  //   reject(error)
+  // })
 }
 
 async function getRootStoreAddress (serverUrl, identifier) {
+  // read orbitdb root store address from the 3box-address-server
+  const res = await utils.fetchJson(serverUrl + '/odbAddress/' + identifier)
+  if (res.status === 'success') {
+    return res.data.rootStoreAddress
+  } else {
+    throw new Error(res.message)
+  }
+}
+
+async function getProfileAPI (rootStoreAddress, serverUrl) {
   return new Promise(async (resolve, reject) => {
     try {
-      // read orbitdb root store address from the 3box-address-server
-      const res = await utils.httpRequest(
-        serverUrl + '/odbAddress/' + identifier,
-        'GET'
-      )
-      resolve(res.data.rootStoreAddress)
+      const res = await utils.fetchJson(serverUrl + '/profile?address=' + encodeURIComponent(rootStoreAddress))
+      resolve(res)
     } catch (err) {
-      if (JSON.parse(err).message === 'root store address not found') {
-        resolve(null)
-      }
       reject(err)
     }
   })

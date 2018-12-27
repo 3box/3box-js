@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -33,7 +33,7 @@
     "type": "git",
     "url": "git+https://github.com/uport-project/3box-js.git"
   },
-  "author": "uPort <team@uport.me>",
+  "author": "3box <team@3box.io>",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/uport-project/3box-js/issues"
@@ -42,14 +42,14 @@
   "dependencies": {
     "@babel/runtime": "^7.1.2",
     "bip39": "^2.5.0",
-    "ipfs": "^0.32.2",
-    "ipfs-api": "^24.0.0",
-    "ipfs-pubsub-room": "^1.4.0",
+    "graphql-request": "^1.8.2",
+    "ipfs-postmsg-proxy": "^3.1.1",
     "js-sha256": "^0.9.0",
     "muport-core": "^0.4.1",
-    "orbit-db": "^0.19.9",
-    "store": "^2.0.12",
-    "xmlhttprequest": "^1.8.0"
+    "node-fetch": "^2.3.0",
+    "orbit-db": "git://github.com/orbitdb/orbit-db.git#dddb271",
+    "orbit-db-cache-postmsg-proxy": "^0.1.1",
+    "store": "^2.0.12"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.2",
@@ -61,7 +61,8 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "^7.1.5",
     "ganache-cli": "^6.1.0",
-    "ipfsd-ctl": "^0.39.1",
+    "ipfs": "^0.32.2",
+    "ipfsd-ctl": "^0.40.1",
     "jest": "^23.6.0",
     "jsdoc-to-markdown": "^4.0.1",
     "standard": "^12.0.1",
