@@ -2,6 +2,7 @@ const verifier = require('./utils/verifier')
 
 class Verifications {
   /**
+   * @private
    * Please use **box.verified** to get the instance of this class
    */
   constructor (box) {

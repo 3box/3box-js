@@ -58,6 +58,7 @@ class Box {
      */
     this.private = null
     /**
+     * @private
      * @property {Verifications} verified       check and create verifications
      */
     this.verified = new Verifications(this)
@@ -271,6 +272,7 @@ class Box {
   /**
    * Verifies the proofs of social accounts that is present in the profile.
    *
+   * @private
    * @param     {Object}            profile                 A user profile object
    * @return    {Object}                                    An object containing the accounts that have been verified
    */
