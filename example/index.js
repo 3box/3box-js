@@ -67,9 +67,18 @@ profileGraphQL.addEventListener('click', () => {
   Box.profileGraphQL(query).then(res => {
     console.log(res)
     profileGraphQLData.innerHTML = ''
-    Object.entries(res.profile).map(kv => {
-      profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
-    })
+    if (res.profile) {
+      Object.entries(res.profile).map(kv => {
+        profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+      })
+    } else if (res.profiles) {
+      res.profiles.map(profile => {
+        Object.entries(profile).map(kv => {
+          profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+        })
+        profileGraphQLData.innerHTML += '<hr />'
+      })
+    }
   })
 })
 
