@@ -1,5 +1,16 @@
 # Release Notes
 
+## v1.1.0 - 2018-12-27
+### Features
+* Local cache using an iframe
+  IPFS and OrbitDB data is now shared between dapps. The data is now stored in an iframe instead of being replicated between each dapp.
+* Network cache
+  When syncing public profiles of users a centralized caching service is now used by default. This speeds up the process of getting multiple public profiles at once. This feature can be disabled in favor for the decentralized approach.
+* GraphQL queries
+  It's now possible to encode GraphQL queries for public profiles. This allows for queries of only the relevant information of profiles.
+* Ethereum address proof
+  The proof that links users ethereum address to their 3Box profile is now stored in their 3Box.
+
 ## v1.0.6 - 2018-12-4
 Improve error handling
 Publish DID in public profile
