@@ -48,7 +48,7 @@ class Verifications {
    * @return    {String}                                    The twitter handle of the user
    */
   async twitter () {
-    return this._getVerifiedPublicAccount('twitter', verifier.verifyGithub)
+    return this._getVerifiedPublicAccount('twitter', verifier.verifyTwitter)
   }
 
   /**
@@ -59,7 +59,7 @@ class Verifications {
    * @return    {String}                                    The twitter handle of the user
    */
   async addTwitter (claim) {
-    return this._addVerifiedPublicAccount('twitter', claim, verifier.verifyGithub)
+    return this._addVerifiedPublicAccount('twitter', claim, verifier.verifyTwitter)
   }
 }
 
