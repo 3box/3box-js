@@ -49,18 +49,18 @@ class Verifications {
    * @return    {String}                                    The twitter handle of the user
    */
   async twitter () {
-    throw new Error('Not implemented yet')
+    return this._getVerifiedPublicAccount('twitter', verifier.verifyTwitter)
   }
 
   /**
    * Adds a twitter verification to the users profile
    * Throws an error if the verification fails.
    *
-   * @param     {Object}            tweetUrl                URL of the proof
+   * @param     {String}            claim                   A did-JWT claim  ownership of a twitter handle
    * @return    {String}                                    The twitter handle of the user
    */
-  async addTwitter (tweetUrl) {
-    throw new Error('Not implemented yet')
+  async addTwitter (claim) {
+    return this._addVerifiedPublicAccount('twitter', claim, verifier.verifyTwitter)
   }
 }
 

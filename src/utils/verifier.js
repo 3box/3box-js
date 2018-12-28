@@ -1,4 +1,6 @@
 const { fetchText } = require('./index')
+const didJWT = require('did-jwt')
+require('https-did-resolver').default()
 
 module.exports = {
   /**
@@ -27,11 +29,23 @@ module.exports = {
    * Verifies that the tweet contains the given muportDID and returns the users twitter handle.
    * Throws an error otherwise.
    *
-   * @param     {String}            did                     The muport DID of the user
-   * @param     {Object}            tweetUrl                URL of the proof
-   * @return    {String}                                    The twitter handle of the user
+   * @param     {String}            did             The muport DID of the user
+   * @param     {String}            claim           A did-JWT with claim
+   * @return    {Object}                            Object containing twitter handle of the user and the verifier
    */
-  verifyTwitter: (did, tweetUrl) => {
-    return ''
+  verifyTwitter: async (did, claim) => {
+    const verified = await didJWT.verifyJWT(claim)
+    if (verified.payload.sub !== did) {
+      throw new Error('Verification not valid for given user')
+    }
+    const claimData = verified.payload.claim
+    if (!claimData.twitter_handle || !claimData.twitter_proof) {
+      throw new Error('The claim for your twitter is not correct')
+    }
+    return {
+      twitter: claimData.twitter_handle,
+      proof: claimData.twitter_proof,
+      verifier: verified.payload.iss
+    }
   }
 }
