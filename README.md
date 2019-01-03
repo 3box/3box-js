@@ -127,6 +127,36 @@ box.private.get('email').then(email => {
 })
 ```
 
+#### IPFS Configs
+
+Two options are available if you want to pass additional IPFS config options to the IPFS object used in the library.
+
+First you can pass your own IPFS object, configured how you decide and then disable the iframe as well. This offers the most optionality but experiences a loss in performace without the iframe.
+
+```js
+const IPFS_OPTIONS = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  ... // Add your additional options, pubsub is required
+}
+
+const ipfs = new IPFS(IPFS_OPTIONS)
+const box = await Box.openBox('0x12345abcde', ethereumProvider, { ipfs, iframeStore: false })
+```
+
+Second you can access the already initialized default IPFS object and change the IPFS configurations available after initialization. For example you can add a pinning node as follows.
+
+```js
+const box = await Box.openBox('0x12345abcde', ethereumProvider)
+
+box._ipfs.swarm.connect(pinningNode, () => {
+  ...
+})
+```
+
+Reference [ipfs-js](https://github.com/ipfs/js-ipfs) for additional options.
+
 ## <a name="dappdata"></a> Dapp data
 Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](./KEY-CONVENTIONS.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
 
