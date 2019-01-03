@@ -181,6 +181,7 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
     * _instance_
         * [.public](#Box+public)
         * [.private](#Box+private)
+        * [.verified](#Box+verified)
         * [.onSyncDone(syncDone)](#Box+onSyncDone)
         * [.close()](#Box+close)
         * [.logout()](#Box+logout)
@@ -188,6 +189,7 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
         * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
+        * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
         * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
 
@@ -215,6 +217,16 @@ Please use the **openBox** method to instantiate a 3Box
 | Name | Type | Description |
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users 3Box |
+
+<a name="Box+verified"></a>
+
+#### box.verified
+**Kind**: instance property of [<code>Box</code>](#Box)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| verified | [<code>Verifications</code>](#Verifications) | check and create verifications |
 
 <a name="Box+onSyncDone"></a>
 
@@ -288,6 +300,18 @@ GraphQL for 3Box profile API
 | query | <code>Object</code> | A graphQL query object. |
 | opts | <code>Object</code> | Optional parameters |
 | opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
+
+<a name="Box.getVerifiedAccounts"></a>
+
+#### Box.getVerifiedAccounts(profile) ⇒ <code>Object</code>
+Verifies the proofs of social accounts that is present in the profile.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - An object containing the accounts that have been verified  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| profile | <code>Object</code> | A user profile object |
 
 <a name="Box.openBox"></a>
 
@@ -389,4 +413,63 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
+
+<a name="Verifications"></a>
+
+### Verifications
+**Kind**: global class  
+
+* [Verifications](#Verifications)
+    * [new Verifications()](#new_Verifications_new)
+    * [.github()](#Verifications+github) ⇒ <code>String</code>
+    * [.addGithub(gistUrl)](#Verifications+addGithub) ⇒ <code>String</code>
+    * [.twitter()](#Verifications+twitter) ⇒ <code>String</code>
+    * [.addTwitter(claim)](#Verifications+addTwitter) ⇒ <code>String</code>
+
+<a name="new_Verifications_new"></a>
+
+#### new Verifications()
+Please use **box.verified** to get the instance of this class
+
+<a name="Verifications+github"></a>
+
+#### verifications.github() ⇒ <code>String</code>
+Verifies that the user has a valid github account
+Throws an error otherwise.
+
+**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Returns**: <code>String</code> - The github handle of the user  
+<a name="Verifications+addGithub"></a>
+
+#### verifications.addGithub(gistUrl) ⇒ <code>String</code>
+Adds a github verification to the users profile
+Throws an error if the verification fails.
+
+**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Returns**: <code>String</code> - The github handle of the user  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| gistUrl | <code>Object</code> | URL of the proof |
+
+<a name="Verifications+twitter"></a>
+
+#### verifications.twitter() ⇒ <code>String</code>
+Verifies that the user has a valid twitter account
+Throws an error otherwise.
+
+**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Returns**: <code>String</code> - The twitter handle of the user  
+<a name="Verifications+addTwitter"></a>
+
+#### verifications.addTwitter(claim) ⇒ <code>String</code>
+Adds a twitter verification to the users profile
+Throws an error if the verification fails.
+
+**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Returns**: <code>String</code> - The twitter handle of the user  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| claim | <code>String</code> | A did-JWT claim  ownership of a twitter handle |
 
