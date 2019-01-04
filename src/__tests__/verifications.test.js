@@ -64,7 +64,10 @@ describe('Verifications', () => {
     it('should add the github proof and get the github handler to verify if it is verified', async () => {
       await verifications.addGithub(GITHUB_LINK1_URL)
       let github = await verifications.github()
-      expect(github).toEqual(GITHUB_LINK1_USER)
+      expect(github).toEqual({
+        username: GITHUB_LINK1_USER,
+        proof: GITHUB_LINK1_URL
+      })
     })
 
     it('should throw if gistUrl does not contain the correct did', async () => {
@@ -107,14 +110,14 @@ describe('Verifications', () => {
     it('should add the twitter proof and get the twitter handler to verify if it is verified', async () => {
       await verifications.addTwitter(correctClaim)
       let twitter = await verifications.twitter()
-      expect(twitter).toEqual({"twitter": "twitterUser", "proof": "https://twitter.com/twitterUser/12387623", "verifier": "did:https:test.com"})
+      expect(twitter).toEqual({"username": "twitterUser", "proof": "https://twitter.com/twitterUser/12387623", "verifiedBy": "did:https:test.com"})
     })
 
     it('should throw if twitter claim does not contain the correct did', async () => {
       expect(verifications.addTwitter(incorrectClaim)).rejects.toEqual(new Error('Verification not valid for given user'))
     })
 
-    it('should throw if twitter claim does not contain handle and proof', async () => {
+    it('should throw if twitter claim does not contain username and proof', async () => {
       incorrectClaim = await didJWT.createJWT({
         sub: 'did:muport:0x12345',
         iat: 123456789,
