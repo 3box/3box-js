@@ -50,5 +50,16 @@ module.exports = {
       proof: claimData.twitter_proof,
       verifiedBy: verified.payload.iss
     }
+  },
+  /**
+   * Verifies that the proof for a did is correct
+   *
+   * @param     {String}            did             The muport DID of the user
+   * @param     {String}            claim           A did-JWT with claim
+   * @return    {Boolean}                           True if the proof is valid
+   */
+  verifyDID: async (did, claim) => {
+    const verified = await didJWT.verifyJWT(claim)
+    return verified.payload.iss === did
   }
 }

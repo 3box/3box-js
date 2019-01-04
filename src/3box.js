@@ -12,6 +12,7 @@ const PrivateStore = require('./privateStore')
 const Verifications = require('./verifications')
 const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
+const verifier = require('./utils/verifier')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
@@ -275,6 +276,25 @@ class Box {
    * @return    {Object}                                    An object containing the accounts that have been verified
    */
   static async getVerifiedAccounts (profile) {
+    let verifs = {}
+    if (!(await verifier.verifyDID(profile.did, profile.proof_did))) {
+      throw new Error('This profile doesn\'t have a valid proof of it\'s DID')
+    }
+    if (profile.proof_github) {
+      try {
+        verifs.github = await verifier.verifyGithub(profile.did, profile.proof_github)
+      } catch (err) {
+        console.error('Invalid github verification:', err.message)
+      }
+    }
+    if (profile.proof_twitter) {
+      try {
+        verifs.twitter = await verifier.verifyTwitter(profile.did, profile.proof_twitter)
+      } catch (err) {
+        console.error('Invalid twitter verification:', err.message)
+      }
+    }
+    return verifs
   }
 
   /**
@@ -375,6 +395,10 @@ class Box {
   async _ensureDIDPublished () {
     if (!(await this.public.get('did'))) {
       await this.public.set('did', this._muportDID.getDid())
+    }
+    if (!(await this.public.get('proof_did'))) {
+      // we can just sign an empty JWT as a proof that we own this DID
+      await this.public.set('proof_did', this._muportDID.signJWT())
     }
   }
 

@@ -421,10 +421,10 @@ Remove the value for the given key
 
 * [Verifications](#Verifications)
     * [new Verifications()](#new_Verifications_new)
-    * [.github()](#Verifications+github) ⇒ <code>String</code>
-    * [.addGithub(gistUrl)](#Verifications+addGithub) ⇒ <code>String</code>
-    * [.twitter()](#Verifications+twitter) ⇒ <code>String</code>
-    * [.addTwitter(claim)](#Verifications+addTwitter) ⇒ <code>String</code>
+    * [.github()](#Verifications+github) ⇒ <code>Object</code>
+    * [.addGithub(gistUrl)](#Verifications+addGithub) ⇒ <code>Object</code>
+    * [.twitter()](#Verifications+twitter) ⇒ <code>Object</code>
+    * [.addTwitter(claim)](#Verifications+addTwitter) ⇒ <code>Object</code>
 
 <a name="new_Verifications_new"></a>
 
@@ -433,20 +433,20 @@ Please use **box.verified** to get the instance of this class
 
 <a name="Verifications+github"></a>
 
-#### verifications.github() ⇒ <code>String</code>
+#### verifications.github() ⇒ <code>Object</code>
 Verifies that the user has a valid github account
 Throws an error otherwise.
 
 **Kind**: instance method of [<code>Verifications</code>](#Verifications)  
-**Returns**: <code>String</code> - The github handle of the user  
+**Returns**: <code>Object</code> - Object containing username, and proof  
 <a name="Verifications+addGithub"></a>
 
-#### verifications.addGithub(gistUrl) ⇒ <code>String</code>
+#### verifications.addGithub(gistUrl) ⇒ <code>Object</code>
 Adds a github verification to the users profile
 Throws an error if the verification fails.
 
 **Kind**: instance method of [<code>Verifications</code>](#Verifications)  
-**Returns**: <code>String</code> - The github handle of the user  
+**Returns**: <code>Object</code> - Object containing username, and proof  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -454,22 +454,22 @@ Throws an error if the verification fails.
 
 <a name="Verifications+twitter"></a>
 
-#### verifications.twitter() ⇒ <code>String</code>
+#### verifications.twitter() ⇒ <code>Object</code>
 Verifies that the user has a valid twitter account
 Throws an error otherwise.
 
 **Kind**: instance method of [<code>Verifications</code>](#Verifications)  
-**Returns**: <code>String</code> - The twitter handle of the user  
+**Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
 <a name="Verifications+addTwitter"></a>
 
-#### verifications.addTwitter(claim) ⇒ <code>String</code>
+#### verifications.addTwitter(claim) ⇒ <code>Object</code>
 Adds a twitter verification to the users profile
 Throws an error if the verification fails.
 
 **Kind**: instance method of [<code>Verifications</code>](#Verifications)  
-**Returns**: <code>String</code> - The twitter handle of the user  
+**Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| claim | <code>String</code> | A did-JWT claim  ownership of a twitter handle |
+| claim | <code>String</code> | A did-JWT claim ownership of a twitter username |
 
