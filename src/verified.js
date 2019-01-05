@@ -1,6 +1,6 @@
 const verifier = require('./utils/verifier')
 
-class Verifications {
+class Verified {
   /**
    * Please use **box.verified** to get the instance of this class
    */
@@ -18,6 +18,15 @@ class Verifications {
   async _getVerifiedPublicAccount (key, verificationFunction) {
     const proof = await this._box.public.get('proof_' + key)
     return verificationFunction(this._did, proof)
+  }
+
+  /**
+   * Returns the verified DID of the user
+   *
+   * @return    {String}                            The DID of the user
+   */
+  async DID () {
+    return this._did
   }
 
   /**
@@ -63,4 +72,4 @@ class Verifications {
   }
 }
 
-module.exports = Verifications
+module.exports = Verified

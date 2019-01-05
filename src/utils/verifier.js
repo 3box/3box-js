@@ -1,6 +1,7 @@
 const { fetchText } = require('./index')
 const didJWT = require('did-jwt')
 require('https-did-resolver').default()
+require('muport-did-resolver')()
 
 module.exports = {
   /**
@@ -54,12 +55,11 @@ module.exports = {
   /**
    * Verifies that the proof for a did is correct
    *
-   * @param     {String}            did             The muport DID of the user
    * @param     {String}            claim           A did-JWT with claim
-   * @return    {Boolean}                           True if the proof is valid
+   * @return    {String}                            The DID of the user
    */
-  verifyDID: async (did, claim) => {
+  verifyDID: async (claim) => {
     const verified = await didJWT.verifyJWT(claim)
-    return verified.payload.iss === did
+    return verified.payload.iss
   }
 }

@@ -1,4 +1,4 @@
-const Verifications = require('../verifications')
+const Verified = require('../verified')
 const Box = require('../3box')
 const didJWT = require('did-jwt')
 const { registerMethod } = require('did-resolver')
@@ -51,19 +51,19 @@ registerMethod('https', async () => {
 })
 const httpsDidSigner = didJWT.SimpleSigner('95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be')
 
-describe('Verifications', () => {
+describe('Verified', () => {
   let box
-  let verifications
+  let verified
 
   beforeAll(async () => {
     box = await Box.openBox("0x12345", "web3prov");
-    verifications = new Verifications(box)
+    verified = new Verified(box)
   })
 
   describe('github', () => {
     it('should add the github proof and get the github handler to verify if it is verified', async () => {
-      await verifications.addGithub(GITHUB_LINK1_URL)
-      let github = await verifications.github()
+      await verified.addGithub(GITHUB_LINK1_URL)
+      let github = await verified.github()
       expect(github).toEqual({
         username: GITHUB_LINK1_USER,
         proof: GITHUB_LINK1_URL
@@ -71,11 +71,11 @@ describe('Verifications', () => {
     })
 
     it('should throw if gistUrl does not contain the correct did', async () => {
-      expect(verifications.addGithub(GITHUB_LINK2_URL)).rejects.toEqual(new Error('Gist File provided does not contain the correct DID of the user'))
+      expect(verified.addGithub(GITHUB_LINK2_URL)).rejects.toEqual(new Error('Gist File provided does not contain the correct DID of the user'))
     })
 
     it('should throw if gistUrl is empty', async () => {
-      expect(verifications.addGithub("")).rejects.toEqual(new Error('The proof of your Github is not available'))
+      expect(verified.addGithub("")).rejects.toEqual(new Error('The proof of your Github is not available'))
     })
   })
 
@@ -108,13 +108,13 @@ describe('Verifications', () => {
     })
 
     it('should add the twitter proof and get the twitter handler to verify if it is verified', async () => {
-      await verifications.addTwitter(correctClaim)
-      let twitter = await verifications.twitter()
+      await verified.addTwitter(correctClaim)
+      let twitter = await verified.twitter()
       expect(twitter).toEqual({"username": "twitterUser", "proof": "https://twitter.com/twitterUser/12387623", "verifiedBy": "did:https:test.com"})
     })
 
     it('should throw if twitter claim does not contain the correct did', async () => {
-      expect(verifications.addTwitter(incorrectClaim)).rejects.toEqual(new Error('Verification not valid for given user'))
+      expect(verified.addTwitter(incorrectClaim)).rejects.toEqual(new Error('Verification not valid for given user'))
     })
 
     it('should throw if twitter claim does not contain username and proof', async () => {
@@ -128,7 +128,7 @@ describe('Verifications', () => {
         issuer: 'did:https:test.com',
         signer: httpsDidSigner
       })
-      expect(verifications.addTwitter(incorrectClaim)).rejects.toEqual(new Error('The claim for your twitter is not correct'))
+      expect(verified.addTwitter(incorrectClaim)).rejects.toEqual(new Error('The claim for your twitter is not correct'))
     })
   })
 })

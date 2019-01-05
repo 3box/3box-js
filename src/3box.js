@@ -9,7 +9,7 @@ const graphQLRequest = require('graphql-request').request
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
-const Verifications = require('./verifications')
+const Verified = require('./verified')
 const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils')
 const verifier = require('./utils/verifier')
@@ -59,9 +59,9 @@ class Box {
      */
     this.private = null
     /**
-     * @property {Verifications} verified       check and create verifications
+     * @property {Verified} verified       check and create verifications
      */
-    this.verified = new Verifications(this)
+    this.verified = new Verified(this)
   }
 
   async _load (opts = {}) {
@@ -277,19 +277,17 @@ class Box {
    */
   static async getVerifiedAccounts (profile) {
     let verifs = {}
-    if (!(await verifier.verifyDID(profile.did, profile.proof_did))) {
-      throw new Error('This profile doesn\'t have a valid proof of it\'s DID')
-    }
+    const did = await verifier.verifyDID(profile.proof_did)
     if (profile.proof_github) {
       try {
-        verifs.github = await verifier.verifyGithub(profile.did, profile.proof_github)
+        verifs.github = await verifier.verifyGithub(did, profile.proof_github)
       } catch (err) {
         console.error('Invalid github verification:', err.message)
       }
     }
     if (profile.proof_twitter) {
       try {
-        verifs.twitter = await verifier.verifyTwitter(profile.did, profile.proof_twitter)
+        verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
       } catch (err) {
         console.error('Invalid twitter verification:', err.message)
       }
@@ -393,9 +391,6 @@ class Box {
   }
 
   async _ensureDIDPublished () {
-    if (!(await this.public.get('did'))) {
-      await this.public.set('did', this._muportDID.getDid())
-    }
     if (!(await this.public.get('proof_did'))) {
       // we can just sign an empty JWT as a proof that we own this DID
       await this.public.set('proof_did', this._muportDID.signJWT())

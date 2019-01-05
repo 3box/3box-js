@@ -191,10 +191,8 @@ describe('3Box', () => {
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
-    expect(box.public.get).toHaveBeenNthCalledWith(1, 'did')
-    expect(box.public.get).toHaveBeenNthCalledWith(2, 'proof_did')
-    expect(box.public.set).toHaveBeenNthCalledWith(1, 'did', 'did:muport:Qmsdfp98yw4t7')
-    expect(box.public.set).toHaveBeenNthCalledWith(2, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7')
+    expect(box.public.get).toHaveBeenNthCalledWith(1, 'proof_did')
+    expect(box.public.set).toHaveBeenNthCalledWith(1, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7')
 
     pubsub.unsubscribe('3box-pinning')
   })
@@ -243,13 +241,11 @@ describe('3Box', () => {
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
 
-    box.public.get.mockImplementationOnce(() => 'did:test:myid')
     box.public.get.mockImplementationOnce(() => 'did proof JWT')
     const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
-    expect(box.public.get).toHaveBeenCalledWith('did')
     expect(box.public.get).toHaveBeenCalledWith('proof_did')
     expect(box.public.set).toHaveBeenCalledTimes(0)
 
@@ -420,14 +416,14 @@ describe('3Box', () => {
 
   it('should verify profiles correctly', async () => {
     const profile = {
-      did: 'did:muport:Qmasiusdf',
       proof_did: 'some proof',
       proof_github: 'github proof url',
       proof_twitter: 'twitter proof claim jwt'
     }
-    expect(Box.getVerifiedAccounts(profile)).rejects.toEqual(new Error('This profile doesn\'t have a valid proof of it\'s DID'))
     let verifier = require('../utils/verifier')
-    verifier.verifyDID.mockImplementationOnce(() => true)
+    verifier.verifyDID.mockImplementationOnce(() => { throw new Error() })
+    expect(Box.getVerifiedAccounts(profile)).rejects.toEqual(new Error())
+    verifier.verifyDID.mockImplementationOnce(() => 'did:muport:Qmsdpuhs')
     verifier.verifyGithub.mockImplementationOnce(() => {
       return { username: 'test', proof: 'some url' }
     })

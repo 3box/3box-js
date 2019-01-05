@@ -226,7 +226,7 @@ Please use the **openBox** method to instantiate a 3Box
 
 | Name | Type | Description |
 | --- | --- | --- |
-| verified | [<code>Verifications</code>](#Verifications) | check and create verifications |
+| verified | [<code>Verified</code>](#Verified) | check and create verifications |
 
 <a name="Box+onSyncDone"></a>
 
@@ -414,59 +414,67 @@ Remove the value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
-<a name="Verifications"></a>
+<a name="Verified"></a>
 
-### Verifications
+### Verified
 **Kind**: global class  
 
-* [Verifications](#Verifications)
-    * [new Verifications()](#new_Verifications_new)
-    * [.github()](#Verifications+github) ⇒ <code>Object</code>
-    * [.addGithub(gistUrl)](#Verifications+addGithub) ⇒ <code>Object</code>
-    * [.twitter()](#Verifications+twitter) ⇒ <code>Object</code>
-    * [.addTwitter(claim)](#Verifications+addTwitter) ⇒ <code>Object</code>
+* [Verified](#Verified)
+    * [new Verified()](#new_Verified_new)
+    * [.DID()](#Verified+DID) ⇒ <code>String</code>
+    * [.github()](#Verified+github) ⇒ <code>Object</code>
+    * [.addGithub(gistUrl)](#Verified+addGithub) ⇒ <code>Object</code>
+    * [.twitter()](#Verified+twitter) ⇒ <code>Object</code>
+    * [.addTwitter(claim)](#Verified+addTwitter) ⇒ <code>Object</code>
 
-<a name="new_Verifications_new"></a>
+<a name="new_Verified_new"></a>
 
-#### new Verifications()
+#### new Verified()
 Please use **box.verified** to get the instance of this class
 
-<a name="Verifications+github"></a>
+<a name="Verified+DID"></a>
 
-#### verifications.github() ⇒ <code>Object</code>
+#### verified.DID() ⇒ <code>String</code>
+Returns the verified DID of the user
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>String</code> - The DID of the user  
+<a name="Verified+github"></a>
+
+#### verified.github() ⇒ <code>Object</code>
 Verifies that the user has a valid github account
 Throws an error otherwise.
 
-**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
 **Returns**: <code>Object</code> - Object containing username, and proof  
-<a name="Verifications+addGithub"></a>
+<a name="Verified+addGithub"></a>
 
-#### verifications.addGithub(gistUrl) ⇒ <code>Object</code>
+#### verified.addGithub(gistUrl) ⇒ <code>Object</code>
 Adds a github verification to the users profile
 Throws an error if the verification fails.
 
-**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
 **Returns**: <code>Object</code> - Object containing username, and proof  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | gistUrl | <code>Object</code> | URL of the proof |
 
-<a name="Verifications+twitter"></a>
+<a name="Verified+twitter"></a>
 
-#### verifications.twitter() ⇒ <code>Object</code>
+#### verified.twitter() ⇒ <code>Object</code>
 Verifies that the user has a valid twitter account
 Throws an error otherwise.
 
-**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
 **Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
-<a name="Verifications+addTwitter"></a>
+<a name="Verified+addTwitter"></a>
 
-#### verifications.addTwitter(claim) ⇒ <code>Object</code>
+#### verified.addTwitter(claim) ⇒ <code>Object</code>
 Adds a twitter verification to the users profile
 Throws an error if the verification fails.
 
-**Kind**: instance method of [<code>Verifications</code>](#Verifications)  
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
 **Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
 
 | Param | Type | Description |
