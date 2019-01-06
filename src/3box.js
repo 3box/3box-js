@@ -393,7 +393,7 @@ class Box {
   async _ensureDIDPublished () {
     if (!(await this.public.get('proof_did'))) {
       // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', this._muportDID.signJWT())
+      await this.public.set('proof_did', await this._muportDID.signJWT())
     }
   }
 
