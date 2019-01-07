@@ -13,7 +13,8 @@ const CONF = {
       ],
       API: '/ip4/127.0.0.1/tcp/5004',
       Gateway: '/ip4/127.0.0.1/tcp/9092'
-    }
+    },
+    Bootstrap: []
   }
 }
 
@@ -30,7 +31,8 @@ const ALT_CONF = {
       ],
       API: '/ip4/127.0.0.1/tcp/5003',
       Gateway: '/ip4/127.0.0.1/tcp/9091'
-    }
+    },
+    Bootstrap: []
   }
 }
 

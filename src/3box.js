@@ -110,7 +110,7 @@ class Box {
           await Promise.all(syncPromises)
           await this._ensureDIDPublished()
           this._onSyncDoneCB()
-          //this._pubsub.unsubscribe(PINNING_ROOM)
+          // this._pubsub.unsubscribe(PINNING_ROOM)
         }
       }
     }
