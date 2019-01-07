@@ -68,49 +68,33 @@ class Box {
     const didFingerprint = utils.sha256Multihash(did)
     const rootStoreName = didFingerprint + '.root'
 
-    const pinningNode = opts.pinningNode || PINNING_NODE
-    // console.time('start ipfs')
+    this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
-    // console.timeEnd('start ipfs')
-    // TODO - if connection to this peer is lost we should try to reconnect
-    // console.time('connect to pinning ipfs node')
-    this._ipfs.swarm.connect(pinningNode, () => {
-      // console.timeEnd('connect to pinning ipfs node')
-    })
+    this._ipfs.swarm.connect(this.pinningNode, () => {})
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
-    // console.time('new OrbitDB')
     const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
-    // console.timeEnd('new OrbitDB')
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
     this._rootStore = await this._orbitdb.feed(rootStoreName)
     const rootStoreAddress = this._rootStore.address.toString()
 
-    // console.time('opening pinning room, pinning node joined')
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
     const onNewPeer = (topic, peer) => {
-      // console.log('Peer joined the room', peer)
-      // console.log(peer, pinningNode.split('/').pop())
-      if (peer === pinningNode.split('/').pop()) {
-        // console.timeEnd('opening pinning room, pinning node joined')
-        // console.log('broadcasting odb-address')
-
+      if (peer === this.pinningNode.split('/').pop()) {
         this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
     }
 
-    this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
-    this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
+    this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this))
+    this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private', this._ensurePinningNodeConnected.bind(this))
 
-    // console.time('load stores')
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),
       this.private._load()
     ])
-    // console.timeEnd('load stores')
 
     let syncPromises = []
 
@@ -126,26 +110,20 @@ class Box {
           await Promise.all(syncPromises)
           await this._ensureDIDPublished()
           this._onSyncDoneCB()
-          this._pubsub.unsubscribe(PINNING_ROOM)
+          //this._pubsub.unsubscribe(PINNING_ROOM)
         }
       }
     }
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, pinningNode)
+    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
-    // console.time('add PublicStore to rootStore')
     await this._rootStore.add({ odbAddress: pubOdbAddress })
-    // console.timeEnd('add PublicStore to rootStore')
-    // console.time('add PrivateStore to rootStore')
     await this._rootStore.add({ odbAddress: privOdbAddress })
-    // console.timeEnd('add PrivateStore to rootStore')
-    // console.time('publish rootStoreAddress to address-server')
     this._publishRootStore(rootStoreAddress)
-    // console.timeEnd('publish rootStoreAddress to address-server')
   }
 
   /**
@@ -294,34 +272,24 @@ class Box {
   static async openBox (address, ethereumProvider, opts) {
     opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
-    // console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + normalizedAddress)
     if (serializedMuDID) {
-      // console.time('new Muport')
       muportDID = new MuPort(serializedMuDID)
-      // console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
       const sig = await utils.openBoxConsent(normalizedAddress, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = utils.sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
-      // console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: normalizedAddress,
         mnemonic
       })
-      // console.timeEnd('muport.newIdentity')
       localstorage.set('serializedMuDID_' + normalizedAddress, muportDID.serializeState())
     }
-    // console.time('new 3box')
     const box = new Box(muportDID, ethereumProvider, opts)
-    // console.timeEnd('new 3box')
-    // console.time('load 3box')
     await box._load(opts)
-    // console.timeEnd('load 3box')
-    // console.timeEnd('-- openBox --')
     return box
   }
 
@@ -375,6 +343,15 @@ class Box {
   async _ensureDIDPublished () {
     if (!(await this.public.get('did'))) {
       await this.public.set('did', this._muportDID.getDid())
+    }
+  }
+
+  async _ensurePinningNodeConnected (odbAddress) {
+    const roomPeers = await this._ipfs.pubsub.peers(odbAddress)
+    if (!roomPeers.find(p => p === this.pinningNode.split('/').pop())) {
+      this._ipfs.swarm.connect(this.pinningNode)
+      const rootStoreAddress = this._rootStore.address.toString()
+      this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
     }
   }
 

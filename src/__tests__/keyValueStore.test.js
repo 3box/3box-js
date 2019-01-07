@@ -9,6 +9,8 @@ const MUPORT_MOCK = {
   keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
 }
 
+const ensureConnected = jest.fn()
+
 
 describe('KeyValueStore', () => {
   let ipfs
@@ -21,7 +23,11 @@ describe('KeyValueStore', () => {
   beforeAll(async () => {
     ipfs = await utils.initIPFS()
     orbitdb = new OrbitDB(ipfs, './tmp/orbitdb1', { keystore })
-    keyValueStore = new KeyValueStore(orbitdb, STORE_NAME)
+    keyValueStore = new KeyValueStore(orbitdb, STORE_NAME, ensureConnected)
+  })
+
+  beforeEach(() => {
+    ensureConnected.mockClear()
   })
 
   it('should throw if not synced', async () => {
@@ -39,19 +45,24 @@ describe('KeyValueStore', () => {
   it('should set and get values correctly', async () => {
     await keyValueStore.set('key1', 'value1')
     expect(await keyValueStore.get('key1')).toEqual('value1')
+    expect(ensureConnected).toHaveBeenCalledTimes(1)
 
     await keyValueStore.set('key2', 'lalalla')
     expect(await keyValueStore.get('key2')).toEqual('lalalla')
+    expect(ensureConnected).toHaveBeenCalledTimes(2)
 
     await keyValueStore.set('key3', '12345')
     expect(await keyValueStore.get('key3')).toEqual('12345')
+    expect(ensureConnected).toHaveBeenCalledTimes(3)
   })
 
   it('should remove values correctly', async () => {
     await keyValueStore.remove('key3')
     expect(await keyValueStore.get('key3')).toBeUndefined()
+    expect(ensureConnected).toHaveBeenCalledTimes(1)
     await keyValueStore.remove('key2')
     expect(await keyValueStore.get('key2')).toBeUndefined()
+    expect(ensureConnected).toHaveBeenCalledTimes(2)
   })
 
   it('should sync an old profile correctly', async () => {
@@ -76,7 +87,7 @@ describe('KeyValueStore', () => {
     let storeNum = 0
 
     beforeEach(async () => {
-      keyValueStore = new KeyValueStore(orbitdb, 'store num' + storeNum++)
+      keyValueStore = new KeyValueStore(orbitdb, 'store num' + storeNum++, () => {})
       storeAddr = await keyValueStore._load()
       await keyValueStore.set('key1', 'value1')
       await keyValueStore.set('key2', 'lalalla')

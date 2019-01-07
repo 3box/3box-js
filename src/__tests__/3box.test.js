@@ -250,6 +250,22 @@ describe('3Box', () => {
     pubsub.unsubscribe('3box-pinning')
   })
 
+  it('ensurePinningNodeConnected should not do anything if already connected to given pubsub room', async () => {
+    const publishPromise = new Promise((resolve, reject) => {
+      pubsub.subscribe('3box-pinning', (topic, data) => {
+        expect(data.odbAddress).toEqual('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root')
+        resolve()
+      }, () => {})
+    })
+    const peer = (await ipfs.swarm.peers())[0].addr
+    await ipfs.swarm.disconnect(peer)
+    expect((await ipfs.swarm.peers()).length).toEqual(0)
+    await box._ensurePinningNodeConnected('non existant pubsub room')
+    await publishPromise
+    expect((await ipfs.swarm.peers()).length).toEqual(1)
+    pubsub.unsubscribe('3box-pinning')
+  })
+
   it('should handle error and not link profile on first call to _linkProfile', async () => {
     // first two calls in our mock will throw an error
     box.public.get = jest.fn()

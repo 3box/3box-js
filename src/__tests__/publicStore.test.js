@@ -1,6 +1,7 @@
 const PublicStore = require('../publicStore')
 
 const STORE_NAME = '09ab7cd93f9e.public'
+const emptyEnsureConn = () => {}
 
 jest.mock('../keyValueStore')
 
@@ -9,7 +10,7 @@ describe('PublicStore', () => {
   const linkProfile = jest.fn()
 
   beforeAll(async () => {
-    publicStore = new PublicStore('orbitdb instance', STORE_NAME, linkProfile)
+    publicStore = new PublicStore('orbitdb instance', STORE_NAME, linkProfile, emptyEnsureConn)
   })
 
   it('should throw if not synced', async () => {
