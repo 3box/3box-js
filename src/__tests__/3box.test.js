@@ -14,7 +14,13 @@ jest.mock('muport-core', () => {
     return {
       serializeState: () => serialized,
       getDid: () => did,
-      signJWT: ({ rootStoreAddress }) => 'veryJWT,' + rootStoreAddress + ',' + did,
+      signJWT: (data) => {
+        if (data && data.rootStoreAddress) {
+          return 'veryJWT,' + data.rootStoreAddress + ',' + did
+        } else {
+          return 'veryJWT,' + did
+        }
+      },
       getDidDocument: () => { return { managementKey } },
       keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
     }
@@ -50,6 +56,7 @@ jest.mock('../privateStore', () => {
   })
 })
 
+jest.mock('../utils/verifier')
 jest.mock('../utils', () => {
   const sha256 = require('js-sha256').sha256
   let addressMap = {}
@@ -184,8 +191,8 @@ describe('3Box', () => {
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
-    expect(box.public.get).toHaveBeenCalledWith('did')
-    expect(box.public.set).toHaveBeenCalledWith('did', 'did:muport:Qmsdfp98yw4t7')
+    expect(box.public.get).toHaveBeenNthCalledWith(1, 'proof_did')
+    expect(box.public.set).toHaveBeenNthCalledWith(1, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7')
 
     pubsub.unsubscribe('3box-pinning')
   })
@@ -234,12 +241,12 @@ describe('3Box', () => {
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
 
-    box.public.get = jest.fn(() => 'did:test:myid')
+    box.public.get.mockImplementationOnce(() => 'did proof JWT')
     const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
-    expect(box.public.get).toHaveBeenCalledWith('did')
+    expect(box.public.get).toHaveBeenCalledWith('proof_did')
     expect(box.public.set).toHaveBeenCalledTimes(0)
 
     expect(box.public._sync).toHaveBeenCalledTimes(1)
@@ -423,4 +430,23 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress/0x12345')
   })
 
+  it('should verify profiles correctly', async () => {
+    const profile = {
+      proof_did: 'some proof',
+      proof_github: 'github proof url',
+      proof_twitter: 'twitter proof claim jwt'
+    }
+    let verifier = require('../utils/verifier')
+    verifier.verifyDID.mockImplementationOnce(() => { throw new Error() })
+    expect(Box.getVerifiedAccounts(profile)).rejects.toEqual(new Error())
+    verifier.verifyDID.mockImplementationOnce(() => 'did:muport:Qmsdpuhs')
+    verifier.verifyGithub.mockImplementationOnce(() => {
+      return { username: 'test', proof: 'some url' }
+    })
+    verifier.verifyTwitter.mockImplementationOnce(() => {
+      return { username: 'test', proof: 'some url' }
+    })
+    const verifiedAccounts = await Box.getVerifiedAccounts(profile)
+    expect(verifiedAccounts).toEqual({ 'github': { 'proof': 'some url', 'username': 'test' }, 'twitter': { 'proof': 'some url', 'username': 'test' } })
+  })
 })

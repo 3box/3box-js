@@ -108,9 +108,9 @@ function logout (box) {
 
 function updateGithubUser (box) {
   githubUser.innerHTML = ''
-  box.verified.github().then(username => {
-    console.log(username)
-    githubUser.innerHTML = username
+  box.verified.github().then(res => {
+    console.log(res.username)
+    githubUser.innerHTML = res.username
   }).catch(error => {
     githubUser.innerHTML = error
   })

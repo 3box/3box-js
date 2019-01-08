@@ -1,6 +1,6 @@
 const verifier = require('./utils/verifier')
 
-class Verifications {
+class Verified {
   /**
    * Please use **box.verified** to get the instance of this class
    */
@@ -10,9 +10,9 @@ class Verifications {
   }
 
   async _addVerifiedPublicAccount (key, proof, verificationFunction) {
-    await verificationFunction(this._did, proof)
+    const account = await verificationFunction(this._did, proof)
     await this._box.public.set('proof_' + key, proof)
-    return true
+    return account
   }
 
   async _getVerifiedPublicAccount (key, verificationFunction) {
@@ -21,10 +21,19 @@ class Verifications {
   }
 
   /**
+   * Returns the verified DID of the user
+   *
+   * @return    {String}                            The DID of the user
+   */
+  async DID () {
+    return this._did
+  }
+
+  /**
    * Verifies that the user has a valid github account
    * Throws an error otherwise.
    *
-   * @return    {String}                                    The github handle of the user
+   * @return    {Object}                            Object containing username, and proof
    */
   async github () {
     return this._getVerifiedPublicAccount('github', verifier.verifyGithub)
@@ -34,8 +43,8 @@ class Verifications {
    * Adds a github verification to the users profile
    * Throws an error if the verification fails.
    *
-   * @param     {Object}            gistUrl                 URL of the proof
-   * @return    {String}                                    The github handle of the user
+   * @param     {Object}            gistUrl         URL of the proof
+   * @return    {Object}                            Object containing username, and proof
    */
   async addGithub (gistUrl) {
     return this._addVerifiedPublicAccount('github', gistUrl, verifier.verifyGithub)
@@ -45,7 +54,7 @@ class Verifications {
    * Verifies that the user has a valid twitter account
    * Throws an error otherwise.
    *
-   * @return    {String}                                    The twitter handle of the user
+   * @return    {Object}                            Object containing username, proof, and the verifier
    */
   async twitter () {
     return this._getVerifiedPublicAccount('twitter', verifier.verifyTwitter)
@@ -55,12 +64,12 @@ class Verifications {
    * Adds a twitter verification to the users profile
    * Throws an error if the verification fails.
    *
-   * @param     {String}            claim                   A did-JWT claim  ownership of a twitter handle
-   * @return    {String}                                    The twitter handle of the user
+   * @param     {String}            claim           A did-JWT claim ownership of a twitter username
+   * @return    {Object}                            Object containing username, proof, and the verifier
    */
   async addTwitter (claim) {
     return this._addVerifiedPublicAccount('twitter', claim, verifier.verifyTwitter)
   }
 }
 
-module.exports = Verifications
+module.exports = Verified
