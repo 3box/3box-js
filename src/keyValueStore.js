@@ -2,9 +2,10 @@ class KeyValueStore {
   /**
    * Please use **box.profileStore** or **box.profileStore** to get the instance of this class
    */
-  constructor (orbitdb, name) {
+  constructor (orbitdb, name, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
+    this._ensureConnected = ensureConnected
   }
 
   /**
@@ -28,6 +29,7 @@ class KeyValueStore {
    */
   async set (key, value) {
     this._requireLoad()
+    this._ensureConnected()
     const timeStamp = new Date().getTime()
     await this._db.put(key, { value, timeStamp })
     return true
@@ -41,6 +43,7 @@ class KeyValueStore {
    */
   async remove (key) {
     this._requireLoad()
+    this._ensureConnected()
     await this._db.del(key)
     return true
   }

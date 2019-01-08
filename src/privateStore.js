@@ -4,8 +4,8 @@ const utils = require('./utils')
 const ENC_BLOCK_SIZE = 24
 
 class PrivateStore extends KeyValueStore {
-  constructor (muportDID, orbitdb, name) {
-    super(orbitdb, name)
+  constructor (muportDID, orbitdb, name, ensureConnected) {
+    super(orbitdb, name, ensureConnected)
     this.muportDID = muportDID
     this._salt = this._generateSalt()
   }

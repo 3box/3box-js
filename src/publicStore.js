@@ -1,8 +1,8 @@
 const KeyValueStore = require('./keyValueStore')
 
 class ProfileStore extends KeyValueStore {
-  constructor (orbitdb, name, linkProfile) {
-    super(orbitdb, name)
+  constructor (orbitdb, name, linkProfile, ensureConnected) {
+    super(orbitdb, name, ensureConnected)
     this._linkProfile = linkProfile
   }
 
