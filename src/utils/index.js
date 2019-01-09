@@ -51,11 +51,13 @@ module.exports = {
     if (body) {
       opts = { body: JSON.stringify(body), method: 'POST', headers: { 'Content-Type': 'application/json' } }
     }
-    return (await fetch(url, opts)).json()
+    const _json = await fetch(url, opts)
+    return _json.json()
   },
 
   fetchText: async (url, opts) => {
-    return (await fetch(url, opts)).text()
+    const _text = await fetch(url, opts)
+    return _text.text()
   },
 
   sha256Multihash: str => {
