@@ -1,17 +1,3 @@
-const IPFS_OPTIONS = {
-  EXPERIMENTAL: {
-    pubsub: true
-	},
-  preload: { enabled: false },
-  config: {
-    Bootstrap: [ ]
-  }
-}
-
-const ipfs = new window.Ipfs(IPFS_OPTIONS)
-const opts = { ipfs, iframeStore: false }
-//const opts = { ipfs }
-
 const syncComplete = (res) => {
   console.log('Sync Complete')
   updateProfileData(window.box)

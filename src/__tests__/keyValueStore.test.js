@@ -21,8 +21,8 @@ describe('KeyValueStore', () => {
   jest.setTimeout(20000)
 
   beforeAll(async () => {
-    ipfs = await utils.initIPFS()
-    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb1', { keystore })
+    ipfs = await utils.initIPFS(2)
+    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb4', { keystore })
     keyValueStore = new KeyValueStore(orbitdb, STORE_NAME, ensureConnected)
   })
 
@@ -66,7 +66,7 @@ describe('KeyValueStore', () => {
   })
 
   it('should sync an old profile correctly', async () => {
-    let ipfs2 = await utils.initIPFS(true)
+    let ipfs2 = await utils.initIPFS(3)
     let orbitdb2 = new OrbitDB(ipfs2, './tmp/orbitdb2', { keystore })
     let keyValueStore2 = new KeyValueStore(orbitdb2, STORE_NAME)
     let newAddr = await keyValueStore2._load()
@@ -79,7 +79,7 @@ describe('KeyValueStore', () => {
     expect(await keyValueStore2.get('key2')).toBeUndefined()
     expect(await keyValueStore2.get('key3')).toBeUndefined()
     await orbitdb2.stop()
-    await ipfs2.stop()
+    // await ipfs2.stop()
   })
 
   describe('log', () => {

@@ -4,8 +4,8 @@ const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
-const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
-const { createProxyClient } = require('ipfs-postmsg-proxy')
+// const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
+// const { createProxyClient } = require('ipfs-postmsg-proxy')
 const graphQLRequest = require('graphql-request').request
 
 const PublicStore = require('./publicStore')
@@ -16,11 +16,10 @@ const utils = require('./utils')
 const verifier = require('./utils/verifier')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
-//const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
-const PINNING_NODE = '/ip4/127.0.0.1/tcp/4003/ws/ipfs/QmSdfLX6RmXb5qE1C6LEQHAK6icZTeN3DJTJcgV9r5uaKm'
+const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
-const IFRAME_STORE_VERSION = '0.0.3'
-const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+// const IFRAME_STORE_VERSION = '0.0.3'
+// const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 const IPFS_OPTIONS = {
   EXPERIMENTAL: {
     pubsub: true
@@ -34,7 +33,7 @@ const IPFS_OPTIONS = {
 const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
 const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
 
-let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
 /*
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -51,7 +50,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
   ipfsProxy = createProxyClient({ postMessage })
   cacheProxy = OrbitDBCacheProxy({ postMessage })
-}*/
+} */
 
 class Box {
   /**
@@ -82,11 +81,11 @@ class Box {
     const rootStoreName = didFingerprint + '.root'
 
     this.pinningNode = opts.pinningNode || PINNING_NODE
-    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
+    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
-    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
@@ -203,13 +202,13 @@ class Box {
       ipfs = globalIPFS
       usingGlobalIPFS = true
     } else {
-      ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
+      ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     }
     if (globalOrbitDB) {
       orbitdb = globalOrbitDB
       usingGlobalIPFS = true
     } else {
-      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+      const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
       orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
     }
 
@@ -247,7 +246,7 @@ class Box {
         await rootStore.close()
         await publicStore.close()
         if (!usingGlobalOrbitDB) await orbitdb.stop()
-        if (!usingGlobalIPFS) await ipfs.stop()
+        if (!usingGlobalIPFS) {} // await ipfs.stop()
       }
       // close but don't wait for it
       closeAll()
@@ -433,16 +432,16 @@ class Box {
   }
 }
 
-async function initIPFS (ipfs, iframeStore) {
+async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   // if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
   if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
   if (ipfs) {
     return ipfs
   } else {
-    //await iframeLoadedPromise
-    //return ipfsProxy
+    // await iframeLoadedPromise
+    // return ipfsProxy
     return new Promise((resolve, reject) => {
-      ipfs = new IPFS(IPFS_OPTIONS)
+      ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
       ipfs.on('error', error => {
         console.error(error)
         reject(error)
