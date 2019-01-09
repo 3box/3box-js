@@ -1,9 +1,22 @@
-bopen.addEventListener('click', event => {
-
-  const syncComplete = (res) => {
-    console.log('Sync Complete')
-    updateProfileData(window.box)
+const IPFS_OPTIONS = {
+  EXPERIMENTAL: {
+    pubsub: true
+	},
+  preload: { enabled: false },
+  config: {
+    Bootstrap: [ ]
   }
+}
+
+const ipfs = new window.Ipfs(IPFS_OPTIONS)
+const opts = { ipfs, iframeStore: false }
+//const opts = { ipfs }
+
+const syncComplete = (res) => {
+  console.log('Sync Complete')
+  updateProfileData(window.box)
+}
+bopen.addEventListener('click', event => {
 
   window.ethereum.enable().then(addresses => {
     Box.openBox(addresses[0],  window.ethereum, {}).then(box => {

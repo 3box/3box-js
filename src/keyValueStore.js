@@ -50,24 +50,32 @@ class KeyValueStore {
 
   async _sync (numRemoteEntries) {
     this._requireLoad()
-    let toid = null
+    // let toid = null
     if (numRemoteEntries === this._db._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
       if (!numRemoteEntries) {
-        toid = setTimeout(() => {
+        setTimeout(() => {
           this._db.events.removeAllListeners('replicated')
           this._db.events.removeAllListeners('replicate.progress')
           resolve()
         }, 3000)
       }
+      this._db.events.on('replicated', () => {
+        if (numRemoteEntries === this._db._oplog.values.length) resolve()
+      })
+      /*
       this._db.events.on('replicate.progress', (_x, _y, _z, num, max) => {
         if (toid) {
           clearTimeout(toid)
           toid = null
         }
         const total = numRemoteEntries || max
-        if (num >= total) this._db.events.on('replicated', resolve)
+        if (num >= total) {
+          this._db.events.on('replicated', resolve)
+          listenerAdded = true
+        }
       })
+      */
     })
     return this._db.address.toString()
   }
