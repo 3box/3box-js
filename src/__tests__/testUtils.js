@@ -1,6 +1,6 @@
 const IPFS = require('ipfs')
 
-const CONF = {
+const CONF_1 = {
   EXPERIMENTAL: {
     pubsub: true
   },
@@ -13,11 +13,12 @@ const CONF = {
       ],
       API: '/ip4/127.0.0.1/tcp/5004',
       Gateway: '/ip4/127.0.0.1/tcp/9092'
-    }
+    },
+    Bootstrap: []
   }
 }
 
-const ALT_CONF = {
+const CONF_2 = {
   EXPERIMENTAL: {
     pubsub: true
   },
@@ -30,14 +31,52 @@ const ALT_CONF = {
       ],
       API: '/ip4/127.0.0.1/tcp/5003',
       Gateway: '/ip4/127.0.0.1/tcp/9091'
-    }
+    },
+    Bootstrap: []
   }
 }
+
+const CONF_3 = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  repo: './tmp/ipfs5/',
+  config: {
+    Addresses: {
+      Swarm: [
+        '/ip4/127.0.0.1/tcp/4008',
+        '/ip4/127.0.0.1/tcp/4009/ws'
+      ],
+      API: '/ip4/127.0.0.1/tcp/5010',
+      Gateway: '/ip4/127.0.0.1/tcp/9093'
+    },
+    Bootstrap: []
+  }
+}
+
+const CONF_4 = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  repo: './tmp/ipfs6/',
+  config: {
+    Addresses: {
+      Swarm: [
+        '/ip4/127.0.0.1/tcp/4011',
+        '/ip4/127.0.0.1/tcp/4012/ws'
+      ],
+      API: '/ip4/127.0.0.1/tcp/5013',
+      Gateway: '/ip4/127.0.0.1/tcp/9094'
+    },
+    Bootstrap: []
+  }
+}
+const CONFS = [CONF_1, CONF_2, CONF_3, CONF_4]
 
 module.exports = {
   initIPFS: async (useAltConf) => {
     return new Promise((resolve, reject) => {
-      let ipfs = new IPFS(useAltConf ? ALT_CONF : CONF)
+      let ipfs = new IPFS(CONFS[useAltConf])
       ipfs.on('error', reject)
       ipfs.on('ready', () => resolve(ipfs))
     })

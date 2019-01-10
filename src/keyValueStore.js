@@ -2,9 +2,10 @@ class KeyValueStore {
   /**
    * Please use **box.profileStore** or **box.profileStore** to get the instance of this class
    */
-  constructor (orbitdb, name) {
+  constructor (orbitdb, name, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
+    this._ensureConnected = ensureConnected
   }
 
   /**
@@ -28,6 +29,7 @@ class KeyValueStore {
    */
   async set (key, value) {
     this._requireLoad()
+    this._ensureConnected()
     const timeStamp = new Date().getTime()
     await this._db.put(key, { value, timeStamp })
     return true
@@ -41,30 +43,39 @@ class KeyValueStore {
    */
   async remove (key) {
     this._requireLoad()
+    this._ensureConnected()
     await this._db.del(key)
     return true
   }
 
   async _sync (numRemoteEntries) {
     this._requireLoad()
-    let toid = null
+    // let toid = null
     if (numRemoteEntries === this._db._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
       if (!numRemoteEntries) {
-        toid = setTimeout(() => {
+        setTimeout(() => {
           this._db.events.removeAllListeners('replicated')
           this._db.events.removeAllListeners('replicate.progress')
           resolve()
         }, 3000)
       }
+      this._db.events.on('replicated', () => {
+        if (numRemoteEntries === this._db._oplog.values.length) resolve()
+      })
+      /*
       this._db.events.on('replicate.progress', (_x, _y, _z, num, max) => {
         if (toid) {
           clearTimeout(toid)
           toid = null
         }
         const total = numRemoteEntries || max
-        if (num >= total) this._db.events.on('replicated', resolve)
+        if (num >= total) {
+          this._db.events.on('replicated', resolve)
+          listenerAdded = true
+        }
       })
+      */
     })
     return this._db.address.toString()
   }

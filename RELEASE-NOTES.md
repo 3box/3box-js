@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.2.0 - 2019-01-08
+* Implemented new "verified" api that checks and verifies various claims
+* Reconnects to pinning node if connection is lost
+* Disabled local cache iframe because it caused inconsistent behaviour
+* Simplified syncing logic
+* Fixed bug in getProfile #248
+
 ## v1.1.0 - 2018-12-27
 ### Features
 * Local cache using an iframe

@@ -2,6 +2,7 @@ const utils = require('./testUtils')
 const PrivateStore = require('../privateStore')
 
 const STORE_NAME = '09ab7cd93f9e.private'
+const emptyEnsureConn = () => {}
 
 jest.mock('../keyValueStore')
 
@@ -22,7 +23,7 @@ describe('PrivateStore', () => {
   }
 
   beforeAll(async () => {
-    privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
+    privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME, emptyEnsureConn)
   })
 
   it('should be initialized correctly', async () => {
@@ -48,7 +49,7 @@ describe('PrivateStore', () => {
       getDid: () => 'did:muport:Qmsdfwerg',
     keyring: { signingKey: { deriveChild: () => { return { _hdkey: { _privateKey: Buffer.from('bf821847abe8434c96c0740ee0ae4779dbc93d9da8a25e4efdc4ecad6fc68c23') } } } } }
     }
-    const privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
+    const privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME, emptyEnsureConn)
 
     privateStore._encryptEntry(value)
     const decrypted = privateStore._decryptEntry({nonce: '', ciphertext: ''})
@@ -100,7 +101,7 @@ describe('PrivateStore', () => {
   describe('log', () => {
 
     beforeEach(async () => {
-      privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME)
+      privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME, emptyEnsureConn)
       const storeAddr = await privateStore._load()
       await privateStore.set('key1', 'value1')
     })

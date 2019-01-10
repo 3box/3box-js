@@ -127,6 +127,36 @@ box.private.get('email').then(email => {
 })
 ```
 
+#### IPFS Configs
+
+Two options are available if you want to pass additional IPFS config options to the IPFS object used in the library.
+
+First you can pass your own IPFS object, configured how you decide and then disable the iframe as well. This offers the most optionality but experiences a loss in performace without the iframe.
+
+```js
+const IPFS_OPTIONS = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  ... // Add your additional options, pubsub is required
+}
+
+const ipfs = new IPFS(IPFS_OPTIONS)
+const box = await Box.openBox('0x12345abcde', ethereumProvider, { ipfs, iframeStore: false })
+```
+
+Second you can access the already initialized default IPFS object and change the IPFS configurations available after initialization. For example you can add a pinning node as follows.
+
+```js
+const box = await Box.openBox('0x12345abcde', ethereumProvider)
+
+box._ipfs.swarm.connect(pinningNode, () => {
+  ...
+})
+```
+
+Reference [ipfs-js](https://github.com/ipfs/js-ipfs) for additional options.
+
 ## <a name="dappdata"></a> Dapp data
 Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](./KEY-CONVENTIONS.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
 
@@ -151,6 +181,7 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
     * _instance_
         * [.public](#Box+public)
         * [.private](#Box+private)
+        * [.verified](#Box+verified)
         * [.onSyncDone(syncDone)](#Box+onSyncDone)
         * [.close()](#Box+close)
         * [.logout()](#Box+logout)
@@ -158,6 +189,7 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
         * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
+        * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
         * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
 
@@ -185,6 +217,16 @@ Please use the **openBox** method to instantiate a 3Box
 | Name | Type | Description |
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the users 3Box |
+
+<a name="Box+verified"></a>
+
+#### box.verified
+**Kind**: instance property of [<code>Box</code>](#Box)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| verified | [<code>Verified</code>](#Verified) | check and create verifications |
 
 <a name="Box+onSyncDone"></a>
 
@@ -258,6 +300,18 @@ GraphQL for 3Box profile API
 | query | <code>Object</code> | A graphQL query object. |
 | opts | <code>Object</code> | Optional parameters |
 | opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
+
+<a name="Box.getVerifiedAccounts"></a>
+
+#### Box.getVerifiedAccounts(profile) ⇒ <code>Object</code>
+Verifies the proofs of social accounts that is present in the profile.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - An object containing the accounts that have been verified  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| profile | <code>Object</code> | A user profile object |
 
 <a name="Box.openBox"></a>
 
@@ -359,4 +413,71 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
+
+<a name="Verified"></a>
+
+### Verified
+**Kind**: global class  
+
+* [Verified](#Verified)
+    * [new Verified()](#new_Verified_new)
+    * [.DID()](#Verified+DID) ⇒ <code>String</code>
+    * [.github()](#Verified+github) ⇒ <code>Object</code>
+    * [.addGithub(gistUrl)](#Verified+addGithub) ⇒ <code>Object</code>
+    * [.twitter()](#Verified+twitter) ⇒ <code>Object</code>
+    * [.addTwitter(claim)](#Verified+addTwitter) ⇒ <code>Object</code>
+
+<a name="new_Verified_new"></a>
+
+#### new Verified()
+Please use **box.verified** to get the instance of this class
+
+<a name="Verified+DID"></a>
+
+#### verified.DID() ⇒ <code>String</code>
+Returns the verified DID of the user
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>String</code> - The DID of the user  
+<a name="Verified+github"></a>
+
+#### verified.github() ⇒ <code>Object</code>
+Verifies that the user has a valid github account
+Throws an error otherwise.
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>Object</code> - Object containing username, and proof  
+<a name="Verified+addGithub"></a>
+
+#### verified.addGithub(gistUrl) ⇒ <code>Object</code>
+Adds a github verification to the users profile
+Throws an error if the verification fails.
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>Object</code> - Object containing username, and proof  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| gistUrl | <code>Object</code> | URL of the proof |
+
+<a name="Verified+twitter"></a>
+
+#### verified.twitter() ⇒ <code>Object</code>
+Verifies that the user has a valid twitter account
+Throws an error otherwise.
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
+<a name="Verified+addTwitter"></a>
+
+#### verified.addTwitter(claim) ⇒ <code>Object</code>
+Adds a twitter verification to the users profile
+Throws an error if the verification fails.
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| claim | <code>String</code> | A did-JWT claim ownership of a twitter username |
 

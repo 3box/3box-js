@@ -14,7 +14,13 @@ jest.mock('muport-core', () => {
     return {
       serializeState: () => serialized,
       getDid: () => did,
-      signJWT: ({ rootStoreAddress }) => 'veryJWT,' + rootStoreAddress + ',' + did,
+      signJWT: (data) => {
+        if (data && data.rootStoreAddress) {
+          return 'veryJWT,' + data.rootStoreAddress + ',' + did
+        } else {
+          return 'veryJWT,' + did
+        }
+      },
       getDidDocument: () => { return { managementKey } },
       keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
     }
@@ -50,7 +56,8 @@ jest.mock('../privateStore', () => {
   })
 })
 
-jest.mock('../utils', () => {
+jest.mock('../utils/verifier')
+jest.mock('../utils/index', () => {
   const sha256 = require('js-sha256').sha256
   let addressMap = {}
   let linkmap = {}
@@ -109,7 +116,7 @@ jest.mock('../utils', () => {
   }
 })
 
-const mockedUtils = require('../utils')
+const mockedUtils = require('../utils/index')
 const MOCK_HASH_SERVER = 'address-server'
 const MOCK_PROFILE_SERVER = 'profile-server'
 
@@ -118,7 +125,7 @@ describe('3Box', () => {
   jest.setTimeout(30000)
 
   beforeEach(async () => {
-    if (!ipfs) ipfs = await testUtils.initIPFS(true)
+    if (!ipfs) ipfs = await testUtils.initIPFS(0)
     const ipfsMultiAddr = (await ipfs.id()).addresses[0]
     if (!pubsub) pubsub = new Pubsub(ipfs, (await ipfs.id()).id)
 
@@ -130,12 +137,14 @@ describe('3Box', () => {
     }
 
     if (!ipfsBox) {
-      ipfsBox = new IPFS(IPFS_OPTIONS)
-      await new Promise((resolve, reject) => { ipfsBox.on('ready', () => resolve() )})
+      //ipfsBox = new IPFS(IPFS_OPTIONS)
+      ipfsBox = await testUtils.initIPFS(1)
+      //await new Promise((resolve, reject) => { ipfsBox.on('ready', () => resolve() )})
     }
 
     boxOpts = {
       ipfs: ipfsBox,
+      //ipfsOptions: IPFS_OPTIONS,
       orbitPath: './tmp/orbitdb1',
       addressServer: MOCK_HASH_SERVER,
       profileServer: MOCK_PROFILE_SERVER,
@@ -150,7 +159,7 @@ describe('3Box', () => {
 
   afterAll(async () => {
   await pubsub.disconnect()
-  await ipfs.stop()
+  //await ipfs.stop()
 })
 
 
@@ -168,10 +177,6 @@ describe('3Box', () => {
     box = await Box.openBox(addr, prov, opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress', {
-      address_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
-    })
     expect(box.public._load).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledWith()
     expect(box.private._load).toHaveBeenCalledTimes(1)
@@ -184,8 +189,12 @@ describe('3Box', () => {
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
-    expect(box.public.get).toHaveBeenCalledWith('did')
-    expect(box.public.set).toHaveBeenCalledWith('did', 'did:muport:Qmsdfp98yw4t7')
+    expect(box.public.get).toHaveBeenNthCalledWith(1, 'proof_did')
+    expect(box.public.set).toHaveBeenNthCalledWith(1, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7')
+    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress', {
+      address_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
+    })
 
     pubsub.unsubscribe('3box-pinning')
   })
@@ -197,10 +206,6 @@ describe('3Box', () => {
     await box.close()
     box = await Box.openBox('0x12345', 'web3prov', opts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress', {
-      address_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
-    })
     expect(box.public._load).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledWith()
     expect(box.private._load).toHaveBeenCalledTimes(1)
@@ -227,19 +232,22 @@ describe('3Box', () => {
       })
     })
 
+    pubsub.unsubscribe('3box-pinning')
     await box._rootStore.drop()
     await box.close()
+    pubsub.subscribe('3box-pinning', (topic, data) => {}, (topic, peer) => {
+      pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
+      pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
+    })
 
     box = await Box.openBox('0x12345', 'web3prov', boxOpts)
     expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
 
-    box.public.get = jest.fn(() => 'did:test:myid')
+    box.public.get.mockImplementationOnce(() => 'did proof JWT')
     const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
-    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
-    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
-    expect(box.public.get).toHaveBeenCalledWith('did')
+    expect(box.public.get).toHaveBeenCalledWith('proof_did')
     expect(box.public.set).toHaveBeenCalledTimes(0)
 
     expect(box.public._sync).toHaveBeenCalledTimes(1)
@@ -247,6 +255,24 @@ describe('3Box', () => {
     expect(box.private._sync).toHaveBeenCalledTimes(1)
     expect(box.private._sync).toHaveBeenCalledWith(5)
     await publishPromise
+    pubsub.unsubscribe('3box-pinning')
+  })
+
+  it('ensurePinningNodeConnected should not do anything if already connected to given pubsub room', async () => {
+    const publishPromise = new Promise((resolve, reject) => {
+      pubsub.subscribe('3box-pinning', (topic, data) => {
+        expect(data.odbAddress).toEqual('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root')
+        resolve()
+      }, () => {})
+    })
+    const peers = (await ipfs.swarm.peers())// [0].addr
+    await Promise.all(peers.map(async peer => {
+      await ipfs.swarm.disconnect(peer.addr)
+    }))
+    expect((await ipfs.swarm.peers()).length).toEqual(0)
+    await box._ensurePinningNodeConnected('non existant pubsub room')
+    await publishPromise
+    expect((await ipfs.swarm.peers()).length).toEqual(1)
     pubsub.unsubscribe('3box-pinning')
   })
 
@@ -326,24 +352,24 @@ describe('3Box', () => {
 
      expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
      expect(mockedUtils.openBoxConsent).toHaveBeenCalledWith(addr, prov)
-     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-     expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress', {
-       address_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
-     })
      expect(box.public._load).toHaveBeenCalledTimes(1)
      expect(box.public._load).toHaveBeenCalledWith()
      expect(box.private._load).toHaveBeenCalledTimes(1)
      expect(box.private._load).toHaveBeenCalledWith()
 
      await box._linkProfile()
-     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
-     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(2, 'address-server/link', {
+     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
+     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
        consent_msg: 'I agree to stuff,did:muport:Qmsdsdf87g329',
        consent_signature: '0xSuchRealSig,0xabcde',
        linked_did: 'did:muport:Qmsdsdf87g329'
      })
      expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
      await publishPromise
+     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
+     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(2, 'address-server/odbAddress', {
+       address_token: 'veryJWT,/orbitdb/QmQsx8o2qZgTHvXVvL6y6o5nmK4PxMuLyEYptjgUAgfy9m/ab8c73d8f.root,did:muport:Qmsdsdf87g329'
+     })
      pubsub.unsubscribe('3box-pinning')
    })
 
@@ -403,8 +429,26 @@ describe('3Box', () => {
       name: 'oed',
       image: 'an awesome selfie'
     })
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress/0x12345')
   })
 
+  it('should verify profiles correctly', async () => {
+    const profile = {
+      proof_did: 'some proof',
+      proof_github: 'github proof url',
+      proof_twitter: 'twitter proof claim jwt'
+    }
+    let verifier = require('../utils/verifier')
+    verifier.verifyDID.mockImplementationOnce(() => { throw new Error() })
+    expect(Box.getVerifiedAccounts(profile)).rejects.toEqual(new Error())
+    verifier.verifyDID.mockImplementationOnce(() => 'did:muport:Qmsdpuhs')
+    verifier.verifyGithub.mockImplementationOnce(() => {
+      return { username: 'test', proof: 'some url' }
+    })
+    verifier.verifyTwitter.mockImplementationOnce(() => {
+      return { username: 'test', proof: 'some url' }
+    })
+    const verifiedAccounts = await Box.getVerifiedAccounts(profile)
+    expect(verifiedAccounts).toEqual({ 'github': { 'proof': 'some url', 'username': 'test' }, 'twitter': { 'proof': 'some url', 'username': 'test' } })
+  })
 })

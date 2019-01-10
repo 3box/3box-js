@@ -1,29 +1,41 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
 const localstorage = require('store')
+const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
-const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
-const { createProxyClient } = require('ipfs-postmsg-proxy')
+// const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
+// const { createProxyClient } = require('ipfs-postmsg-proxy')
 const graphQLRequest = require('graphql-request').request
 
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
-const Verifications = require('./verifications')
+const Verified = require('./verified')
 const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
-const utils = require('./utils')
+const utils = require('./utils/index')
+const verifier = require('./utils/verifier')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
-const IFRAME_STORE_VERSION = '0.0.3'
-const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+// const IFRAME_STORE_VERSION = '0.0.3'
+// const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+const IPFS_OPTIONS = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  preload: { enabled: false },
+  config: {
+    Bootstrap: [ ]
+  }
+}
 
 const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
 const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
 
-let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
+/*
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const iframe = document.createElement('iframe')
   iframe.src = IFRAME_STORE_URL
@@ -38,7 +50,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
   ipfsProxy = createProxyClient({ postMessage })
   cacheProxy = OrbitDBCacheProxy({ postMessage })
-}
+} */
 
 class Box {
   /**
@@ -58,10 +70,9 @@ class Box {
      */
     this.private = null
     /**
-     * @private
-     * @property {Verifications} verified       check and create verifications
+     * @property {Verified} verified       check and create verifications
      */
-    this.verified = new Verifications(this)
+    this.verified = new Verified(this)
   }
 
   async _load (opts = {}) {
@@ -69,84 +80,73 @@ class Box {
     const didFingerprint = utils.sha256Multihash(did)
     const rootStoreName = didFingerprint + '.root'
 
-    const pinningNode = opts.pinningNode || PINNING_NODE
-    // console.time('start ipfs')
-    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
-    // console.timeEnd('start ipfs')
-    // TODO - if connection to this peer is lost we should try to reconnect
-    // console.time('connect to pinning ipfs node')
-    this._ipfs.swarm.connect(pinningNode, () => {
-      // console.timeEnd('connect to pinning ipfs node')
-    })
+    this.pinningNode = opts.pinningNode || PINNING_NODE
+    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    this._ipfs.swarm.connect(this.pinningNode, () => {})
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
-    // console.time('new OrbitDB')
-    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
-    // console.timeEnd('new OrbitDB')
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
     this._rootStore = await this._orbitdb.feed(rootStoreName)
     const rootStoreAddress = this._rootStore.address.toString()
 
-    // console.time('opening pinning room, pinning node joined')
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
     const onNewPeer = (topic, peer) => {
-      // console.log('Peer joined the room', peer)
-      // console.log(peer, pinningNode.split('/').pop())
-      if (peer === pinningNode.split('/').pop()) {
-        // console.timeEnd('opening pinning room, pinning node joined')
-        // console.log('broadcasting odb-address')
-
+      if (peer === this.pinningNode.split('/').pop()) {
         this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
     }
 
-    this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this))
-    this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private')
+    this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this))
+    this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private', this._ensurePinningNodeConnected.bind(this))
 
-    // console.time('load stores')
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),
       this.private._load()
     ])
-    // console.timeEnd('load stores')
 
     let syncPromises = []
+    let hasResponse = {}
 
     const onMessageRes = async (topic, data) => {
       if (data.type === 'HAS_ENTRIES') {
-        if (data.odbAddress === privStoreAddress) {
+        if (data.odbAddress === privStoreAddress && !hasResponse[privStoreAddress]) {
           syncPromises.push(this.private._sync(data.numEntries))
+          hasResponse[privStoreAddress] = true
         }
-        if (data.odbAddress === pubStoreAddress) {
+        if (data.odbAddress === pubStoreAddress && !hasResponse[pubStoreAddress]) {
           syncPromises.push(this.public._sync(data.numEntries))
+          hasResponse[pubStoreAddress] = true
         }
         if (syncPromises.length === 2) {
-          await Promise.all(syncPromises)
+          const promises = syncPromises
+          syncPromises = []
+          await Promise.all(promises)
           await this._ensureDIDPublished()
           this._onSyncDoneCB()
-          this._pubsub.unsubscribe(PINNING_ROOM)
+          // this._pubsub.unsubscribe(PINNING_ROOM)
         }
       }
     }
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, pinningNode)
+    this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
-    // console.time('add PublicStore to rootStore')
-    await this._rootStore.add({ odbAddress: pubOdbAddress })
-    // console.timeEnd('add PublicStore to rootStore')
-    // console.time('add PrivateStore to rootStore')
-    await this._rootStore.add({ odbAddress: privOdbAddress })
-    // console.timeEnd('add PrivateStore to rootStore')
-    // console.time('publish rootStoreAddress to address-server')
+    await this._rootStore.load()
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    if (!entries.find(e => e.payload.value.odbAddress === pubOdbAddress)) {
+      await this._rootStore.add({ odbAddress: pubOdbAddress })
+    }
+    if (!entries.find(e => e.payload.value.odbAddress === privOdbAddress)) {
+      await this._rootStore.add({ odbAddress: privOdbAddress })
+    }
     this._publishRootStore(rootStoreAddress)
-    // console.timeEnd('publish rootStoreAddress to address-server')
   }
 
   /**
@@ -164,7 +164,7 @@ class Box {
 
   static async getProfile (address, opts = {}) {
     const normalizedAddress = address.toLowerCase()
-    opts = Object.assign({ iframeStore: true, useCacheService: true }, opts)
+    opts = Object.assign({ useCacheService: true }, opts)
     let profile
     if (opts.useCacheService) {
       const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
@@ -191,7 +191,7 @@ class Box {
   }
 
   static async _getProfileOrbit (address, opts = {}) {
-    opts = Object.assign({ iframeStore: true }, opts)
+    // opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
     let usingGlobalIPFS = false
@@ -202,13 +202,13 @@ class Box {
       ipfs = globalIPFS
       usingGlobalIPFS = true
     } else {
-      ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
+      ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     }
     if (globalOrbitDB) {
       orbitdb = globalOrbitDB
       usingGlobalIPFS = true
     } else {
-      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+      const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
       orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
     }
 
@@ -246,7 +246,7 @@ class Box {
         await rootStore.close()
         await publicStore.close()
         if (!usingGlobalOrbitDB) await orbitdb.stop()
-        if (!usingGlobalIPFS) await ipfs.stop()
+        if (!usingGlobalIPFS) {} // await ipfs.stop()
       }
       // close but don't wait for it
       closeAll()
@@ -272,11 +272,27 @@ class Box {
   /**
    * Verifies the proofs of social accounts that is present in the profile.
    *
-   * @private
    * @param     {Object}            profile                 A user profile object
    * @return    {Object}                                    An object containing the accounts that have been verified
    */
   static async getVerifiedAccounts (profile) {
+    let verifs = {}
+    const did = await verifier.verifyDID(profile.proof_did)
+    if (profile.proof_github) {
+      try {
+        verifs.github = await verifier.verifyGithub(did, profile.proof_github)
+      } catch (err) {
+        console.error('Invalid github verification:', err.message)
+      }
+    }
+    if (profile.proof_twitter) {
+      try {
+        verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
+      } catch (err) {
+        console.error('Invalid twitter verification:', err.message)
+      }
+    }
+    return verifs
   }
 
   /**
@@ -294,36 +310,26 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts) {
-    opts = Object.assign({ iframeStore: true }, opts)
+    // opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
-    // console.time('-- openBox --')
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + normalizedAddress)
     if (serializedMuDID) {
-      // console.time('new Muport')
       muportDID = new MuPort(serializedMuDID)
-      // console.timeEnd('new Muport')
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
       const sig = await utils.openBoxConsent(normalizedAddress, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = utils.sha256(sig.slice(2))
       const mnemonic = bip39.entropyToMnemonic(entropy)
-      // console.time('muport.newIdentity')
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: normalizedAddress,
         mnemonic
       })
-      // console.timeEnd('muport.newIdentity')
       localstorage.set('serializedMuDID_' + normalizedAddress, muportDID.serializeState())
     }
-    // console.time('new 3box')
     const box = new Box(muportDID, ethereumProvider, opts)
-    // console.timeEnd('new 3box')
-    // console.time('load 3box')
     await box._load(opts)
-    // console.timeEnd('load 3box')
-    // console.timeEnd('-- openBox --')
     return box
   }
 
@@ -375,8 +381,18 @@ class Box {
   }
 
   async _ensureDIDPublished () {
-    if (!(await this.public.get('did'))) {
-      await this.public.set('did', this._muportDID.getDid())
+    if (!(await this.public.get('proof_did'))) {
+      // we can just sign an empty JWT as a proof that we own this DID
+      await this.public.set('proof_did', await this._muportDID.signJWT())
+    }
+  }
+
+  async _ensurePinningNodeConnected (odbAddress) {
+    const roomPeers = await this._ipfs.pubsub.peers(odbAddress)
+    if (!roomPeers.find(p => p === this.pinningNode.split('/').pop())) {
+      this._ipfs.swarm.connect(this.pinningNode, () => {})
+      const rootStoreAddress = this._rootStore.address.toString()
+      this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
     }
   }
 
@@ -416,19 +432,23 @@ class Box {
   }
 }
 
-async function initIPFS (ipfs, iframeStore) {
-  if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
+async function initIPFS (ipfs, iframeStore, ipfsOptions) {
+  // if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
   if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
   if (ipfs) {
     return ipfs
   } else {
-    await iframeLoadedPromise
-    return ipfsProxy
+    // await iframeLoadedPromise
+    // return ipfsProxy
+    return new Promise((resolve, reject) => {
+      ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
+      ipfs.on('error', error => {
+        console.error(error)
+        reject(error)
+      })
+      ipfs.on('ready', () => resolve(ipfs))
+    })
   }
-  // ipfs.on('error', error => {
-  //   console.error(error)
-  //   reject(error)
-  // })
 }
 
 async function getRootStoreAddress (serverUrl, identifier) {

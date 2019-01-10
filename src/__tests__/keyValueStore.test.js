@@ -9,6 +9,8 @@ const MUPORT_MOCK = {
   keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
 }
 
+const ensureConnected = jest.fn()
+
 
 describe('KeyValueStore', () => {
   let ipfs
@@ -19,9 +21,13 @@ describe('KeyValueStore', () => {
   jest.setTimeout(20000)
 
   beforeAll(async () => {
-    ipfs = await utils.initIPFS()
-    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb1', { keystore })
-    keyValueStore = new KeyValueStore(orbitdb, STORE_NAME)
+    ipfs = await utils.initIPFS(2)
+    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb4', { keystore })
+    keyValueStore = new KeyValueStore(orbitdb, STORE_NAME, ensureConnected)
+  })
+
+  beforeEach(() => {
+    ensureConnected.mockClear()
   })
 
   it('should throw if not synced', async () => {
@@ -39,23 +45,28 @@ describe('KeyValueStore', () => {
   it('should set and get values correctly', async () => {
     await keyValueStore.set('key1', 'value1')
     expect(await keyValueStore.get('key1')).toEqual('value1')
+    expect(ensureConnected).toHaveBeenCalledTimes(1)
 
     await keyValueStore.set('key2', 'lalalla')
     expect(await keyValueStore.get('key2')).toEqual('lalalla')
+    expect(ensureConnected).toHaveBeenCalledTimes(2)
 
     await keyValueStore.set('key3', '12345')
     expect(await keyValueStore.get('key3')).toEqual('12345')
+    expect(ensureConnected).toHaveBeenCalledTimes(3)
   })
 
   it('should remove values correctly', async () => {
     await keyValueStore.remove('key3')
     expect(await keyValueStore.get('key3')).toBeUndefined()
+    expect(ensureConnected).toHaveBeenCalledTimes(1)
     await keyValueStore.remove('key2')
     expect(await keyValueStore.get('key2')).toBeUndefined()
+    expect(ensureConnected).toHaveBeenCalledTimes(2)
   })
 
   it('should sync an old profile correctly', async () => {
-    let ipfs2 = await utils.initIPFS(true)
+    let ipfs2 = await utils.initIPFS(3)
     let orbitdb2 = new OrbitDB(ipfs2, './tmp/orbitdb2', { keystore })
     let keyValueStore2 = new KeyValueStore(orbitdb2, STORE_NAME)
     let newAddr = await keyValueStore2._load()
@@ -68,7 +79,7 @@ describe('KeyValueStore', () => {
     expect(await keyValueStore2.get('key2')).toBeUndefined()
     expect(await keyValueStore2.get('key3')).toBeUndefined()
     await orbitdb2.stop()
-    await ipfs2.stop()
+    // await ipfs2.stop()
   })
 
   describe('log', () => {
@@ -76,7 +87,7 @@ describe('KeyValueStore', () => {
     let storeNum = 0
 
     beforeEach(async () => {
-      keyValueStore = new KeyValueStore(orbitdb, 'store num' + storeNum++)
+      keyValueStore = new KeyValueStore(orbitdb, 'store num' + storeNum++, () => {})
       storeAddr = await keyValueStore._load()
       await keyValueStore.set('key1', 'value1')
       await keyValueStore.set('key2', 'lalalla')
