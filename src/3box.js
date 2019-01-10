@@ -12,7 +12,7 @@ const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
 const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
-const utils = require('./utils')
+const utils = require('./utils/index')
 const verifier = require('./utils/verifier')
 
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'

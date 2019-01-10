@@ -1,5 +1,5 @@
 const KeyValueStore = require('./keyValueStore')
-const utils = require('./utils')
+const utils = require('./utils/index')
 
 const ENC_BLOCK_SIZE = 24
 

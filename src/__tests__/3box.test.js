@@ -57,7 +57,7 @@ jest.mock('../privateStore', () => {
 })
 
 jest.mock('../utils/verifier')
-jest.mock('../utils', () => {
+jest.mock('../utils/index', () => {
   const sha256 = require('js-sha256').sha256
   let addressMap = {}
   let linkmap = {}
@@ -116,7 +116,7 @@ jest.mock('../utils', () => {
   }
 })
 
-const mockedUtils = require('../utils')
+const mockedUtils = require('../utils/index')
 const MOCK_HASH_SERVER = 'address-server'
 const MOCK_PROFILE_SERVER = 'profile-server'
 
