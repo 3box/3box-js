@@ -1,10 +1,11 @@
 const MuPort = require('muport-core')
 const bip39 = require('bip39')
 const localstorage = require('store')
+const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
-const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
-const { createProxyClient } = require('ipfs-postmsg-proxy')
+// const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
+// const { createProxyClient } = require('ipfs-postmsg-proxy')
 const graphQLRequest = require('graphql-request').request
 
 const PublicStore = require('./publicStore')
@@ -17,14 +18,24 @@ const verifier = require('./utils/verifier')
 const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
 const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
 const PINNING_ROOM = '3box-pinning'
-const IFRAME_STORE_VERSION = '0.0.3'
-const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+// const IFRAME_STORE_VERSION = '0.0.3'
+// const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+const IPFS_OPTIONS = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  preload: { enabled: false },
+  config: {
+    Bootstrap: [ ]
+  }
+}
 
 const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
 const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
 
-let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
+/*
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const iframe = document.createElement('iframe')
   iframe.src = IFRAME_STORE_URL
@@ -39,7 +50,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
   ipfsProxy = createProxyClient({ postMessage })
   cacheProxy = OrbitDBCacheProxy({ postMessage })
-}
+} */
 
 class Box {
   /**
@@ -70,11 +81,11 @@ class Box {
     const rootStoreName = didFingerprint + '.root'
 
     this.pinningNode = opts.pinningNode || PINNING_NODE
-    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
+    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
     const keystore = new OrbitdbKeyAdapter(this._muportDID)
-    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
@@ -98,17 +109,22 @@ class Box {
     ])
 
     let syncPromises = []
+    let hasResponse = {}
 
     const onMessageRes = async (topic, data) => {
       if (data.type === 'HAS_ENTRIES') {
-        if (data.odbAddress === privStoreAddress) {
+        if (data.odbAddress === privStoreAddress && !hasResponse[privStoreAddress]) {
           syncPromises.push(this.private._sync(data.numEntries))
+          hasResponse[privStoreAddress] = true
         }
-        if (data.odbAddress === pubStoreAddress) {
+        if (data.odbAddress === pubStoreAddress && !hasResponse[pubStoreAddress]) {
           syncPromises.push(this.public._sync(data.numEntries))
+          hasResponse[pubStoreAddress] = true
         }
         if (syncPromises.length === 2) {
-          await Promise.all(syncPromises)
+          const promises = syncPromises
+          syncPromises = []
+          await Promise.all(promises)
           await this._ensureDIDPublished()
           this._onSyncDoneCB()
           // this._pubsub.unsubscribe(PINNING_ROOM)
@@ -118,12 +134,18 @@ class Box {
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
+    this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
-    await this._rootStore.add({ odbAddress: pubOdbAddress })
-    await this._rootStore.add({ odbAddress: privOdbAddress })
+    await this._rootStore.load()
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    if (!entries.find(e => e.payload.value.odbAddress === pubOdbAddress)) {
+      await this._rootStore.add({ odbAddress: pubOdbAddress })
+    }
+    if (!entries.find(e => e.payload.value.odbAddress === privOdbAddress)) {
+      await this._rootStore.add({ odbAddress: privOdbAddress })
+    }
     this._publishRootStore(rootStoreAddress)
   }
 
@@ -180,13 +202,13 @@ class Box {
       ipfs = globalIPFS
       usingGlobalIPFS = true
     } else {
-      ipfs = await initIPFS(opts.ipfs, opts.iframeStore)
+      ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     }
     if (globalOrbitDB) {
       orbitdb = globalOrbitDB
       usingGlobalIPFS = true
     } else {
-      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+      const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
       orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
     }
 
@@ -224,7 +246,7 @@ class Box {
         await rootStore.close()
         await publicStore.close()
         if (!usingGlobalOrbitDB) await orbitdb.stop()
-        if (!usingGlobalIPFS) await ipfs.stop()
+        if (!usingGlobalIPFS) {} // await ipfs.stop()
       }
       // close but don't wait for it
       closeAll()
@@ -368,7 +390,7 @@ class Box {
   async _ensurePinningNodeConnected (odbAddress) {
     const roomPeers = await this._ipfs.pubsub.peers(odbAddress)
     if (!roomPeers.find(p => p === this.pinningNode.split('/').pop())) {
-      this._ipfs.swarm.connect(this.pinningNode)
+      this._ipfs.swarm.connect(this.pinningNode, () => {})
       const rootStoreAddress = this._rootStore.address.toString()
       this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
     }
@@ -410,19 +432,23 @@ class Box {
   }
 }
 
-async function initIPFS (ipfs, iframeStore) {
-  if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
+async function initIPFS (ipfs, iframeStore, ipfsOptions) {
+  // if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
   if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
   if (ipfs) {
     return ipfs
   } else {
-    await iframeLoadedPromise
-    return ipfsProxy
+    // await iframeLoadedPromise
+    // return ipfsProxy
+    return new Promise((resolve, reject) => {
+      ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
+      ipfs.on('error', error => {
+        console.error(error)
+        reject(error)
+      })
+      ipfs.on('ready', () => resolve(ipfs))
+    })
   }
-  // ipfs.on('error', error => {
-  //   console.error(error)
-  //   reject(error)
-  // })
 }
 
 async function getRootStoreAddress (serverUrl, identifier) {

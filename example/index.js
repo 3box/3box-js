@@ -1,9 +1,8 @@
+const syncComplete = (res) => {
+  console.log('Sync Complete')
+  updateProfileData(window.box)
+}
 bopen.addEventListener('click', event => {
-
-  const syncComplete = (res) => {
-    console.log('Sync Complete')
-    updateProfileData(window.box)
-  }
 
   window.ethereum.enable().then(addresses => {
     Box.openBox(addresses[0],  window.ethereum, {}).then(box => {
