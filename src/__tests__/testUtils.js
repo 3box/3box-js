@@ -75,7 +75,6 @@ const CONFS = [CONF_1, CONF_2, CONF_3, CONF_4]
 
 module.exports = {
   initIPFS: async (useAltConf) => {
-    console.log('num', useAltConf, CONFS[useAltConf])
     return new Promise((resolve, reject) => {
       let ipfs = new IPFS(CONFS[useAltConf])
       ipfs.on('error', reject)

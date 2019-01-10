@@ -164,7 +164,7 @@ class Box {
 
   static async getProfile (address, opts = {}) {
     const normalizedAddress = address.toLowerCase()
-    opts = Object.assign({ iframeStore: true, useCacheService: true }, opts)
+    opts = Object.assign({ useCacheService: true }, opts)
     let profile
     if (opts.useCacheService) {
       const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
@@ -191,7 +191,7 @@ class Box {
   }
 
   static async _getProfileOrbit (address, opts = {}) {
-    opts = Object.assign({ iframeStore: true }, opts)
+    // opts = Object.assign({ iframeStore: true }, opts)
     const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
     let usingGlobalIPFS = false
@@ -310,7 +310,7 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts) {
-    opts = Object.assign({ iframeStore: true }, opts)
+    // opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
     let muportDID
     let serializedMuDID = localstorage.get('serializedMuDID_' + normalizedAddress)
