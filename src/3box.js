@@ -1,5 +1,5 @@
 const MuPort = require('muport-core')
-const bip39 = require('bip39')
+const { HDNode } = require('ethers').utils
 const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
@@ -321,7 +321,7 @@ class Box {
       const sig = await utils.openBoxConsent(normalizedAddress, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = utils.sha256(sig.slice(2))
-      const mnemonic = bip39.entropyToMnemonic(entropy)
+      const mnemonic = HDNode.entropyToMnemonic(entropy)
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: normalizedAddress,
         mnemonic
