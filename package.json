@@ -41,7 +41,7 @@
   "homepage": "https://github.com/uport-project/3box-js#readme",
   "dependencies": {
     "@babel/runtime": "^7.1.2",
-    "bip39": "^2.5.0",
+    "ethers": "^4.0.20",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "0.0.3",
     "ipfs": "^0.33.1",
