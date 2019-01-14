@@ -320,7 +320,7 @@ class Box {
     } else {
       const sig = await utils.openBoxConsent(normalizedAddress, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
-      const entropy = utils.sha256(sig.slice(2))
+      const entropy = '0x' + utils.sha256(sig.slice(2))
       const mnemonic = HDNode.entropyToMnemonic(entropy)
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: normalizedAddress,
