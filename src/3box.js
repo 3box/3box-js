@@ -309,7 +309,7 @@ class Box {
    * @param     {Boolean}           opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts) {
+  static async openBox (address, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
     let muportDID
