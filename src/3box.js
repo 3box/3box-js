@@ -277,20 +277,24 @@ class Box {
    */
   static async getVerifiedAccounts (profile) {
     let verifs = {}
-    const did = await verifier.verifyDID(profile.proof_did)
-    if (profile.proof_github) {
-      try {
-        verifs.github = await verifier.verifyGithub(did, profile.proof_github)
-      } catch (err) {
-        console.error('Invalid github verification:', err.message)
+    try {
+      const did = await verifier.verifyDID(profile.proof_did)
+      if (profile.proof_github) {
+        try {
+          verifs.github = await verifier.verifyGithub(did, profile.proof_github)
+        } catch (err) {
+          // Invalid github verification
+        }
       }
-    }
-    if (profile.proof_twitter) {
-      try {
-        verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
-      } catch (err) {
-        console.error('Invalid twitter verification:', err.message)
+      if (profile.proof_twitter) {
+        try {
+          verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
+        } catch (err) {
+          // Invalid twitter verification
+        }
       }
+    } catch (err) {
+      // Invalid proof for DID return an empty profile
     }
     return verifs
   }
