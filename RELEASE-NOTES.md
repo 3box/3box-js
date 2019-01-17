@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.2.1 - 2019-01-17
+* Fixes bug in getVerifiedAccounts to work with earlier accounts #258
+* Fix to allow openBox to be called with no options
+* Replace bip39 dependency with more lightweight ethers.js dependency
+* Removes stale lib files during build
+* Modify example to work in additional environments including github pages
+
 ## v1.2.0 - 2019-01-08
 * Implemented new "verified" api that checks and verifies various claims
 * Reconnects to pinning node if connection is lost

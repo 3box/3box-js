@@ -1,5 +1,5 @@
 const MuPort = require('muport-core')
-const bip39 = require('bip39')
+const { HDNode } = require('ethers').utils
 const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
@@ -277,20 +277,24 @@ class Box {
    */
   static async getVerifiedAccounts (profile) {
     let verifs = {}
-    const did = await verifier.verifyDID(profile.proof_did)
-    if (profile.proof_github) {
-      try {
-        verifs.github = await verifier.verifyGithub(did, profile.proof_github)
-      } catch (err) {
-        console.error('Invalid github verification:', err.message)
+    try {
+      const did = await verifier.verifyDID(profile.proof_did)
+      if (profile.proof_github) {
+        try {
+          verifs.github = await verifier.verifyGithub(did, profile.proof_github)
+        } catch (err) {
+          // Invalid github verification
+        }
       }
-    }
-    if (profile.proof_twitter) {
-      try {
-        verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
-      } catch (err) {
-        console.error('Invalid twitter verification:', err.message)
+      if (profile.proof_twitter) {
+        try {
+          verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
+        } catch (err) {
+          // Invalid twitter verification
+        }
       }
+    } catch (err) {
+      // Invalid proof for DID return an empty profile
     }
     return verifs
   }
@@ -309,7 +313,7 @@ class Box {
    * @param     {Boolean}           opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts) {
+  static async openBox (address, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
     const normalizedAddress = address.toLowerCase()
     let muportDID
@@ -320,8 +324,8 @@ class Box {
     } else {
       const sig = await utils.openBoxConsent(normalizedAddress, ethereumProvider)
       if (opts.consentCallback) opts.consentCallback(true)
-      const entropy = utils.sha256(sig.slice(2))
-      const mnemonic = bip39.entropyToMnemonic(entropy)
+      const entropy = '0x' + utils.sha256(sig.slice(2))
+      const mnemonic = HDNode.entropyToMnemonic(entropy)
       muportDID = await MuPort.newIdentity(null, null, {
         externalMgmtKey: normalizedAddress,
         mnemonic

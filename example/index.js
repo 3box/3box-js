@@ -5,7 +5,7 @@ const syncComplete = (res) => {
 bopen.addEventListener('click', event => {
 
   window.ethereum.enable().then(addresses => {
-    Box.openBox(addresses[0],  window.ethereum, {}).then(box => {
+    window.Box.openBox(addresses[0],  window.ethereum, {}).then(box => {
       box.onSyncDone(syncComplete)
       window.box = box
       console.log(box)
@@ -52,7 +52,7 @@ bopen.addEventListener('click', event => {
 
 getProfile.addEventListener('click', () => {
   console.log(ethAddr.value)
-  Box.getProfile(ethAddr.value, {}).then(profile => {
+  window.Box.getProfile(ethAddr.value, {}).then(profile => {
     console.log(profile)
     Object.entries(profile).map(kv => {
       getProfileData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
@@ -63,7 +63,7 @@ getProfile.addEventListener('click', () => {
 profileGraphQL.addEventListener('click', () => {
   const query = profileGraphQLQuery.value
   console.log(query)
-  Box.profileGraphQL(query).then(res => {
+  window.Box.profileGraphQL(query).then(res => {
     console.log(res)
     profileGraphQLData.innerHTML = ''
     if (res.profile) {

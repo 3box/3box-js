@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
     "test": "rm -rf ./tmp ; jest --forceExit --detectOpenHandles --coverage --runInBand --testURL=\"http://localhost\"",
-    "build:es5": "./node_modules/.bin/babel src --out-dir lib --ignore=src/__tests__/,src/__mocks__/",
+    "build:es5": "rm -rf ./lib; ./node_modules/.bin/babel src --out-dir lib --ignore=src/__tests__/,src/__mocks__/",
     "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",
     "build:dist:prod": "./node_modules/.bin/webpack --config webpack.config.js --mode=production --output-filename 3box.min.js",
     "build": "npm run build:es5; npm run build:dist; npm run build:dist:prod",
@@ -41,7 +41,7 @@
   "homepage": "https://github.com/uport-project/3box-js#readme",
   "dependencies": {
     "@babel/runtime": "^7.1.2",
-    "bip39": "^2.5.0",
+    "ethers": "^4.0.20",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "0.0.3",
     "ipfs": "^0.33.1",
