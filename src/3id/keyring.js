@@ -7,9 +7,9 @@ const BASE_PATH = "m/7696500'/0'/0'"
 const MM_PATH = "m/44'/60'/0'/0"
 
 class Keyring {
-  constructor (opts = {}) {
-    this.mnemonic = opts.mnemonic
-    if (opts.entropy) {
+  constructor (mnemonic, opts = {}) {
+    this.mnemonic = mnemonic
+    if (!mnemonic && opts.entropy) {
       this.mnemonic = HDNode.entropyToMnemonic(opts.entropy)
     }
     if (!this.mnemonic) throw new Error('Mnemonic or entropy needs to be specified')

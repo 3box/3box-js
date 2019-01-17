@@ -1,5 +1,3 @@
-const MuPort = require('muport-core')
-const { HDNode } = require('ethers').utils
 const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
@@ -8,6 +6,7 @@ const Pubsub = require('orbit-db-pubsub')
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
 const graphQLRequest = require('graphql-request').request
 
+const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
@@ -56,8 +55,8 @@ class Box {
   /**
    * Please use the **openBox** method to instantiate a 3Box
    */
-  constructor (muportDID, ethereumProvider, opts = {}) {
-    this._muportDID = muportDID
+  constructor (threeId, ethereumProvider, opts = {}) {
+    this._3id = threeId
     this._web3provider = ethereumProvider
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     this._onSyncDoneCB = () => {}
@@ -76,15 +75,13 @@ class Box {
   }
 
   async _load (opts = {}) {
-    const did = this._muportDID.getDid()
-    const didFingerprint = utils.sha256Multihash(did)
-    const rootStoreName = didFingerprint + '.root'
+    const rootStoreName = this._3id.muportFingerprint + '.root'
 
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
-    const keystore = new OrbitdbKeyAdapter(this._muportDID)
+    const keystore = new OrbitdbKeyAdapter(this._3id._muport)
     const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
     globalIPFS = this._ipfs
@@ -100,8 +97,8 @@ class Box {
       }
     }
 
-    this.public = new PublicStore(this._orbitdb, didFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this))
-    this.private = new PrivateStore(this._muportDID, this._orbitdb, didFingerprint + '.private', this._ensurePinningNodeConnected.bind(this))
+    this.public = new PublicStore(this._orbitdb, this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this))
+    this.private = new PrivateStore(this._3id._muport, this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this))
 
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),
@@ -315,24 +312,8 @@ class Box {
    */
   static async openBox (address, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
-    const normalizedAddress = address.toLowerCase()
-    let muportDID
-    let serializedMuDID = localstorage.get('serializedMuDID_' + normalizedAddress)
-    if (serializedMuDID) {
-      muportDID = new MuPort(serializedMuDID)
-      if (opts.consentCallback) opts.consentCallback(false)
-    } else {
-      const sig = await utils.openBoxConsent(normalizedAddress, ethereumProvider)
-      if (opts.consentCallback) opts.consentCallback(true)
-      const entropy = '0x' + utils.sha256(sig.slice(2))
-      const mnemonic = HDNode.entropyToMnemonic(entropy)
-      muportDID = await MuPort.newIdentity(null, null, {
-        externalMgmtKey: normalizedAddress,
-        mnemonic
-      })
-      localstorage.set('serializedMuDID_' + normalizedAddress, muportDID.serializeState())
-    }
-    const box = new Box(muportDID, ethereumProvider, opts)
+    const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, opts)
+    const box = new Box(_3id, ethereumProvider, opts)
     await box._load(opts)
     return box
   }
@@ -348,7 +329,7 @@ class Box {
 
   async _publishRootStore (rootStoreAddress) {
     // Sign rootStoreAddress
-    const addressToken = await this._muportDID.signJWT({ rootStoreAddress })
+    const addressToken = await this._3id.signJWT({ rootStoreAddress })
     // Store odbAddress on 3box-address-server
     try {
       await utils.fetchJson(this._serverUrl + '/odbAddress', {
@@ -361,9 +342,9 @@ class Box {
   }
 
   async _linkProfile () {
-    const address = this._muportDID.getDidDocument().managementKey
+    const address = this._3id.managementAddress
     if (!localstorage.get('linkConsent_' + address)) {
-      const did = this._muportDID.getDid()
+      const did = this._3id.getDid()
       let linkData = await this.public.get('ethereum_proof')
       if (!linkData) {
         const consent = await utils.getLinkConsent(address, did, this._web3provider)
@@ -387,14 +368,14 @@ class Box {
   async _ensureDIDPublished () {
     if (!(await this.public.get('proof_did'))) {
       // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', await this._muportDID.signJWT())
+      await this.public.set('proof_did', await this._3id.signJWT())
     }
   }
 
   async _ensurePinningNodeConnected (odbAddress) {
     const roomPeers = await this._ipfs.pubsub.peers(odbAddress)
     if (!roomPeers.find(p => p === this.pinningNode.split('/').pop())) {
-      this._ipfs.swarm.connect(this.pinningNode, () => {})
+      this._ipfs.swarm.connect(this.pinningNode, (a,b) => {console.log('connected', a,b)})
       const rootStoreAddress = this._rootStore.address.toString()
       this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
     }
@@ -420,8 +401,8 @@ class Box {
    */
   async logout () {
     await this.close()
-    const address = this._muportDID.getDidDocument().managementKey
-    localstorage.remove('serializedMuDID_' + address)
+    this._3id.logout()
+    const address = this._3id.managementAddress
     localstorage.remove('linkConsent_' + address)
   }
 
@@ -432,7 +413,7 @@ class Box {
    * @return    {Boolean}                           true if the user is logged in
    */
   static isLoggedIn (address) {
-    return Boolean(localstorage.get('serializedMuDID_' + address.toLowerCase()))
+    return ThreeId.isLoggedIn(address)
   }
 }
 
