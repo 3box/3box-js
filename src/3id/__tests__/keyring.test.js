@@ -27,13 +27,13 @@ describe('Keyring', () => {
   })
 
   it('derives correct keys from entropy', async () => {
-    keyring2 = new Keyring({ entropy: '0xf0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b' })
-    keyring3 = new Keyring({ entropy: '0x24a0bc3a2a1d1404c0ab24bef9bb0618938ee892fbf62f63f82f015eddf1729e' })
+    keyring2 = new Keyring(null, { entropy: '0xf0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b' })
+    keyring3 = new Keyring(null, { entropy: '0x24a0bc3a2a1d1404c0ab24bef9bb0618938ee892fbf62f63f82f015eddf1729e' })
     expect(keyring2.mnemonic).toEqual('valley champion saddle suffer math resist annual bundle educate churn whisper banana spend head music echo sentence around pink method ranch arena lumber lemon')
   })
 
   it('derives correct keys from mnemonic', async () => {
-    keyring1 = new Keyring({mnemonic})
+    keyring1 = new Keyring(mnemonic)
 
     expect(keyring1.getPublicKeys()).toEqual(publicKeys1)
     expect(keyring1.serialize()).toEqual(JSON.stringify({ mnemonic }))

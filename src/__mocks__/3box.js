@@ -2,7 +2,7 @@ class Box {
 
   constructor (muportDID, ethereumProvider, opts = {}) {
     this._publicStore = {}
-    this._muportDID = {
+    this._3id = {
       getDid : () => muportDID
     }
     this.public = {
@@ -15,7 +15,7 @@ class Box {
     let did = "did:muport:"+address
     return new Box(did, ethereumProvider, opts);
   }
-  
+
 }
 
 module.exports = Box
