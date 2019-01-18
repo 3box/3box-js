@@ -21,6 +21,24 @@ module.exports = {
     })
   },
 
+  openSpaceConsent: (fromAddress, ethereum, name) => {
+    const text = `This app wants to view and update your 3Box space ${name}.`
+    var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
+    var params = [msg, fromAddress]
+    var method = 'personal_sign'
+    return new Promise((resolve, reject) => {
+      ethereum.sendAsync({
+        method,
+        params,
+        fromAddress
+      }, function (err, result) {
+        if (err) reject(err)
+        if (result.error) reject(result.error)
+        resolve(result.result)
+      })
+    })
+  },
+
   getLinkConsent: (fromAddress, toDID, ethereum) => {
     const text = 'Create a new 3Box profile' +
       '\n\n' +
