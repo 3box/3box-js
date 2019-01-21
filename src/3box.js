@@ -10,6 +10,7 @@ const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
+const Spaces = require('./spaces')
 const utils = require('./utils/index')
 const verifier = require('./utils/verifier')
 
