@@ -1,7 +1,9 @@
 class KeyValueStore {
-  constructor (orbitdb, name) {
+  constructor (orbitdb, name, ensureConnected, threeId) {
     this._orbitdb = orbitdb
     this._name = name
+    this._ensureConnected = ensureConnected
+    this._3id = threeId
     this._store = {}
   }
   async get (key) {
