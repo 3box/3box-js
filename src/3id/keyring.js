@@ -1,6 +1,8 @@
 const { HDNode } = require('ethers').utils
 const nacl = require('tweetnacl')
 nacl.util = require('tweetnacl-util')
+const EC = require('elliptic').ec
+const ec = new EC('secp256k1')
 const SimpleSigner = require('did-jwt').SimpleSigner
 
 const BASE_PATH = "m/7696500'/0'/0'"
@@ -58,6 +60,10 @@ class Keyring {
 
   getJWTSigner () {
     return SimpleSigner(this.signingKey.privateKey.slice(2))
+  }
+
+  getDBKey () {
+    return ec.keyFromPrivate(this.signingKey.privateKey.slice(2))
   }
 
   getPublicKeys () {
