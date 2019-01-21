@@ -7,6 +7,8 @@ const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 
 jest.mock('../3id', () => {
+  const EC = require('elliptic').ec
+  const ec = new EC('secp256k1')
   const did1 = 'did:muport:Qmsdfp98yw4t7'
   const did2 = 'did:muport:Qmsdsdf87g329'
   const serialized = 'such serialized state'
@@ -28,7 +30,9 @@ jest.mock('../3id', () => {
       logout: logoutFn,
       muportFingerprint: managementKey === '0x12345' ? 'b932fe7ab' : 'ab8c73d8f',
       getDidDocument: () => { return { managementKey } },
-      _muport: { keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } } }
+      getKeyringBySpaceName: () => {
+        return { getDBKey: () => ec.keyFromPrivate('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46') }
+      }
     }
   }
   return {
