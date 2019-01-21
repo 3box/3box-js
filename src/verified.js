@@ -6,7 +6,7 @@ class Verified {
    */
   constructor (box) {
     this._box = box
-    this._did = box._muportDID.getDid()
+    this._did = box._3id.getDid()
   }
 
   async _addVerifiedPublicAccount (key, proof, verificationFunction) {
