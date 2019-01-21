@@ -43,6 +43,39 @@ bopen.addEventListener('click', event => {
         })
       })
 
+      openSpace.addEventListener('click', () => {
+        const name = spaceName.value
+        const opts = {
+          onSyncDone: () => {
+            console.log('sync done in space', name)
+            updateSpaceData()
+          }
+        }
+        box.spaces.open(name, opts).then(() => {
+          window.currentSpace = name
+          space.innerHTML = `Data in ${name}:`
+          spaceCtrl.style.display = 'block'
+          updateSpaceData()
+        })
+      })
+
+      setSpace.addEventListener('click', () => {
+        console.log(spkey.value, spvalue.value)
+        box.spaces[window.currentSpace].set(spkey.value, spvalue.value).then(() => {
+          spkey.value = null
+          spvalue.value = null
+          updateSpaceData()
+        })
+      })
+      const updateSpaceData = () => {
+        const entries = box.spaces[window.currentSpace]._db.all()
+        console.log(entries)
+        spaceData.innerHTML = ''
+        Object.keys(entries).map(k => {
+          spaceData.innerHTML += k + ': ' + entries[k].value + '<br />'
+        })
+      }
+
       bclose.addEventListener('click', () => {
         logout(box)
       })
