@@ -10,7 +10,6 @@ const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
-const OrbitdbKeyAdapter = require('./orbitdbKeyAdapter')
 const utils = require('./utils/index')
 const verifier = require('./utils/verifier')
 
@@ -81,13 +80,16 @@ class Box {
     this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
-    const keystore = new OrbitdbKeyAdapter(this._3id._muport)
-    const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { keystore, cache })
+    // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
     globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
-    this._rootStore = await this._orbitdb.feed(rootStoreName)
+    const key = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
+    this._rootStore = await this._orbitdb.feed(rootStoreName, {
+      key,
+      write: [key.getPublic('hex')]
+    })
     const rootStoreAddress = this._rootStore.address.toString()
 
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
@@ -97,8 +99,8 @@ class Box {
       }
     }
 
-    this.public = new PublicStore(this._orbitdb, this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this))
-    this.private = new PrivateStore(this._3id._muport, this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this))
+    this.public = new PublicStore(this._orbitdb, this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this), this._3id)
+    this.private = new PrivateStore(this._3id._muport, this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this), this._3id)
 
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),

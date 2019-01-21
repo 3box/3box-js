@@ -2,10 +2,11 @@ class KeyValueStore {
   /**
    * Please use **box.profileStore** or **box.profileStore** to get the instance of this class
    */
-  constructor (orbitdb, name, ensureConnected) {
+  constructor (orbitdb, name, ensureConnected, threeId) {
     this._orbitdb = orbitdb
     this._name = name
     this._ensureConnected = ensureConnected
+    this._3id = threeId
   }
 
   /**
@@ -81,7 +82,11 @@ class KeyValueStore {
   }
 
   async _load (odbAddress) {
-    this._db = await this._orbitdb.keyvalue(odbAddress || this._name)
+    const key = this._3id.getKeyringBySpaceName(this._name).getDBKey()
+    this._db = await this._orbitdb.keyvalue(odbAddress || this._name, {
+      key,
+      write: [key.getPublic('hex')]
+    })
     await this._db.load()
     return this._db.address.toString()
   }

@@ -57,7 +57,7 @@ class ThreeId {
     if (split[0] === this.muportFingerprint) {
       return this._mainKeyring
     } else {
-      return this._keyrings[split[1]]
+      return this._keyrings[split[2]]
     }
   }
 
