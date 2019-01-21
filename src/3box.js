@@ -68,9 +68,13 @@ class Box {
      */
     this.private = null
     /**
-     * @property {Verified} verified       check and create verifications
+     * @property {Verified} verified        check and create verifications
      */
     this.verified = new Verified(this)
+    /**
+     * @property {Spaces} spaces            create and interact with spaces
+     */
+    this.spaces = null
   }
 
   async _load (opts = {}) {
@@ -101,6 +105,7 @@ class Box {
 
     this.public = new PublicStore(this._orbitdb, this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this), this._3id)
     this.private = new PrivateStore(this._3id._muport, this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this), this._3id)
+    this.spaces = new Spaces(this._3id, this._orbitdb, this._rootStore, this._ensurePinningNodeConnected.bind(this))
 
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),
