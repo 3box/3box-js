@@ -14,13 +14,16 @@ class Spaces {
     const consentNeeded = await this._3id.initKeyringByName(name)
     if (opts.consentCallback) opts.consentCallback(consentNeeded, name)
     this[name] = new KeyValueStore(this._orbitdb, `3box.space.${name}`, this._ensureConnected, this._3id)
-    const spaceAddress = this[name]._load()
+    const spaceAddress = await this[name]._load()
 
     const entries = await this._rootStore.iterator({ limit: -1 }).collect()
     if (!entries.find(entry => entry.payload.value.odbAddress.split('.')[2] === name)) {
       this._rootStore.add({ odbAddress: spaceAddress })
     }
     const syncSpace = async () => {
+      // TODO - this logic isn't completely sound yet. Now it will just
+      // always resolve after three seconds. We need a way to get unsynced
+      // entries for the given store from the pinning node.
       await this[name]._sync()
       if (opts.onSyncDone) opts.onSyncDone()
     }
