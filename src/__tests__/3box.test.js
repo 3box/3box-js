@@ -64,6 +64,14 @@ jest.mock('../privateStore', () => {
     }
   })
 })
+jest.mock('../space', () => {
+  return jest.fn(name => {
+    return {
+      _name: name,
+      open: jest.fn()
+    }
+  })
+})
 
 jest.mock('../utils/verifier')
 jest.mock('../utils/index', () => {
@@ -246,6 +254,22 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     await publishPromise
     pubsub.unsubscribe('3box-pinning')
+  })
+
+  it('should open spaces correctly', async () => {
+    let space1 = await box.openSpace('name1', 'myOpts')
+    expect(space1._name).toEqual('name1')
+    expect(space1.open).toHaveBeenCalledWith('myOpts')
+    let opts = { onSyncDone: jest.fn() }
+    let space2 = await box.openSpace('name1', opts)
+    expect(space1).toEqual(space2)
+    expect(opts.onSyncDone).toHaveBeenCalledTimes(1)
+
+    let space3 = await box.openSpace('name2', 'myOpts')
+    expect(box.spaces).toEqual({
+      name1: space1,
+      name2: space3
+    })
   })
 
   it.skip('ensurePinningNodeConnected should not do anything if already connected to given pubsub room', async () => {
