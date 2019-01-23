@@ -10,7 +10,7 @@ const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
-const Spaces = require('./spaces')
+const Space = require('./space')
 const utils = require('./utils/index')
 const verifier = require('./utils/verifier')
 
@@ -73,9 +73,9 @@ class Box {
      */
     this.verified = new Verified(this)
     /**
-     * @property {Spaces} spaces            create and interact with spaces
+     * @property {Object} spaces            an object containing all open spaces indexed by their name.
      */
-    this.spaces = null
+    this.spaces = {}
   }
 
   async _load (opts = {}) {
@@ -106,7 +106,6 @@ class Box {
 
     this.public = new PublicStore(this._orbitdb, this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this), this._3id)
     this.private = new PrivateStore(this._3id._muport, this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this), this._3id)
-    this.spaces = new Spaces(this._3id, this._orbitdb, this._rootStore, this._ensurePinningNodeConnected.bind(this))
 
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),
@@ -305,7 +304,7 @@ class Box {
   }
 
   /**
-   * Opens the user space associated with the given address
+   * Opens the 3Box associated with the given address
    *
    * @param     {String}            address                 An ethereum address
    * @param     {ethereumProvider}  ethereumProvider        An ethereum provider
@@ -324,6 +323,30 @@ class Box {
     const box = new Box(_3id, ethereumProvider, opts)
     await box._load(opts)
     return box
+  }
+
+  /**
+   * Opens the space with the given name in the users 3Box
+   *
+   * @param     {String}            name                    The name of the space
+   * @param     {Object}            opts                    Optional parameters
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   * @return    {Space}                                       the 3Box instance for the given address
+   */
+  async openSpace (name, opts = {}) {
+    if (!this.spaces[name]) {
+      this.spaces[name] = new Space(name, this._3id, this._orbitdb, this._rootStore, this._ensurePinningNodeConnected.bind(this))
+      try {
+        await this.spaces[name].open(opts)
+      } catch (e) {
+        delete this.spaces[name]
+      }
+    } else if (opts.onSyncDone) {
+      // since the space is already open we can call onSyncDone directly
+      opts.onSyncDone()
+    }
+    return this.spaces[name]
   }
 
   /**
