@@ -51,7 +51,7 @@ bopen.addEventListener('click', event => {
             updateSpaceData()
           }
         }
-        box.spaces.open(name, opts).then(() => {
+        box.openSpace(name, opts).then(() => {
           window.currentSpace = name
           space.innerHTML = `Data in ${name}:`
           spaceCtrl.style.display = 'block'
@@ -68,7 +68,8 @@ bopen.addEventListener('click', event => {
         })
       })
       const updateSpaceData = () => {
-        const entries = box.spaces[window.currentSpace]._db.all()
+        // TODO - this should have a better api
+        const entries = box.spaces[window.currentSpace]._store._db.all()
         console.log(entries)
         spaceData.innerHTML = ''
         Object.keys(entries).map(k => {
