@@ -61,13 +61,21 @@
         <button id="openSpace" type="button" class="btn btn btn-primary" >Open space</button>
 
         <div id="spaceCtrl" style="display: none;">
-          <input type="text" id="spkey" placeholder="Space Key" >
-          <input type="text" id="spvalue" placeholder="Space Value" >
-          <button id="setSpace" type="button" class="btn btn-primary">Set Space Data</button>
-
-          <h5 style="padding: 20px 0px 10px 0px" id="space"> </h5>
+          <h3> Public data: </h3>
+          <input type="text" id="spkey" placeholder="Key" >
+          <input type="text" id="spvalue" placeholder="Value" >
+          <button id="setSpacePub" type="button" class="btn btn-primary">Set Space Data</button>
+          <h5 style="padding: 20px 0px 10px 0px" id="spacePub"> </h5>
           <p>
-            <span id="spaceData"></span>
+            <span id="spaceDataPub"></span>
+          </p>
+          <h3> Private data: </h3>
+          <input type="text" id="sskey" placeholder="Key" >
+          <input type="text" id="ssvalue" placeholder="Value" >
+          <button id="setSpacePriv" type="button" class="btn btn-primary">Set Space Data</button>
+          <h5 style="padding: 20px 0px 10px 0px" id="spacePriv"> </h5>
+          <p>
+            <span id="spaceDataPriv"></span>
           </p>
         </div>
       </div>
