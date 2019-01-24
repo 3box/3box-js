@@ -109,7 +109,7 @@ describe('PrivateStore', () => {
     it('should return array of ALL entries values of log underlying store decrypted', async () => {
       const log = privateStore.log
       const entry = log.pop()
-      expect(entry.key).toEqual('hash')
+      expect(entry.key).toEqual('1220240ad89944cd6376657a6b66594f5e20c7dcae5e22e589af8b581bd94bb759a9')
       expect(entry.value).toEqual('value1')
     })
   })

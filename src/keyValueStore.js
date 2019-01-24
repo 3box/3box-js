@@ -100,6 +100,14 @@ class KeyValueStore {
     await this._db.close()
   }
 
+  async all () {
+    this._requireLoad()
+    const entries = await this._db.all()
+    let allSimple = {}
+    Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
+    return allSimple
+  }
+
   /**
    * Returns array of underlying log entries. In linearized order according to their Lamport clocks.
    * Useful for generating a complete history of all operations on store.
