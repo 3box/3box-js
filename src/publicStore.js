@@ -10,14 +10,6 @@ class ProfileStore extends KeyValueStore {
     this._linkProfile()
     return super.set(key, value)
   }
-
-  async all () {
-    super._requireLoad()
-    const entries = await this._db.all()
-    let allSimple = {}
-    Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
-    return allSimple
-  }
 }
 
 module.exports = ProfileStore

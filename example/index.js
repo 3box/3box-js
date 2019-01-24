@@ -53,27 +53,41 @@ bopen.addEventListener('click', event => {
         }
         box.openSpace(name, opts).then(() => {
           window.currentSpace = name
-          space.innerHTML = `Data in ${name}:`
+          spacePub.innerHTML = `Public data in ${name}:`
+          spacePriv.innerHTML = `Private data in ${name}:`
           spaceCtrl.style.display = 'block'
           updateSpaceData()
         })
       })
 
-      setSpace.addEventListener('click', () => {
+      setSpacePub.addEventListener('click', () => {
         console.log(spkey.value, spvalue.value)
-        box.spaces[window.currentSpace].set(spkey.value, spvalue.value).then(() => {
+        box.spaces[window.currentSpace].public.set(spkey.value, spvalue.value).then(() => {
           spkey.value = null
           spvalue.value = null
           updateSpaceData()
         })
       })
+      setSpacePriv.addEventListener('click', () => {
+        console.log(sskey.value, ssvalue.value)
+        box.spaces[window.currentSpace].private.set(sskey.value, ssvalue.value).then(() => {
+          sskey.value = null
+          ssvalue.value = null
+          updateSpaceData()
+        })
+      })
       const updateSpaceData = () => {
-        // TODO - this should have a better api
-        const entries = box.spaces[window.currentSpace]._store._db.all()
-        console.log(entries)
-        spaceData.innerHTML = ''
-        Object.keys(entries).map(k => {
-          spaceData.innerHTML += k + ': ' + entries[k].value + '<br />'
+        box.spaces[window.currentSpace].public.all().then(entries => {
+          spaceDataPub.innerHTML = ''
+          Object.keys(entries).map(k => {
+            spaceDataPub.innerHTML += k + ': ' + entries[k] + '<br />'
+          })
+        })
+        box.spaces[window.currentSpace].private.all().then(entries => {
+          spaceDataPriv.innerHTML = ''
+          Object.keys(entries).map(k => {
+            spaceDataPriv.innerHTML += k + ': ' + entries[k] + '<br />'
+          })
         })
       }
 
