@@ -51,7 +51,7 @@ class KeyValueStore {
   async _sync (numRemoteEntries) {
     this._requireLoad()
     // let toid = null
-    if (numRemoteEntries === this._db._oplog.values.length) return Promise.resolve()
+    if (numRemoteEntries <= this._db._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
       if (!numRemoteEntries) {
         setTimeout(() => {
@@ -61,7 +61,7 @@ class KeyValueStore {
         }, 3000)
       }
       this._db.events.on('replicated', () => {
-        if (numRemoteEntries === this._db._oplog.values.length) resolve()
+        if (numRemoteEntries <= this._db._oplog.values.length) resolve()
       })
       /*
       this._db.events.on('replicate.progress', (_x, _y, _z, num, max) => {
