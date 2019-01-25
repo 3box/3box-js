@@ -10,13 +10,9 @@ const BASE_PATH = "m/7696500'/0'/0'"
 const MM_PATH = "m/44'/60'/0'/0"
 
 class Keyring {
-  constructor (mnemonic, opts = {}) {
-    this.mnemonic = mnemonic
-    if (!mnemonic && opts.entropy) {
-      this.mnemonic = HDNode.entropyToMnemonic(opts.entropy)
-    }
-    if (!this.mnemonic) throw new Error('Mnemonic or entropy needs to be specified')
-    const seedNode = HDNode.fromMnemonic(this.mnemonic)
+  constructor (seed) {
+    this._seed = seed
+    const seedNode = HDNode.fromSeed(this._seed)
     const baseNode = seedNode.derivePath(BASE_PATH)
 
     this.signingKey = baseNode.derivePath("0")
@@ -80,7 +76,7 @@ class Keyring {
   }
 
   serialize () {
-    return JSON.stringify({ mnemonic: this.mnemonic })
+    return this._seed
   }
 }
 

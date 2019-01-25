@@ -31,12 +31,12 @@ class ThreeId {
   serializeState () {
     let stateObj = {
       managementAddress: this.managementAddress,
-      mnemonic: this._mainKeyring.mnemonic,
-      spaceMnemonics: {},
+      seed: this._mainKeyring.serialize(),
+      spaceSeeds: {},
       muport: this._muport.serializeState()
     }
     Object.keys(this._keyrings).map(name => {
-      stateObj.spaceMnemonics[name] = this._keyrings[name].mnemonic
+      stateObj.spaceSeeds[name] = this._keyrings[name].serialize()
     })
     return JSON.stringify(stateObj)
   }
@@ -44,10 +44,10 @@ class ThreeId {
   _init3id (serializeState) {
     const state = JSON.parse(serializeState)
     this.managementAddress = state.managementAddress
-    this._mainKeyring = new Keyring(state.mnemonic)
+    this._mainKeyring = new Keyring(state.seed)
     this._muport = new MuPort(state.muport)
-    Object.keys(state.spaceMnemonics).map(name => {
-      this._keyrings[name] = new Keyring(state.spaceMnemonics[name])
+    Object.keys(state.spaceSeeds).map(name => {
+      this._keyrings[name] = new Keyring(state.spaceSeeds[name])
     })
     this.muportFingerprint = utils.sha256Multihash(this._muport.getDid())
   }
@@ -65,8 +65,8 @@ class ThreeId {
     if (!this._keyrings[name]) {
       const sig = await utils.openSpaceConsent(this.managementAddress, this._ethereum, name)
       const entropy = '0x' + utils.sha256(sig.slice(2))
-      const mnemonic = HDNode.entropyToMnemonic(entropy)
-      this._keyrings[name] = new Keyring(mnemonic)
+      const seed = HDNode.mnemonicToSeed(HDNode.entropyToMnemonic(entropy))
+      this._keyrings[name] = new Keyring(seed)
       localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
       return true
     } else {
@@ -92,14 +92,15 @@ class ThreeId {
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = '0x' + utils.sha256(sig.slice(2))
       const mnemonic = HDNode.entropyToMnemonic(entropy)
+      const seed = HDNode.mnemonicToSeed(mnemonic)
       const muport = await MuPort.newIdentity(null, null, {
         externalMgmtKey: normalizedAddress,
         mnemonic
       })
       serialized3id = JSON.stringify({
         managementAddress: address,
-        mnemonic,
-        spaceMnemonics: {},
+        seed,
+        spaceSeeds: {},
         muport: muport.serializeState()
       })
     }
