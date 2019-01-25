@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.2.2 - 2019-01-25
+* Fixes a bug where more entries locally compared to the pinning node would result in onSyncDone not getting called.
+
 ## v1.2.1 - 2019-01-17
 * Fixes bug in getVerifiedAccounts to work with earlier accounts #258
 * Fix to allow openBox to be called with no options
