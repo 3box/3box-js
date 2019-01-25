@@ -43,9 +43,9 @@ jest.mock('muport-core', () => {
 
 const ADDR_1 = '0x12345'
 const ADDR_2 = '0xabcde'
-const ADDR_1_STATE_1 = '{"managementAddress":"0x12345","mnemonic":"blossom stay latin ramp sail tube stairs replace cross stone deposit find hobby conduct vehicle grocery chronic mercy arctic churn target manage repair pistol","spaceMnemonics":{},"muport":{"did":"did:muport:Qmsdfp98yw4t7","managementKey":"0x12345"}}'
-const ADDR_1_STATE_2 = '{"managementAddress":"0x12345","mnemonic":"blossom stay latin ramp sail tube stairs replace cross stone deposit find hobby conduct vehicle grocery chronic mercy arctic churn target manage repair pistol","spaceMnemonics":{"space1":"renew bring affair lawn pass quick clever scatter hover horror drift crawl frost announce piano food electric develop bring between sound deer exhibit anger","space2":"renew bring affair lawn pass quick clever scatter hover horror drift crawl frost announce piano food electric develop bring between sound deer exhibit anger"},"muport":{"did":"did:muport:Qmsdfp98yw4t7","managementKey":"0x12345"}}'
-const ADDR_2_STATE = '{"managementAddress":"0xabcde","mnemonic":"blossom stay latin ramp sail tube stairs replace cross stone deposit find hobby conduct vehicle grocery chronic mercy arctic churn target manage repair pistol","spaceMnemonics":{},"muport":{"did":"did:muport:Qmsdsdf87g329","managementKey":"0xabcde"}}'
+const ADDR_1_STATE_1 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{},"muport":{"did":"did:muport:Qmsdfp98yw4t7","managementKey":"0x12345"}}'
+const ADDR_1_STATE_2 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{"space1":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450","space2":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450"},"muport":{"did":"did:muport:Qmsdfp98yw4t7","managementKey":"0x12345"}}'
+const ADDR_2_STATE = '{"managementAddress":"0xabcde","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{},"muport":{"did":"did:muport:Qmsdsdf87g329","managementKey":"0xabcde"}}'
 const SPACE_1 = 'space1'
 const SPACE_2 = 'space2'
 const ETHEREUM = 'mockEthProvider'
@@ -55,7 +55,6 @@ const mockedUtils = require('../../utils/index')
 describe('3id', () => {
 
   let threeId
-  const mnemonic = 'clay rubber drama brush salute cream nerve wear stuff sentence trade conduct'
 
   beforeEach(() => {
     mockedUtils.openBoxConsent.mockClear()
@@ -92,11 +91,11 @@ describe('3id', () => {
     it('should get main keyring using rootStore/public/private name', async () => {
       const fingerprint = threeId.muportFingerprint
       let kr = threeId.getKeyringBySpaceName(fingerprint + '.root')
-      expect(kr.mnemonic).toEqual(JSON.parse(ADDR_1_STATE_1).mnemonic)
+      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_1).seed)
       kr = threeId.getKeyringBySpaceName(fingerprint + '.public')
-      expect(kr.mnemonic).toEqual(JSON.parse(ADDR_1_STATE_1).mnemonic)
+      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_1).seed)
       kr = threeId.getKeyringBySpaceName(fingerprint + '.private')
-      expect(kr.mnemonic).toEqual(JSON.parse(ADDR_1_STATE_1).mnemonic)
+      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_1).seed)
     })
 
     it('should init space keyrings correctly', async () => {
@@ -117,9 +116,9 @@ describe('3id', () => {
 
     it('should get space keyrings correctly', async () => {
       let kr = threeId.getKeyringBySpaceName(`3box.space.${SPACE_1}.keyvalue`)
-      expect(kr.mnemonic).toEqual(JSON.parse(ADDR_1_STATE_2).spaceMnemonics[SPACE_1])
+      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_2).spaceSeeds[SPACE_1])
       kr = threeId.getKeyringBySpaceName(`3box.space.${SPACE_2}.keyvalue`)
-      expect(kr.mnemonic).toEqual(JSON.parse(ADDR_1_STATE_2).spaceMnemonics[SPACE_2])
+      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_2).spaceSeeds[SPACE_2])
     })
 
     it('should get identity with spaces automatically initialized', async () => {
