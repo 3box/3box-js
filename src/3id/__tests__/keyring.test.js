@@ -1,4 +1,5 @@
 const Keyring = require('../keyring')
+const { HDNode } = require('ethers').utils
 const nacl = require('tweetnacl')
 nacl.util = require('tweetnacl-util')
 
@@ -8,7 +9,7 @@ describe('Keyring', () => {
   let keyring1
   let keyring2
   let keyring3
-  const mnemonic = 'clay rubber drama brush salute cream nerve wear stuff sentence trade conduct'
+  const seed = HDNode.mnemonicToSeed('clay rubber drama brush salute cream nerve wear stuff sentence trade conduct')
   const publicKeys1 = {
     signingKey: '028aaa695fa16f2a2279e1de718d80e00f4f4ddf30fe8674bbdb9e1f11778c2f77',
     ethereumKey: '027422e4f0321f010fd6b763bac41db22dcbf3717c7a9762bd7d2b9ce302152060',
@@ -22,21 +23,21 @@ describe('Keyring', () => {
   //const keyring2 = new Keyring()
   //const keyring3 = new Keyring()
 
-  it('throws error if no entropy or mnemonic', async () => {
+  it('throws error if no seed', async () => {
     expect(() => new Keyring()).toThrow()
   })
 
   it('derives correct keys from entropy', async () => {
-    keyring2 = new Keyring(null, { entropy: '0xf0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b' })
-    keyring3 = new Keyring(null, { entropy: '0x24a0bc3a2a1d1404c0ab24bef9bb0618938ee892fbf62f63f82f015eddf1729e' })
-    expect(keyring2.mnemonic).toEqual('valley champion saddle suffer math resist annual bundle educate churn whisper banana spend head music echo sentence around pink method ranch arena lumber lemon')
+    keyring2 = new Keyring('0xf0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b')
+    keyring3 = new Keyring('0x24a0bc3a2a1d1404c0ab24bef9bb0618938ee892fbf62f63f82f015eddf1729e')
+    expect(keyring2._seed).toEqual('0xf0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b')
   })
 
-  it('derives correct keys from mnemonic', async () => {
-    keyring1 = new Keyring(mnemonic)
+  it('derives correct keys from seed', async () => {
+    keyring1 = new Keyring(seed)
 
     expect(keyring1.getPublicKeys()).toEqual(publicKeys1)
-    expect(keyring1.serialize()).toEqual(JSON.stringify({ mnemonic }))
+    expect(keyring1.serialize()).toEqual(seed)
   })
 
   it('getDBKey works correctly', async () => {
