@@ -13,24 +13,17 @@ const Verified = require('./verified')
 const Space = require('./space')
 const utils = require('./utils/index')
 const verifier = require('./utils/verifier')
+const config = require('./config.js')
 
-const ADDRESS_SERVER_URL = 'https://beta.3box.io/address-server'
-const PINNING_NODE = '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC'
-const PINNING_ROOM = '3box-pinning'
+const ADDRESS_SERVER_URL = config.address_server_url
+const PINNING_NODE = config.pinning_node
+const PINNING_ROOM = config.pinning_room
 // const IFRAME_STORE_VERSION = '0.0.3'
 // const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
-const IPFS_OPTIONS = {
-  EXPERIMENTAL: {
-    pubsub: true
-  },
-  preload: { enabled: false },
-  config: {
-    Bootstrap: [ ]
-  }
-}
+const IPFS_OPTIONS = config.ipfs_options
+const GRAPHQL_SERVER_URL = config.graphql_server_url
+const PROFILE_SERVER_URL = config.profile_server_url
 
-const GRAPHQL_SERVER_URL = 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql'
-const PROFILE_SERVER_URL = 'https://ipfs.3box.io'
 
 let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
