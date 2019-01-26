@@ -116,9 +116,9 @@ describe('3id', () => {
     })
 
     it('should get space keyrings correctly', async () => {
-      let kr = threeId.getKeyringBySpaceName(`space.${SPACE_1}.public`)
+      let kr = threeId.getKeyringBySpaceName(`3box.space.${SPACE_1}`)
       expect(kr.mnemonic).toEqual(JSON.parse(ADDR_1_STATE_2).spaceMnemonics[SPACE_1])
-      kr = threeId.getKeyringBySpaceName(`space.${SPACE_2}.public`)
+      kr = threeId.getKeyringBySpaceName(`3box.space.${SPACE_2}`)
       expect(kr.mnemonic).toEqual(JSON.parse(ADDR_1_STATE_2).spaceMnemonics[SPACE_2])
     })
 

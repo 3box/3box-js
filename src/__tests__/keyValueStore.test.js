@@ -1,12 +1,15 @@
 const utils = require('./testUtils')
 const KeyValueStore = require('../keyValueStore')
-const OrbitdbKeyAdapter = require('../orbitdbKeyAdapter')
 const OrbitDB = require('orbit-db')
+const EC = require('elliptic').ec
+const ec = new EC('secp256k1')
 
 const STORE_NAME = '09ab7cd93f9e.public'
 
-const MUPORT_MOCK = {
-  keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
+const THREEID_MOCK = {
+  getKeyringBySpaceName: () => {
+    return { getDBKey: () => ec.keyFromPrivate('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46') }
+  }
 }
 
 const ensureConnected = jest.fn()
@@ -15,15 +18,14 @@ const ensureConnected = jest.fn()
 describe('KeyValueStore', () => {
   let ipfs
   let orbitdb
-  let keystore = new OrbitdbKeyAdapter(MUPORT_MOCK)
   let keyValueStore
   let storeAddr
   jest.setTimeout(20000)
 
   beforeAll(async () => {
     ipfs = await utils.initIPFS(2)
-    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb4', { keystore })
-    keyValueStore = new KeyValueStore(orbitdb, STORE_NAME, ensureConnected)
+    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb4')
+    keyValueStore = new KeyValueStore(orbitdb, STORE_NAME, ensureConnected, THREEID_MOCK)
   })
 
   beforeEach(() => {
@@ -67,8 +69,8 @@ describe('KeyValueStore', () => {
 
   it('should sync an old profile correctly', async () => {
     let ipfs2 = await utils.initIPFS(3)
-    let orbitdb2 = new OrbitDB(ipfs2, './tmp/orbitdb2', { keystore })
-    let keyValueStore2 = new KeyValueStore(orbitdb2, STORE_NAME)
+    let orbitdb2 = new OrbitDB(ipfs2, './tmp/orbitdb2')
+    let keyValueStore2 = new KeyValueStore(orbitdb2, STORE_NAME, null, THREEID_MOCK)
     let newAddr = await keyValueStore2._load()
     expect(newAddr).toEqual(storeAddr)
 
@@ -87,7 +89,7 @@ describe('KeyValueStore', () => {
     let storeNum = 0
 
     beforeEach(async () => {
-      keyValueStore = new KeyValueStore(orbitdb, 'store num' + storeNum++, () => {})
+      keyValueStore = new KeyValueStore(orbitdb, 'store num' + storeNum++, () => {}, THREEID_MOCK)
       storeAddr = await keyValueStore._load()
       await keyValueStore.set('key1', 'value1')
       await keyValueStore.set('key2', 'lalalla')

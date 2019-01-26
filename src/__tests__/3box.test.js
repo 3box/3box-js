@@ -7,6 +7,8 @@ const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 
 jest.mock('../3id', () => {
+  const EC = require('elliptic').ec
+  const ec = new EC('secp256k1')
   const did1 = 'did:muport:Qmsdfp98yw4t7'
   const did2 = 'did:muport:Qmsdsdf87g329'
   const serialized = 'such serialized state'
@@ -28,7 +30,9 @@ jest.mock('../3id', () => {
       logout: logoutFn,
       muportFingerprint: managementKey === '0x12345' ? 'b932fe7ab' : 'ab8c73d8f',
       getDidDocument: () => { return { managementKey } },
-      _muport: { keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } } }
+      getKeyringBySpaceName: () => {
+        return { getDBKey: () => ec.keyFromPrivate('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46') }
+      }
     }
   }
   return {
@@ -57,6 +61,14 @@ jest.mock('../privateStore', () => {
     return {
       _sync: jest.fn(() => '/orbitdb/Qmfdsa/08a7.private'),
       _load: jest.fn(() => '/orbitdb/Qmfdsa/08a7.private')
+    }
+  })
+})
+jest.mock('../space', () => {
+  return jest.fn(name => {
+    return {
+      _name: name,
+      open: jest.fn()
     }
   })
 })
@@ -242,6 +254,22 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     await publishPromise
     pubsub.unsubscribe('3box-pinning')
+  })
+
+  it('should open spaces correctly', async () => {
+    let space1 = await box.openSpace('name1', 'myOpts')
+    expect(space1._name).toEqual('name1')
+    expect(space1.open).toHaveBeenCalledWith('myOpts')
+    let opts = { onSyncDone: jest.fn() }
+    let space2 = await box.openSpace('name1', opts)
+    expect(space1).toEqual(space2)
+    expect(opts.onSyncDone).toHaveBeenCalledTimes(1)
+
+    let space3 = await box.openSpace('name2', 'myOpts')
+    expect(box.spaces).toEqual({
+      name1: space1,
+      name2: space3
+    })
   })
 
   it.skip('ensurePinningNodeConnected should not do anything if already connected to given pubsub room', async () => {
