@@ -11,10 +11,11 @@
     "test": "rm -rf ./tmp ; jest --forceExit --detectOpenHandles --coverage --runInBand --testURL=\"http://localhost\"",
     "build:es5": "rm -rf ./lib; ./node_modules/.bin/babel src --out-dir lib --ignore=src/__tests__/,src/__mocks__/",
     "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",
+    "build:dist:dev": "./node_modules/.bin/webpack --config webpack.dev.config.js --mode=development",
     "build:dist:prod": "./node_modules/.bin/webpack --config webpack.config.js --mode=production --output-filename 3box.min.js",
     "build": "npm run build:es5; npm run build:dist; npm run build:dist:prod",
     "prepublishOnly": "npm run build; npm run generate-readme",
-    "example:start": "npm run build:dist; node example/server.js",
+    "example:start": "node example/server.js | npm run build:dist:dev ",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 src/*.js >> README.md"
   },
   "browser": {

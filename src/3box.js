@@ -24,7 +24,6 @@ const IPFS_OPTIONS = config.ipfs_options
 const GRAPHQL_SERVER_URL = config.graphql_server_url
 const PROFILE_SERVER_URL = config.profile_server_url
 
-
 let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
 /*

@@ -1,6 +1,6 @@
 const IFRAME_STORE_VERSION = '0.0.3'
 
-module.exports =  {
+module.exports = {
   address_server_url: process.env.ADDRESS_SERVER_URL || 'https://beta.3box.io/address-server',
   pinning_node: process.env.PINNING_NODE || '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC',
   pinning_room: process.env.PINNING_ROOM || '3box-pinning',
