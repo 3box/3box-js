@@ -18,6 +18,9 @@ module.exports = Object.assign(require('./webpack.config.js'), {
       'IFRAME_STORE_URL',
       'GRAPHQL_SERVER_URL',
       'PROFILE_SERVER_URL',
+      'MUPORT_IPFS_HOST',
+      'MUPORT_IPFS_PORT',
+      'MUPORT_IPFS_PROTOCOL',
     ])
   ]
 })
