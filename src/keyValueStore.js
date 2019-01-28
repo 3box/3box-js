@@ -1,6 +1,6 @@
 class KeyValueStore {
   /**
-   * Please use **box.profileStore** or **box.profileStore** to get the instance of this class
+   * Please use **box.public** or **box.private** to get the instance of this class
    */
   constructor (orbitdb, name, ensureConnected, threeId) {
     this._orbitdb = orbitdb

@@ -10,7 +10,7 @@
 
 # 3box-js
 
-This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. Currently it supports one shared space which all dapps can access. In the future there will be support for more granular access control using namespaces.
+This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. There is one shared space for data which all authorized dapps access by default, then there are spaces which dapps have to request explicit consent to access.
 
 ## <a name="install"></a>Installation
 Install 3box in your npm project:
@@ -156,6 +156,20 @@ box._ipfs.swarm.connect(pinningNode, () => {
 ```
 
 Reference [ipfs-js](https://github.com/ipfs/js-ipfs) for additional options.
+
+### Open a space
+A space is a named section of a users 3Box. Each space has both a public and a private store, and for every space you open the user has to grant explicit consent to view that space. This means that if your dapp uses a space that no other dapp uses, only your dapp is allowed to update the data and read the private store of that particular space. To open a space called `narwhal` you simply call:
+
+```js
+const space = await box.openSpace('narwhal')
+```
+
+#### Get, set, and remove space data
+Interacting with data in a space is done in the same way as interacting with `box.public` and `box.private` ([see here](#interact-with-3box-data)). For example:
+```js
+const config = await space.private.get('dapp-config')
+```
+
 
 ## <a name="dappdata"></a> Dapp data
 Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](./KEY-CONVENTIONS.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
