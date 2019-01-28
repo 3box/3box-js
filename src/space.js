@@ -5,11 +5,22 @@ const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 
 class Space {
+  /**
+   * Please use **box.openSpace** to get the instance of this class
+   */
   constructor (name, threeId, orbitdb, rootStore, ensureConnected) {
     this._name = name
     this._3id = threeId
     this._store = new KeyValueStore(orbitdb, nameToSpaceName(this._name), ensureConnected, this._3id)
     this._rootStore = rootStore
+    /**
+     * @property {KeyValueStore} public         access the profile store of the space
+     */
+    this.public = null
+    /**
+     * @property {KeyValueStore} private        access the private store of the space
+     */
+    this.private = null
   }
 
   async open (opts = {}) {

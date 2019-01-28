@@ -10,7 +10,7 @@
 
 # 3box-js
 
-This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. Currently it supports one shared space which all dapps can access. In the future there will be support for more granular access control using namespaces.
+This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. There is one shared space for data which all authorized dapps access by default, then there are spaces which dapps have to request explicit consent to access.
 
 ## <a name="install"></a>Installation
 Install 3box in your npm project:
@@ -157,6 +157,20 @@ box._ipfs.swarm.connect(pinningNode, () => {
 
 Reference [ipfs-js](https://github.com/ipfs/js-ipfs) for additional options.
 
+### Open a space
+A space is a named section of a users 3Box. Each space has both a public and a private store, and for every space you open the user has to grant explicit consent to view that space. This means that if your dapp uses a space that no other dapp uses, only your dapp is allowed to update the data and read the private store of that particular space. To open a space called `narwhal` you simply call:
+
+```js
+const space = await box.openSpace('narwhal')
+```
+
+#### Get, set, and remove space data
+Interacting with data in a space is done in the same way as interacting with `box.public` and `box.private` ([see here](#interact-with-3box-data)). For example:
+```js
+const config = await space.private.get('dapp-config')
+```
+
+
 ## <a name="dappdata"></a> Dapp data
 Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](./KEY-CONVENTIONS.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
 
@@ -182,8 +196,9 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
         * [.public](#Box+public)
         * [.private](#Box+private)
         * [.verified](#Box+verified)
+        * [.spaces](#Box+spaces)
+        * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
         * [.onSyncDone(syncDone)](#Box+onSyncDone)
-        * [.close()](#Box+close)
         * [.logout()](#Box+logout)
     * _static_
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
@@ -228,6 +243,31 @@ Please use the **openBox** method to instantiate a 3Box
 | --- | --- | --- |
 | verified | [<code>Verified</code>](#Verified) | check and create verifications |
 
+<a name="Box+spaces"></a>
+
+#### box.spaces
+**Kind**: instance property of [<code>Box</code>](#Box)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| spaces | <code>Object</code> | an object containing all open spaces indexed by their name. |
+
+<a name="Box+openSpace"></a>
+
+#### box.openSpace(name, opts) ⇒ [<code>Space</code>](#Space)
+Opens the space with the given name in the users 3Box
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+**Returns**: [<code>Space</code>](#Space) - the Space instance for the given space name  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The name of the space |
+| opts | <code>Object</code> | Optional parameters |
+| opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
+| opts.onSyncDone | <code>function</code> | A function that will be called when the space has finished syncing with the pinning node |
+
 <a name="Box+onSyncDone"></a>
 
 #### box.onSyncDone(syncDone)
@@ -239,14 +279,6 @@ Sets the callback function that will be called once when the db is fully synced.
 | --- | --- | --- |
 | syncDone | <code>function</code> | The function that will be called |
 
-<a name="Box+close"></a>
-
-#### box.close()
-Closes the 3box instance without clearing the local cache.
-Should be called after you are done using the 3Box instance,
-but without logging the user out.
-
-**Kind**: instance method of [<code>Box</code>](#Box)  
 <a name="Box+logout"></a>
 
 #### box.logout()
@@ -269,9 +301,8 @@ Get the public profile of a given address
 | opts | <code>Object</code> | Optional parameters |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
-| opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
-| opts.iframeStore | <code>Boolean</code> | Use iframe for storage, allows shared store across domains. Default true when run in browser. |
 | opts.useCacheService | <code>Boolean</code> | Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true. |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
 
 <a name="Box.getProfiles"></a>
 
@@ -311,12 +342,12 @@ Verifies the proofs of social accounts that is present in the profile.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| profile | <code>Object</code> | A user profile object |
+| profile | <code>Object</code> | A user profile object, received from the `getProfile` function |
 
 <a name="Box.openBox"></a>
 
 #### Box.openBox(address, ethereumProvider, opts) ⇒ [<code>Box</code>](#Box)
-Opens the user space associated with the given address
+Opens the 3Box associated with the given address
 
 **Kind**: static method of [<code>Box</code>](#Box)  
 **Returns**: [<code>Box</code>](#Box) - the 3Box instance for the given address  
@@ -329,9 +360,7 @@ Opens the user space associated with the given address
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 | opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
-| opts.orbitPath | <code>String</code> | A custom path for orbitdb storage |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
-| opts.iframeStore | <code>Boolean</code> | Use iframe for storage, allows shared store across domains. Default true when run in browser. |
 
 <a name="Box.isLoggedIn"></a>
 
@@ -360,7 +389,7 @@ Check if the given address is logged in
 <a name="new_KeyValueStore_new"></a>
 
 #### new KeyValueStore()
-Please use **box.profileStore** or **box.profileStore** to get the instance of this class
+Please use **box.public** or **box.private** to get the instance of this class
 
 <a name="KeyValueStore+log"></a>
 
@@ -413,6 +442,41 @@ Remove the value for the given key
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
+
+<a name="Space"></a>
+
+### Space
+**Kind**: global class  
+
+* [Space](#Space)
+    * [new Space()](#new_Space_new)
+    * [.public](#Space+public)
+    * [.private](#Space+private)
+
+<a name="new_Space_new"></a>
+
+#### new Space()
+Please use **box.openSpace** to get the instance of this class
+
+<a name="Space+public"></a>
+
+#### space.public
+**Kind**: instance property of [<code>Space</code>](#Space)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| public | [<code>KeyValueStore</code>](#KeyValueStore) | access the profile store of the space |
+
+<a name="Space+private"></a>
+
+#### space.private
+**Kind**: instance property of [<code>Space</code>](#Space)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the space |
 
 <a name="Verified"></a>
 
