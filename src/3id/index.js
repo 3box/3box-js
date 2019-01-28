@@ -4,14 +4,17 @@ const didJWT = require('did-jwt')
 const localstorage = require('store')
 const utils = require('../utils/index')
 const Keyring = require('./keyring')
+const config = require('../config.js')
 
 const STORAGE_KEY = 'serialized3id_'
+const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_port, protocol: config.muport_ipfs_protocol}
 
 class ThreeId {
   constructor (serializeState, ethereum, opts) {
     this._ethereum = ethereum
     this._keyrings = {}
-    this._init3id(serializeState)
+    opts = Object.assign({ muportIpfs: MUPORT_IPFS }, opts )
+    this._init3id(serializeState, opts)
     localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
   }
 
@@ -41,11 +44,11 @@ class ThreeId {
     return JSON.stringify(stateObj)
   }
 
-  _init3id (serializeState) {
+  _init3id (serializeState, opts) {
     const state = JSON.parse(serializeState)
     this.managementAddress = state.managementAddress
     this._mainKeyring = new Keyring(state.seed)
-    this._muport = new MuPort(state.muport)
+    this._muport = new MuPort(state.muport, opts.muportIPFS || {} )
     Object.keys(state.spaceSeeds).map(name => {
       this._keyrings[name] = new Keyring(state.spaceSeeds[name])
     })
@@ -83,6 +86,7 @@ class ThreeId {
   }
 
   static async getIdFromEthAddress (address, ethereum, opts = {}) {
+    opts = Object.assign({ muportIpfs: MUPORT_IPFS }, opts )
     const normalizedAddress = address.toLowerCase()
     let serialized3id = localstorage.get(STORAGE_KEY + normalizedAddress)
     if (serialized3id) {
@@ -95,7 +99,8 @@ class ThreeId {
       const seed = HDNode.mnemonicToSeed(mnemonic)
       const muport = await MuPort.newIdentity(null, null, {
         externalMgmtKey: normalizedAddress,
-        mnemonic
+        mnemonic,
+        ipfsConf: opts.muportIpfs
       })
       serialized3id = JSON.stringify({
         managementAddress: address,
