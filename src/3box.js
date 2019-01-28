@@ -160,9 +160,8 @@ class Box {
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.addressServer      URL of the Address Server
    * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
-   * @param     {String}    opts.orbitPath          A custom path for orbitdb storage
-   * @param     {Boolean}   opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
+   * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Object}                            a json object with the profile for the given address
    */
 
@@ -276,7 +275,7 @@ class Box {
   /**
    * Verifies the proofs of social accounts that is present in the profile.
    *
-   * @param     {Object}            profile                 A user profile object
+   * @param     {Object}            profile                 A user profile object, received from the `getProfile` function
    * @return    {Object}                                    An object containing the accounts that have been verified
    */
   static async getVerifiedAccounts (profile) {
@@ -312,9 +311,7 @@ class Box {
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
-   * @param     {String}            opts.orbitPath          A custom path for orbitdb storage
    * @param     {String}            opts.addressServer      URL of the Address Server
-   * @param     {Boolean}           opts.iframeStore        Use iframe for storage, allows shared store across domains. Default true when run in browser.
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
@@ -331,8 +328,8 @@ class Box {
    * @param     {String}            name                    The name of the space
    * @param     {Object}            opts                    Optional parameters
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
-   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
-   * @return    {Space}                                       the 3Box instance for the given address
+   * @param     {Function}          opts.onSyncDone         A function that will be called when the space has finished syncing with the pinning node
+   * @return    {Space}                                     the Space instance for the given space name
    */
   async openSpace (name, opts = {}) {
     if (!this.spaces[name]) {
@@ -412,11 +409,6 @@ class Box {
     }
   }
 
-  /**
-   * Closes the 3box instance without clearing the local cache.
-   * Should be called after you are done using the 3Box instance,
-   * but without logging the user out.
-   */
   async close () {
     await this._orbitdb.stop()
     await this._pubsub.disconnect()
