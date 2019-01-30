@@ -82,12 +82,12 @@ class Box {
     const rootStoreName = this._3id.muportFingerprint + '.root'
 
     this.pinningNode = opts.pinningNode || PINNING_NODE
-    this._ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    this._ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    globalIPFS = this._ipfs
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
     // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
-    globalIPFS = this._ipfs
     globalOrbitDB = this._orbitdb
 
     const key = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
@@ -98,7 +98,8 @@ class Box {
     const rootStoreAddress = this._rootStore.address.toString()
 
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
-    const onNewPeer = (topic, peer) => {
+
+    const onNewPeer = async (topic, peer) => {
       if (peer === this.pinningNode.split('/').pop()) {
         this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
       }
@@ -420,9 +421,7 @@ class Box {
   async close () {
     await this._orbitdb.stop()
     await this._pubsub.disconnect()
-    // await this._ipfs.stop()
     globalOrbitDB = null
-    globalIPFS = null
   }
 
   /**
