@@ -22,7 +22,7 @@ module.exports = {
   },
 
   openSpaceConsent: (fromAddress, ethereum, name) => {
-    const text = `This app wants to view and update your 3Box space ${name}.`
+    const text = `Allow this app to open your ${name} space.`
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
