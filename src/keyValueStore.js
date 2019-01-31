@@ -52,7 +52,8 @@ class KeyValueStore {
   async _sync (numRemoteEntries) {
     this._requireLoad()
     // let toid = null
-    if (numRemoteEntries <= this._db._oplog.values.length) return Promise.resolve()
+    const numEntriesDefined = !(numRemoteEntries === null || numRemoteEntries === undefined)
+    if (numEntriesDefined && numRemoteEntries <= this._db._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
       if (!numRemoteEntries) {
         setTimeout(() => {
