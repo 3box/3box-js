@@ -35,10 +35,7 @@ class Space {
         this._rootStore.add({ odbAddress: spaceAddress })
       }
       const syncSpace = async () => {
-        // TODO - this logic isn't completely sound yet. Now it will just
-        // always resolve after three seconds. We need a way to get unsynced
-        // entries for the given store from the pinning node.
-        await this._store._sync()
+        await this._store._sync(opts.numEntries || null)
         if (opts.onSyncDone) opts.onSyncDone()
       }
       syncSpace()

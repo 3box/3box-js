@@ -68,6 +68,9 @@ class Box {
      * @property {Object} spaces            an object containing all open spaces indexed by their name.
      */
     this.spaces = {}
+
+    // local store of all pinning server pubsub messages seen related to spaces
+    this.spacesPubSubMessages = {}
   }
 
   async _load (opts = {}) {
@@ -117,6 +120,10 @@ class Box {
         if (data.odbAddress === pubStoreAddress && !hasResponse[pubStoreAddress]) {
           syncPromises.push(this.public._sync(data.numEntries))
           hasResponse[pubStoreAddress] = true
+        }
+        if (data.odbAddress.includes('space') === true) {
+          const spaceName = data.odbAddress.split('/')[3].split('.')[2]
+          this.spacesPubSubMessages[spaceName] = data
         }
         if (syncPromises.length === 2) {
           const promises = syncPromises
@@ -328,8 +335,11 @@ class Box {
     if (!this.spaces[name]) {
       this.spaces[name] = new Space(name, this._3id, this._orbitdb, this._rootStore, this._ensurePinningNodeConnected.bind(this))
       try {
+        const entryMessage = this.spacesPubSubMessages[name]
+        opts = entryMessage ? Object.assign({ numEntries: entryMessage.numEntries }, opts) : opts
         await this.spaces[name].open(opts)
       } catch (e) {
+        console.log(e)
         delete this.spaces[name]
       }
     } else if (opts.onSyncDone) {
