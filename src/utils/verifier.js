@@ -14,7 +14,7 @@ module.exports = {
    */
   verifyGithub: async (did, gistUrl) => {
     if (!gistUrl || gistUrl.trim() === '') {
-      throw new Error('The proof of your Github is not available')
+      return null
     }
 
     let gistFileContent = await fetchText(gistUrl)
@@ -38,6 +38,7 @@ module.exports = {
    * @return    {Object}                            Object containing username, proof, and the verifier
    */
   verifyTwitter: async (did, claim) => {
+    if (!claim) return null
     const verified = await didJWT.verifyJWT(claim)
     if (verified.payload.sub !== did) {
       throw new Error('Verification not valid for given user')
