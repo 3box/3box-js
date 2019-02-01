@@ -35,7 +35,7 @@ class Space {
         this._rootStore.add({ odbAddress: spaceAddress })
       }
       const syncSpace = async () => {
-        await this._store._sync(opts.numEntries || null)
+        await this._store._sync(opts.numEntries)
         if (opts.onSyncDone) opts.onSyncDone()
       }
       syncSpace()
