@@ -111,7 +111,16 @@ class Box {
     let syncPromises = []
     let hasResponse = {}
 
+    // Filters and store space related messages for 3secs, the best effort
+    // simple approach, until refactor
+    let spaceMessageFilterActive = true
+    let filterTimeSet = false
+
     const onMessageRes = async (topic, data) => {
+      if (!filterTimeSet) {
+        filterTimeSet = true
+        setTimeout(() => { spaceMessageFilterActive = false }, 3000)
+      }
       if (data.type === 'HAS_ENTRIES') {
         if (data.odbAddress === privStoreAddress && !hasResponse[privStoreAddress]) {
           syncPromises.push(this.private._sync(data.numEntries))
@@ -121,7 +130,7 @@ class Box {
           syncPromises.push(this.public._sync(data.numEntries))
           hasResponse[pubStoreAddress] = true
         }
-        if (data.odbAddress.includes('space') === true) {
+        if (spaceMessageFilterActive && data.odbAddress.includes('space') === true) {
           const spaceName = data.odbAddress.split('/')[3].split('.')[2]
           this.spacesPubSubMessages[spaceName] = data
         }
