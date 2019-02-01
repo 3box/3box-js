@@ -10,20 +10,24 @@ describe('PrivateStore', () => {
   let privateStore
   let encryptedSalt
 
-  let muportDIDMock = {
-    symEncrypt: cleartext => {
+  let threeIdMock = {
+    getKeyringBySpaceName: () => {
       return {
-        nonce: 'asd9hfg0847h',
-        ciphertext: 'such encrypted, wow!' + cleartext
+        symEncrypt: cleartext => {
+          return {
+            nonce: 'asd9hfg0847h',
+            ciphertext: 'such encrypted, wow!' + cleartext
+          }
+        },
+        symDecrypt: (ciphertext, nonce) => ciphertext.split('!')[1],
+        getDid: () => 'did:muport:Qmsdfwerg',
+        getDBSalt: () => 'f97f0d1ced93052700d740e23666ad9ff8b32366e3ce28696d3c9684f448142e'
       }
-    },
-    symDecrypt: (ciphertext, nonce) => ciphertext.split('!')[1],
-    getDid: () => 'did:muport:Qmsdfwerg',
-    keyring: { signingKey: { deriveChild: () => { return { _hdkey: { _privateKey: Buffer.from('bf821847abe8434c96c0740ee0ae4779dbc93d9da8a25e4efdc4ecad6fc68c23') } } } } }
+    }
   }
 
   beforeAll(async () => {
-    privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME, emptyEnsureConn)
+    privateStore = new PrivateStore('orbitdb instance', STORE_NAME, emptyEnsureConn, threeIdMock)
   })
 
   it('should be initialized correctly', async () => {
@@ -40,16 +44,20 @@ describe('PrivateStore', () => {
   it('should (un)pad encrypted values (with blocksize = 24)', async () => {
     const value = 'my secret string'
     let paddedVal
-    const muportDIDMock = {
-      symEncrypt: cleartext => {
-        paddedVal = cleartext
-        expect(cleartext.length % 24).toEqual(0)
-      },
-      symDecrypt: () => paddedVal,
-      getDid: () => 'did:muport:Qmsdfwerg',
-    keyring: { signingKey: { deriveChild: () => { return { _hdkey: { _privateKey: Buffer.from('bf821847abe8434c96c0740ee0ae4779dbc93d9da8a25e4efdc4ecad6fc68c23') } } } } }
+    const threeIdMock = {
+      getKeyringBySpaceName: () => {
+        return {
+          symEncrypt: cleartext => {
+            paddedVal = cleartext
+            expect(cleartext.length % 24).toEqual(0)
+          },
+          symDecrypt: () => paddedVal,
+          getDid: () => 'did:muport:Qmsdfwerg',
+          getDBSalt: () => 'f97f0d1ced93052700d740e23666ad9ff8b32366e3ce28696d3c9684f448142e'
+        }
+      }
     }
-    const privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME, emptyEnsureConn)
+    const privateStore = new PrivateStore('orbitdb instance', STORE_NAME, emptyEnsureConn, threeIdMock)
 
     privateStore._encryptEntry(value)
     const decrypted = privateStore._decryptEntry({nonce: '', ciphertext: ''})
@@ -101,7 +109,7 @@ describe('PrivateStore', () => {
   describe('log', () => {
 
     beforeEach(async () => {
-      privateStore = new PrivateStore(muportDIDMock, 'orbitdb instance', STORE_NAME, emptyEnsureConn)
+      privateStore = new PrivateStore('orbitdb instance', STORE_NAME, emptyEnsureConn, threeIdMock)
       const storeAddr = await privateStore._load()
       await privateStore.set('key1', 'value1')
     })

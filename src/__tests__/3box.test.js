@@ -36,7 +36,7 @@ jest.mock('../3id', () => {
     }
   }
   return {
-    getIdFromEthAddress: jest.fn((address, ethProv, { consentCallback }) => {
+    getIdFromEthAddress: jest.fn((address, ethProv, ipfs, { consentCallback }) => {
       const did = address === '0x12345' ? did1 : did2
       return instance(did, address)
     }),
@@ -200,7 +200,7 @@ describe('3Box', () => {
     expect(box.private._load).toHaveBeenCalledTimes(1)
     expect(box.private._load).toHaveBeenCalledWith()
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
     await publishPromise
 
     const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
@@ -372,7 +372,7 @@ describe('3Box', () => {
      expect(box.private._load).toHaveBeenCalledTimes(1)
      expect(box.private._load).toHaveBeenCalledWith()
      expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts)
+     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, boxOpts)
 
      await box._linkProfile()
      expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)

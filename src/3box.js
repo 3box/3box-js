@@ -47,9 +47,10 @@ class Box {
   /**
    * Please use the **openBox** method to instantiate a 3Box
    */
-  constructor (threeId, ethereumProvider, opts = {}) {
+  constructor (threeId, ethereumProvider, ipfs, opts = {}) {
     this._3id = threeId
     this._web3provider = ethereumProvider
+    this._ipfs = ipfs
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     this._onSyncDoneCB = () => {}
     /**
@@ -74,8 +75,6 @@ class Box {
     const rootStoreName = this._3id.muportFingerprint + '.root'
 
     this.pinningNode = opts.pinningNode || PINNING_NODE
-    this._ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
-    globalIPFS = this._ipfs
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
     // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
@@ -98,7 +97,7 @@ class Box {
     }
 
     this.public = new PublicStore(this._orbitdb, this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this), this._3id)
-    this.private = new PrivateStore(this._3id._muport, this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this), this._3id)
+    this.private = new PrivateStore(this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this), this._3id)
 
     const [pubStoreAddress, privStoreAddress] = await Promise.all([
       this.public._load(),
@@ -309,8 +308,10 @@ class Box {
    */
   static async openBox (address, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
-    const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, opts)
-    const box = new Box(_3id, ethereumProvider, opts)
+    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    globalIPFS = ipfs
+    const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, ipfs, opts)
+    const box = new Box(_3id, ethereumProvider, ipfs, opts)
     await box._load(opts)
     return box
   }
