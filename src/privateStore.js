@@ -4,10 +4,10 @@ const utils = require('./utils/index')
 const ENC_BLOCK_SIZE = 24
 
 class PrivateStore extends KeyValueStore {
-  constructor (muportDID, orbitdb, name, ensureConnected, _3id) {
+  constructor (orbitdb, name, ensureConnected, _3id) {
     super(orbitdb, name, ensureConnected, _3id)
-    this.muportDID = muportDID
-    this._salt = this._generateSalt()
+    this.keyring = _3id.getKeyringBySpaceName(name)
+    this._salt = this.keyring.getDBSalt()
   }
 
   async get (key) {
@@ -45,11 +45,6 @@ class PrivateStore extends KeyValueStore {
     })
   }
 
-  _generateSalt () {
-    const saltData = this.muportDID.keyring.signingKey.deriveChild(0)._hdkey._privateKey.toString('hex')
-    return utils.sha256(saltData)
-  }
-
   _genDbKey (key) {
     return utils.sha256Multihash(this._salt + key)
   }
@@ -57,11 +52,11 @@ class PrivateStore extends KeyValueStore {
   _encryptEntry (entry) {
     if (typeof entry === 'undefined') throw new Error('Entry to encrypt cannot be undefined')
 
-    return this.muportDID.symEncrypt(this._pad(JSON.stringify(entry)))
+    return this.keyring.symEncrypt(this._pad(JSON.stringify(entry)))
   }
 
   _decryptEntry ({ ciphertext, nonce }) {
-    return JSON.parse(this._unpad(this.muportDID.symDecrypt(ciphertext, nonce)))
+    return JSON.parse(this._unpad(this.keyring.symDecrypt(ciphertext, nonce)))
   }
 
   _pad (val, blockSize = ENC_BLOCK_SIZE) {
