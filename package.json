@@ -15,7 +15,8 @@
     "build:dist:prod": "./node_modules/.bin/webpack --config webpack.config.js --mode=production --output-filename 3box.min.js",
     "build": "npm run build:es5; npm run build:dist; npm run build:dist:prod",
     "prepublishOnly": "npm run build; npm run generate-readme",
-    "example:start": "node example/server.js | npm run build:dist:dev ",
+    "example-server:start": "node example/server.js",
+    "example:start": "npm run build:dist; npm run example-server:start",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 src/*.js >> README.md"
   },
   "browser": {
