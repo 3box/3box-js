@@ -13,44 +13,21 @@ jest.mock('../../utils/index', () => {
   }
 })
 
-jest.mock('muport-core', () => {
-  const did1 = 'did:muport:Qmsdfp98yw4t7'
-  const did2 = 'did:muport:Qmsdsdf87g329'
-  const instance = (did, managementKey) => {
-    return {
-      serializeState: () => { return { did, managementKey } },
-      getDid: () => did,
-      signJWT: (data) => {
-        if (data && data.rootStoreAddress) {
-          return 'veryJWT,' + data.rootStoreAddress + ',' + did
-        } else {
-          return 'veryJWT,' + did
-        }
-      },
-      getDidDocument: () => { return { managementKey } },
-      keyring: { signingKey: { _hdkey: { _privateKey: Buffer.from('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46', 'hex') } } }
-    }
-  }
-  const MuPort = function (serializeState) {
-    return instance(serializeState.did, serializeState.managementKey)
-  }
-  MuPort.newIdentity = (p, d, { externalMgmtKey }) => {
-    const did = externalMgmtKey === '0x12345' ? did1 : did2
-    return instance(did, externalMgmtKey)
-  }
-  return MuPort
-})
-
 const ADDR_1 = '0x12345'
 const ADDR_2 = '0xabcde'
-const ADDR_1_STATE_1 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{},"muport":{"did":"did:muport:Qmsdfp98yw4t7","managementKey":"0x12345"}}'
-const ADDR_1_STATE_2 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{"space1":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450","space2":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450"},"muport":{"did":"did:muport:Qmsdfp98yw4t7","managementKey":"0x12345"}}'
-const ADDR_2_STATE = '{"managementAddress":"0xabcde","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{},"muport":{"did":"did:muport:Qmsdsdf87g329","managementKey":"0xabcde"}}'
+const ADDR_1_STATE_1 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{}}'
+const ADDR_1_STATE_2 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{"space1":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450","space2":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450"}}'
+const ADDR_2_STATE = '{"managementAddress":"0xabcde","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{}}'
 const SPACE_1 = 'space1'
 const SPACE_2 = 'space2'
 const ETHEREUM = 'mockEthProvider'
 
 const mockedUtils = require('../../utils/index')
+const ipfsMock = {
+  files: {
+    add: async () => [{ hash: 'Qmasd08j34t' }]
+  }
+}
 
 describe('3id', () => {
 
@@ -64,15 +41,16 @@ describe('3id', () => {
   describe('getIdFromEthAddress', () => {
     it('should create a new identity on first call', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfsMock, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
+      expect(threeId.getDid()).toEqual('did:muport:Qmasd08j34t')
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
     })
 
     it('should create a new identity for other eth addr', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_2, ETHEREUM, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_2, ETHEREUM, ipfsMock, opts)
       expect(threeId.serializeState()).toEqual(ADDR_2_STATE)
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
@@ -80,7 +58,7 @@ describe('3id', () => {
 
     it('should get identity from storage on subsequent calls to existing identity', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfsMock, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
       expect(opts.consentCallback).toHaveBeenCalledWith(false)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
@@ -122,7 +100,7 @@ describe('3id', () => {
     })
 
     it('should get identity with spaces automatically initialized', async () => {
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfsMock)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_2)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
     })
