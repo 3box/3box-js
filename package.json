@@ -43,7 +43,7 @@
   "homepage": "https://github.com/uport-project/3box-js#readme",
   "dependencies": {
     "@babel/runtime": "^7.1.2",
-    "did-jwt": "^0.1.0",
+    "did-jwt": "^0.1.1",
     "ethers": "^4.0.20",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "^0.1.0",
