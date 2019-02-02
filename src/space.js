@@ -23,8 +23,9 @@ class Space {
       if (!entries.find(entry => entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)) {
         this._rootStore.add({ odbAddress: spaceAddress })
       }
+      const numEntries = opts.numEntriesMessages ? opts.numEntriesMessages[spaceAddress].numEntries : undefined
       const syncSpace = async () => {
-        await this._store._sync(opts.numEntries)
+        await this._store._sync(numEntries)
         if (opts.onSyncDone) opts.onSyncDone()
       }
       syncSpace()

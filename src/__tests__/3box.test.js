@@ -257,9 +257,9 @@ describe('3Box', () => {
   })
 
   it('should open spaces correctly', async () => {
-    let space1 = await box.openSpace('name1', 'myOpts')
+    let space1 = await box.openSpace('name1', {})
     expect(space1._name).toEqual('name1')
-    expect(space1.open).toHaveBeenCalledWith('myOpts')
+    expect(space1.open).toHaveBeenCalledWith(expect.any(Object))
     let opts = { onSyncDone: jest.fn() }
     let space2 = await box.openSpace('name1', opts)
     expect(space1).toEqual(space2)
