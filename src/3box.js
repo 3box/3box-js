@@ -131,8 +131,7 @@ class Box {
           hasResponse[pubStoreAddress] = true
         }
         if (spaceMessageFilterActive && data.odbAddress.includes('space') === true) {
-          const spaceName = data.odbAddress.split('/')[3].split('.')[2]
-          this.spacesPubSubMessages[spaceName] = data
+          this.spacesPubSubMessages[data.odbAddress] = data
         }
         if (syncPromises.length === 2) {
           const promises = syncPromises
@@ -344,8 +343,7 @@ class Box {
     if (!this.spaces[name]) {
       this.spaces[name] = new Space(name, this._3id, this._orbitdb, this._rootStore, this._ensurePinningNodeConnected.bind(this))
       try {
-        const entryMessage = this.spacesPubSubMessages[name]
-        opts = entryMessage ? Object.assign({ numEntries: entryMessage.numEntries }, opts) : opts
+        opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
       } catch (e) {
         console.log(e)
