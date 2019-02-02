@@ -30,9 +30,9 @@ jest.mock('../utils', () => {
     })
   }
 })
-jest.mock('https-did-resolver', () => {
-  return { default: jest.fn() }
-})
+//jest.mock('https-did-resolver', () => {
+  //return { default: jest.fn() }
+//})
 registerMethod('https', async () => {
   return {
     "@context": "https://w3id.org/did/v1",
@@ -107,7 +107,7 @@ describe('Verified', () => {
       })
     })
 
-    // TODO - this test is broken because of did-resolver not working properly
+    // TODO - Not sure how to mock the https-did-resolver. The code on top stopped working.
     it.skip('should add the twitter proof and get the twitter handler to verify if it is verified', async () => {
       await verified.addTwitter(correctClaim)
       let twitter = await verified.twitter()
