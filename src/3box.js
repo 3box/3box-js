@@ -4,7 +4,6 @@ const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
-const graphQLRequest = require('graphql-request').request
 
 const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')

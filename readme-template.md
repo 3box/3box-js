@@ -184,4 +184,15 @@ $ npm run example:start
 
 This runs a simple server at `http://localhost:3000/` that serves the static `example/index.html` file. This allows it easily interact with metamask. You can edit the `example/index.html` file to try differnt code.
 
+## <a name="dappdata"></a> Optimize build for read only 3Box API
+
+If you only want to fetch profile data from 3Box's profile APIs you can optimize by importing only those functions or the API specific dist file. Since this includes minimal dependencies, file size is ~ 80kb vs 4+mb for the full build.
+
+```js
+const { profileGraphQL, getProfile, getProfiles } = require('3box/lib/api')
+```
+```html
+<script src="https://unpkg.com/3box/dist/3box.api.min.js"></script>
+```
+
 ## <a name="api"></a> API Documentation
