@@ -34,7 +34,7 @@ async function getProfiles (addressArray, opts = {}) {
   return utils.fetchJson(url, req)
 }
 
-export async function profileGraphQL (query, opts = {}) {
+async function profileGraphQL (query, opts = {}) {
   opts = Object.assign({ graphqlServer: GRAPHQL_SERVER_URL }, opts)
   return graphQLRequest(opts.graphqlServer, query)
 }
