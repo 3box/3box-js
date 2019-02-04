@@ -1,4 +1,4 @@
-const ThreeId = require('../index')
+import ThreeId from '../index'
 
 jest.mock('../../utils/index', () => {
   const sha256 = require('js-sha256').sha256
@@ -139,4 +139,3 @@ describe('3id', () => {
     })
   })
 })
-

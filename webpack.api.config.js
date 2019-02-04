@@ -1,11 +1,11 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/3box.js',
+  entry: './src/api.js',
   output: {
-    filename: '3box.js',
+    filename: '3box.api.min.js',
     path: path.resolve(__dirname, 'dist'),
-    library: 'Box',
+    library: 'BoxApi',
     libraryExport: "default" ,
     libraryTarget: 'umd',
     umdNamedDefine: true

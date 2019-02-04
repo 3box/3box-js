@@ -1,4 +1,4 @@
-const KeyValueStore = require('./keyValueStore')
+import KeyValueStore from './keyValueStore'
 
 class ProfileStore extends KeyValueStore {
   constructor (orbitdb, name, linkProfile, ensureConnected, _3id) {
@@ -12,4 +12,4 @@ class ProfileStore extends KeyValueStore {
   }
 }
 
-module.exports = ProfileStore
+export default ProfileStore

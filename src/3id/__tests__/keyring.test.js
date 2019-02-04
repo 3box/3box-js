@@ -1,7 +1,8 @@
-const Keyring = require('../keyring')
-const { HDNode } = require('ethers').utils
-const nacl = require('tweetnacl')
-nacl.util = require('tweetnacl-util')
+import Keyring from '../keyring'
+import { HDNode } from 'ethers/utils'
+import nacl from 'tweetnacl'
+import naclUtil from 'tweetnacl-util'
+nacl.util = naclUtil
 
 
 describe('Keyring', () => {
@@ -64,4 +65,3 @@ describe('Keyring', () => {
     expect(cleartext).toEqual(testMsg)
   })
 })
-

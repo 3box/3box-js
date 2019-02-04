@@ -19,7 +19,8 @@ const rootstoreMock = {
   add: jest.fn()
 }
 
-const Space = require('../space')
+// const Space = require('../space')
+import Space from '../space'
 
 
 describe('Space', () => {

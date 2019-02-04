@@ -1,7 +1,7 @@
-const Verified = require('../verified')
-const Box = require('../3box')
-const didJWT = require('did-jwt')
-const { registerMethod } = require('did-resolver')
+import Verified from '../verified'
+import Box from '../3box'
+import didJWT from 'did-jwt'
+import { registerMethod } from 'did-resolver'
 
 const GITHUB_LINK1_URL = "https://gist.githubusercontent.com/user1/12345"
 const GITHUB_LINK1_CONTENT = "some random text did:muport:0x12345 more random text"
@@ -31,7 +31,7 @@ jest.mock('../utils', () => {
   }
 })
 jest.mock('https-did-resolver', () => {
-  return { default: jest.fn() }
+  return jest.fn()
 })
 registerMethod('https', async () => {
   return {

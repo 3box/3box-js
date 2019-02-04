@@ -1,19 +1,18 @@
-const localstorage = require('store')
-const IPFS = require('ipfs')
-const OrbitDB = require('orbit-db')
-const Pubsub = require('orbit-db-pubsub')
+import localstorage from 'store'
+import IPFS from 'ipfs'
+import OrbitDB from 'orbit-db'
+import Pubsub from 'orbit-db-pubsub'
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
-const graphQLRequest = require('graphql-request').request
-
-const ThreeId = require('./3id')
-const PublicStore = require('./publicStore')
-const PrivateStore = require('./privateStore')
-const Verified = require('./verified')
-const Space = require('./space')
-const utils = require('./utils/index')
-const verifier = require('./utils/verifier')
-const config = require('./config.js')
+import ThreeId from './3id'
+import PublicStore from './publicStore'
+import PrivateStore from './privateStore'
+import Verified from './verified'
+import Space from './space'
+import utils from './utils/index'
+import verifier from './utils/verifier'
+import config from './config'
+import API from './api'
 
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
@@ -21,8 +20,6 @@ const PINNING_ROOM = config.pinning_room
 // const IFRAME_STORE_VERSION = '0.0.3'
 // const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 const IPFS_OPTIONS = config.ipfs_options
-const GRAPHQL_SERVER_URL = config.graphql_server_url
-const PROFILE_SERVER_URL = config.profile_server_url
 
 let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
@@ -163,8 +160,7 @@ class Box {
     opts = Object.assign({ useCacheService: true }, opts)
     let profile
     if (opts.useCacheService) {
-      const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
-      profile = await getProfileAPI(normalizedAddress, profileServerUrl)
+      profile = await API.getProfile(normalizedAddress, opts.profileServer)
     } else {
       profile = await this._getProfileOrbit(normalizedAddress, opts)
     }
@@ -181,15 +177,13 @@ class Box {
    */
 
   static async getProfiles (addressArray, opts = {}) {
-    const profileServerUrl = opts.profileServer || PROFILE_SERVER_URL
-    const req = { addressList: addressArray }
-    return utils.fetchJson(profileServerUrl + '/profileList', req)
+    return API.getProfiles(addressArray, opts)
   }
 
   static async _getProfileOrbit (address, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
-    const serverUrl = opts.addressServer || ADDRESS_SERVER_URL
-    const rootStoreAddress = await getRootStoreAddress(serverUrl, address.toLowerCase())
+    console.log(opts.addressServer)
+    const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
     let usingGlobalIPFS = false
     let usingGlobalOrbitDB = false
     let ipfs
@@ -262,7 +256,7 @@ class Box {
    */
 
   static async profileGraphQL (query, opts = {}) {
-    return graphQLRequest(opts.graphqlServer || GRAPHQL_SERVER_URL, query)
+    return API.profileGraphQL(query, opts.graphqlServer)
   }
 
   /**
@@ -450,25 +444,4 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   }
 }
 
-async function getRootStoreAddress (serverUrl, identifier) {
-  // read orbitdb root store address from the 3box-address-server
-  const res = await utils.fetchJson(serverUrl + '/odbAddress/' + identifier)
-  if (res.status === 'success') {
-    return res.data.rootStoreAddress
-  } else {
-    throw new Error(res.message)
-  }
-}
-
-async function getProfileAPI (rootStoreAddress, serverUrl) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await utils.fetchJson(serverUrl + '/profile?address=' + encodeURIComponent(rootStoreAddress))
-      resolve(res)
-    } catch (err) {
-      reject(err)
-    }
-  })
-}
-
-module.exports = Box
+export default Box

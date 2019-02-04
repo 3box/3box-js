@@ -130,4 +130,4 @@ class KeyValueStore {
   }
 }
 
-module.exports = KeyValueStore
+export default KeyValueStore

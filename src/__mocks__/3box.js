@@ -18,4 +18,4 @@ class Box {
 
 }
 
-module.exports = Box
+export default Box
