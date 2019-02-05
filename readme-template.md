@@ -189,7 +189,7 @@ This runs a simple server at `http://localhost:3000/` that serves the static `ex
 If you only want to fetch profile data from 3Box's profile APIs you can optimize by importing only those functions or the API specific dist file. Since this includes minimal dependencies, file size is ~ 80kb vs 4+mb for the full build.
 
 ```js
-const { profileGraphQL, getProfile, getProfiles } = require('3box/lib/api')
+const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require('3box/lib/api')
 ```
 ```html
 <script src="https://unpkg.com/3box/dist/3box.api.min.js"></script>

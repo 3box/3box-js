@@ -1,5 +1,6 @@
 const graphQLRequest = require('graphql-request').request
 const utils = require('./utils/index')
+const verifier = require('./utils/verifier')
 const config = require('./config.js')
 
 const GRAPHQL_SERVER_URL = config.graphql_server_url
@@ -39,4 +40,28 @@ async function profileGraphQL (query, opts = {}) {
   return graphQLRequest(opts.graphqlServer, query)
 }
 
-module.exports = { profileGraphQL, getProfile, getRootStoreAddress, getProfiles }
+async function getVerifiedAccounts (profile) {
+  let verifs = {}
+  try {
+    const did = await verifier.verifyDID(profile.proof_did)
+    if (profile.proof_github) {
+      try {
+        verifs.github = await verifier.verifyGithub(did, profile.proof_github)
+      } catch (err) {
+        // Invalid github verification
+      }
+    }
+    if (profile.proof_twitter) {
+      try {
+        verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
+      } catch (err) {
+        // Invalid twitter verification
+      }
+    }
+  } catch (err) {
+    // Invalid proof for DID return an empty profile
+  }
+  return verifs
+}
+
+module.exports = { profileGraphQL, getProfile, getRootStoreAddress, getProfiles, getVerifiedAccounts }
