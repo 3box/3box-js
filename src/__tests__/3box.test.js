@@ -1,9 +1,9 @@
 const testUtils = require('./testUtils')
-const OrbitDB = require('orbit-db')
-const Pubsub = require('orbit-db-pubsub')
-const jsdom = require('jsdom')
-const IPFS = require('ipfs')
-const Box = require('../3box')
+import OrbitDB from 'orbit-db'
+import Pubsub from 'orbit-db-pubsub'
+import jsdom from 'jsdom'
+import IPFS from 'ipfs'
+import Box from '../3box'
 global.window = new jsdom.JSDOM().window
 
 jest.mock('../3id', () => {

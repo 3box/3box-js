@@ -1,10 +1,11 @@
-const { HDNode } = require('ethers').utils
-const nacl = require('tweetnacl')
-nacl.util = require('tweetnacl-util')
-const EC = require('elliptic').ec
+import { HDNode } from 'ethers/utils'
+import nacl from 'tweetnacl'
+import naclUtil from 'tweetnacl-util'
+nacl.util = naclUtil
+import { ec as EC } from 'elliptic'
 const ec = new EC('secp256k1')
-const SimpleSigner = require('did-jwt').SimpleSigner
-const { sha256 } = require('../utils/index')
+import { SimpleSigner } from 'did-jwt'
+import { sha256 } from '../utils/index'
 
 const BASE_PATH = "m/7696500'/0'/0'"
 const MM_PATH = "m/44'/60'/0'/0"
@@ -106,4 +107,4 @@ const symDecryptBase = (ciphertext, symKey, nonce, toBuffer) => {
   return cleartext ? nacl.util.encodeUTF8(cleartext) : null
 }
 
-module.exports = Keyring
+export default Keyring

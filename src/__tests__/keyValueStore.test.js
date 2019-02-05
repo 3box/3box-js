@@ -1,8 +1,13 @@
 const utils = require('./testUtils')
-const KeyValueStore = require('../keyValueStore')
-const OrbitDB = require('orbit-db')
-const EC = require('elliptic').ec
+// const KeyValueStore = require('../keyValueStore')
+import KeyValueStore from '../keyValueStore'
+// const OrbitDB = require('orbit-db')
+import OrbitDB from 'orbit-db'
+// const EC = require('elliptic').ec
+// const ec = new EC('secp256k1')
+import { ec as EC } from 'elliptic'
 const ec = new EC('secp256k1')
+
 
 const STORE_NAME = '09ab7cd93f9e.public'
 

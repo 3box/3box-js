@@ -1,5 +1,5 @@
 const utils = require('./testUtils')
-const PrivateStore = require('../privateStore')
+import PrivateStore from '../privateStore'
 
 const STORE_NAME = '09ab7cd93f9e.private'
 const emptyEnsureConn = () => {}

@@ -1,4 +1,4 @@
-const verifier = require('./utils/verifier')
+import verifier from './utils/verifier'
 
 class Verified {
   /**
@@ -72,4 +72,4 @@ class Verified {
   }
 }
 
-module.exports = Verified
+export default Verified

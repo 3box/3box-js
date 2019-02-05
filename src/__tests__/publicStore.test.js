@@ -1,4 +1,4 @@
-const PublicStore = require('../publicStore')
+import PublicStore from '../publicStore'
 
 const STORE_NAME = '09ab7cd93f9e.public'
 const emptyEnsureConn = () => {}

@@ -6,6 +6,7 @@ module.exports = {
     filename: '3box.js',
     path: path.resolve(__dirname, 'dist'),
     library: 'Box',
+    libraryExport: "default" ,
     libraryTarget: 'umd',
     umdNamedDefine: true
   },

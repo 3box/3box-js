@@ -1,19 +1,19 @@
-const localstorage = require('store')
-const IPFS = require('ipfs')
-const OrbitDB = require('orbit-db')
-const Pubsub = require('orbit-db-pubsub')
+import localstorage from 'store'
+import IPFS from 'ipfs'
+import OrbitDB from 'orbit-db'
+import Pubsub from 'orbit-db-pubsub'
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
 
-const ThreeId = require('./3id')
-const PublicStore = require('./publicStore')
-const PrivateStore = require('./privateStore')
-const Verified = require('./verified')
-const Space = require('./space')
-const utils = require('./utils/index')
-const verifier = require('./utils/verifier')
-const config = require('./config.js')
-const API = require('./api')
+import ThreeId from './3id'
+import PublicStore from './publicStore'
+import PrivateStore from './privateStore'
+import Verified from './verified'
+import Space from './space'
+import utils from './utils/index'
+import verifier from './utils/verifier'
+import config from './config'
+import API from './api'
 
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
@@ -462,4 +462,4 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   }
 }
 
-module.exports = Box
+export default Box

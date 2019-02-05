@@ -1,10 +1,10 @@
-const { HDNode } = require('ethers').utils
-const MuPort = require('muport-core')
-const didJWT = require('did-jwt')
-const localstorage = require('store')
-const utils = require('../utils/index')
-const Keyring = require('./keyring')
-const config = require('../config.js')
+import { HDNode } from 'ethers/utils'
+import MuPort from 'muport-core'
+import didJWT from 'did-jwt'
+import localstorage from 'store'
+import utils from '../utils/index'
+import Keyring from './keyring'
+import config from '../config.js'
 
 const STORAGE_KEY = 'serialized3id_'
 const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_port, protocol: config.muport_ipfs_protocol}
@@ -113,4 +113,4 @@ class ThreeId {
   }
 }
 
-module.exports = ThreeId
+export default ThreeId

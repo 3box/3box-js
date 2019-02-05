@@ -1,5 +1,5 @@
-const KeyValueStore = require('./keyValueStore')
-const utils = require('./utils/index')
+import KeyValueStore from './keyValueStore'
+import utils from './utils/index'
 
 const ENC_BLOCK_SIZE = 24
 
@@ -74,4 +74,4 @@ class PrivateStore extends KeyValueStore {
   }
 }
 
-module.exports = PrivateStore
+export default PrivateStore

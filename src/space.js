@@ -1,5 +1,5 @@
-const KeyValueStore = require('./keyValueStore')
-const { sha256Multihash } = require('./utils')
+import KeyValueStore from './keyValueStore'
+import { sha256Multihash } from './utils'
 
 const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
@@ -46,7 +46,7 @@ class Space {
   }
 }
 
-module.exports = Space
+export default Space
 
 const publicStoreReducer = (store) => {
   const PREFIX = 'pub_'
