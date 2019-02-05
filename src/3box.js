@@ -11,7 +11,6 @@ const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
 const Space = require('./space')
 const utils = require('./utils/index')
-const verifier = require('./utils/verifier')
 const config = require('./config.js')
 const API = require('./api')
 
@@ -281,27 +280,7 @@ class Box {
    * @return    {Object}                                    An object containing the accounts that have been verified
    */
   static async getVerifiedAccounts (profile) {
-    let verifs = {}
-    try {
-      const did = await verifier.verifyDID(profile.proof_did)
-      if (profile.proof_github) {
-        try {
-          verifs.github = await verifier.verifyGithub(did, profile.proof_github)
-        } catch (err) {
-          // Invalid github verification
-        }
-      }
-      if (profile.proof_twitter) {
-        try {
-          verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
-        } catch (err) {
-          // Invalid twitter verification
-        }
-      }
-    } catch (err) {
-      // Invalid proof for DID return an empty profile
-    }
-    return verifs
+    return API.getVerifiedAccounts(profile)
   }
 
   /**
