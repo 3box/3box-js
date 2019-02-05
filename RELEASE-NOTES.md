@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.3.0 - 2019-02-05
+* Spaces feature, allows dapps to request access to compartments of the users 3Box which only dapps which the user has given explicit permission to can read/write
+* 3Box is now able to run completely offline
+* Added a more lightweight module for accessing getProfile and related api methods
+* Updates to network logic for stability
+
 ## v1.2.2 - 2019-01-25
 * Fixes a bug where more entries locally compared to the pinning node would result in onSyncDone not getting called.
 
