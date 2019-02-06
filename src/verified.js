@@ -20,6 +20,17 @@ class Verified {
     return verificationFunction(this._did, proof)
   }
 
+  async _addVerifiedPrivateAccount (key, proof, verificationFunction) {
+    const account = await verificationFunction(this._did, proof)
+    await this._box.private.set('proof_' + key, proof)
+    return account
+  }
+
+  async _getVerifiedPrivateAccount (key, verificationFunction) {
+    const proof = await this._box.private.get('proof_' + key)
+    return verificationFunction(this._did, proof)
+  }
+
   /**
    * Returns the verified DID of the user
    *
@@ -69,6 +80,27 @@ class Verified {
    */
   async addTwitter (claim) {
     return this._addVerifiedPublicAccount('twitter', claim, verifier.verifyTwitter)
+  }
+
+  /**
+ * Verifies that the user has a verified email account
+ * Throws an error otherwise.
+ *
+ * @return    {Object}                            Object containing username, proof, and the verifier
+ */
+  async email () {
+    return this._getVerifiedPrivateAccount('email', verifier.verifyEmail)
+  }
+
+  /**
+   * Adds an email verification to the users profile
+   * Throws an error if the verification fails.
+   *
+   * @param     {String}            claim           A did-JWT claim ownership of an email username
+   * @return    {Object}                            Object containing username, proof, and the verifier
+   */
+  async addEmail (claim) {
+    return this._addVerifiedPrivateAccount('email', claim, verifier.verifyEmail)
   }
 }
 
