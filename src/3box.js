@@ -2,8 +2,8 @@ const localstorage = require('store')
 const IPFS = require('ipfs')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
-// const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
-// const { createProxyClient } = require('ipfs-postmsg-proxy')
+const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
+const { createProxyClient } = require('ipfs-postmsg-proxy')
 
 const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
@@ -17,28 +17,32 @@ const API = require('./api')
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
-// const IFRAME_STORE_VERSION = '0.0.3'
-// const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
+const IFRAME_STORE_VERSION = config.iframe_store_version
+const IFRAME_STORE_URL = config.iframe_store_url
 const IPFS_OPTIONS = config.ipfs_options
 
-let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS, globalOrbitDB, ipfsProxy, cacheProxy, iframeLoadedPromise
 
-/*
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  const iframe = document.createElement('iframe')
-  iframe.src = IFRAME_STORE_URL
-  iframe.style = 'width:0; height:0; border:0; border:none !important'
+  //  TODO check this further, may want to check underlying engine not browser name, although
+  //  would be fine for finding dapp browser running safari
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (!isSafari) {
+    const iframe = document.createElement('iframe')
+    iframe.src = IFRAME_STORE_URL
+    iframe.style = 'width:0; height:0; border:0; border:none !important'
 
-  iframeLoadedPromise = new Promise((resolve, reject) => {
-    iframe.onload = () => { resolve() }
-  })
+    iframeLoadedPromise = new Promise((resolve, reject) => {
+      iframe.onload = () => { resolve() }
+    })
 
-  document.body.appendChild(iframe)
-  // Create proxy clients that talks to the iframe
-  const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
-  ipfsProxy = createProxyClient({ postMessage })
-  cacheProxy = OrbitDBCacheProxy({ postMessage })
-} */
+    document.body.appendChild(iframe)
+    // Create proxy clients that talks to the iframe
+    const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
+    ipfsProxy = createProxyClient({ postMessage })
+    cacheProxy = OrbitDBCacheProxy({ postMessage })
+  }
+}
 
 class Box {
   /**
@@ -77,8 +81,8 @@ class Box {
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
-    // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
+    const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath, { cache })
     globalOrbitDB = this._orbitdb
 
     const key = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
@@ -195,8 +199,7 @@ class Box {
   }
 
   static async _getProfileOrbit (address, opts = {}) {
-    // opts = Object.assign({ iframeStore: true }, opts)
-    console.log(opts.addressServer)
+    opts = Object.assign({ iframeStore: true }, opts)
     const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
     let usingGlobalIPFS = false
     let usingGlobalOrbitDB = false
@@ -212,7 +215,7 @@ class Box {
       orbitdb = globalOrbitDB
       usingGlobalIPFS = true
     } else {
-      const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+      const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
       orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
     }
 
@@ -296,7 +299,7 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
-    // opts = Object.assign({ iframeStore: true }, opts)
+    opts = Object.assign({ iframeStore: true }, opts)
     const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     globalIPFS = ipfs
     const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, ipfs, opts)
@@ -428,9 +431,10 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
   if (ipfs) {
     return ipfs
+  } else if (ipfsProxy) {
+    await iframeLoadedPromise
+    return ipfsProxy
   } else {
-    // await iframeLoadedPromise
-    // return ipfsProxy
     return new Promise((resolve, reject) => {
       ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
       ipfs.on('error', error => {
