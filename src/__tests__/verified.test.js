@@ -161,7 +161,7 @@ describe('Verified', () => {
     it('should add the email proof and get the email address to verify if it is verified', async () => {
       await verified.addEmail(correctClaim)
       let email = await verified.email()
-      expect(email).toEqual({ 'email_address': 'user@3box.io', 'proof': '123456', 'verifiedBy': 'did:https:test.com' })
+      expect(email).toEqual({ 'email_address': 'user@3box.io', 'verifiedBy': 'did:https:test.com' })
     })
 
     it('should throw if email claim does not contain the correct did', async () => {

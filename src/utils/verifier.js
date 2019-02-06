@@ -74,7 +74,6 @@ module.exports = {
     }
     return {
       email_address: claimData.email_address,
-      proof: claimData.code,
       verifiedBy: verified.payload.iss
     }
   },
