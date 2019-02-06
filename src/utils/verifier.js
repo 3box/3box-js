@@ -53,6 +53,30 @@ module.exports = {
       verifiedBy: verified.payload.iss
     }
   },
+
+  /**
+   * Verifies that the code entered by the user is the same one that was sent via email.
+   * Throws an error otherwise.
+   *
+   * @param     {String}            did             The muport DID of the user
+   * @param     {String}            claim           A did-JWT with claim
+   * @return    {Object}                            Object containing username, proof, and the verifier
+   */
+  verifyEmail: async (did, claim) => {
+    if (!claim) return null
+    const verified = await didJWT.verifyJWT(claim)
+    if (verified.payload.sub !== did) {
+      throw new Error('Verification not valid for given user')
+    }
+    const claimData = verified.payload.claim
+    if (!claimData.email_address) {
+      throw new Error('The claim for your email address is not correct')
+    }
+    return {
+      email_address: claimData.email_address,
+      verifiedBy: verified.payload.iss
+    }
+  },
   /**
    * Verifies that the proof for a did is correct
    *
