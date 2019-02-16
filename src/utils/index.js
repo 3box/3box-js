@@ -30,7 +30,7 @@ module.exports = {
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
       ethereum.sendAsync({
-				jsonrpc: "2.0",
+	jsonrpc: "2.0",
         id: new Date().getTime(),
         method,
         params,
@@ -53,7 +53,7 @@ module.exports = {
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
       ethereum.sendAsync({
-				jsonrpc: "2.0",
+	jsonrpc: "2.0",
         id: new Date().getTime(),
         method,
         params,
