@@ -501,6 +501,8 @@ Please use **box.openSpace** to get the instance of this class
     * [.addGithub(gistUrl)](#Verified+addGithub) ⇒ <code>Object</code>
     * [.twitter()](#Verified+twitter) ⇒ <code>Object</code>
     * [.addTwitter(claim)](#Verified+addTwitter) ⇒ <code>Object</code>
+    * [.email()](#Verified+email) ⇒ <code>Object</code>
+    * [.addEmail(claim)](#Verified+addEmail) ⇒ <code>Object</code>
 
 <a name="new_Verified_new"></a>
 
@@ -555,4 +557,25 @@ Throws an error if the verification fails.
 | Param | Type | Description |
 | --- | --- | --- |
 | claim | <code>String</code> | A did-JWT claim ownership of a twitter username |
+
+<a name="Verified+email"></a>
+
+#### verified.email() ⇒ <code>Object</code>
+Verifies that the user has a verified email account
+Throws an error otherwise.
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
+<a name="Verified+addEmail"></a>
+
+#### verified.addEmail(claim) ⇒ <code>Object</code>
+Adds an email verification to the users profile
+Throws an error if the verification fails.
+
+**Kind**: instance method of [<code>Verified</code>](#Verified)  
+**Returns**: <code>Object</code> - Object containing username, proof, and the verifier  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| claim | <code>String</code> | A did-JWT claim ownership of an email username |
 
