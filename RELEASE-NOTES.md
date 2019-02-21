@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.4.0 - 2019-02-21
+* New functions for adding a verified email credential
+
 ## v1.3.0 - 2019-02-05
 * Spaces feature, allows dapps to request access to compartments of the users 3Box which only dapps which the user has given explicit permission to can read/write
 * 3Box is now able to run completely offline
