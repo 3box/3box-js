@@ -16,6 +16,27 @@ async function getRootStoreAddress (identifier, serverUrl = ADDRESS_SERVER_URL) 
     throw new Error(res.message)
   }
 }
+async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.fetchJson(serverUrl + '/list-spaces?address=' + encodeURIComponent(address))
+      resolve(res)
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.fetchJson(serverUrl + `/space?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+      resolve(res)
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
 
 async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
   return new Promise(async (resolve, reject) => {
@@ -64,4 +85,4 @@ async function getVerifiedAccounts (profile) {
   return verifs
 }
 
-module.exports = { profileGraphQL, getProfile, getRootStoreAddress, getProfiles, getVerifiedAccounts }
+module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getRootStoreAddress, getProfiles, getVerifiedAccounts }
