@@ -168,7 +168,6 @@ class Box {
    * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Object}                            a json object with the profile for the given address
    */
-
   static async getProfile (address, opts = {}) {
     const normalizedAddress = address.toLowerCase()
     opts = Object.assign({ useCacheService: true }, opts)
@@ -189,9 +188,33 @@ class Box {
    * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Object}                            a json object with each key an address and value the profile
    */
-
   static async getProfiles (addressArray, opts = {}) {
     return API.getProfiles(addressArray, opts)
+  }
+
+  /**
+   * Get the public data in a space of a given address with the given name
+   *
+   * @param     {String}    address                 An ethereum address
+   * @param     {String}    name                    A space name
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Object}                            a json object with the public space data
+   */
+  static async getSpace (address, name, opts = {}) {
+    return API.getSpace(address, name, opts.profileServer)
+  }
+
+  /**
+   * Get the names of all spaces a user has
+   *
+   * @param     {String}    address                 An ethereum address
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Object}                            an array with all spaces as strings
+   */
+  static async listSpaces (address, opts = {}) {
+    return API.listSpaces(address, opts.profileServer)
   }
 
   static async _getProfileOrbit (address, opts = {}) {
