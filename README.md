@@ -214,6 +214,8 @@ const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require
     * _static_
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
         * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
+        * [.getSpace(address, name, opts)](#Box.getSpace) ⇒ <code>Object</code>
+        * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
         * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
@@ -326,6 +328,35 @@ Get a list of public profiles for given addresses. This relies on 3Box profile A
 | Param | Type | Description |
 | --- | --- | --- |
 | address | <code>Array</code> | An array of ethereum addresses |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.getSpace"></a>
+
+#### Box.getSpace(address, name, opts) ⇒ <code>Object</code>
+Get the public data in a space of a given address with the given name
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - a json object with the public space data  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
+| name | <code>String</code> | A space name |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.listSpaces"></a>
+
+#### Box.listSpaces(address, opts) ⇒ <code>Object</code>
+Get the names of all spaces a user has
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Object</code> - an array with all spaces as strings  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
 | opts | <code>Object</code> | Optional parameters |
 | opts.profileServer | <code>String</code> | URL of Profile API server |
 
