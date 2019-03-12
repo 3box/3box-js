@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.5.0 - 2019-03-12
+* Add support for getting public space data
+* Add support for listing spaces of a user
+* Properly format ETH-RPC calls
+
 ## v1.4.0 - 2019-02-21
 * New functions for adding a verified email credential
 
