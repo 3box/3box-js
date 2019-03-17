@@ -25,6 +25,7 @@ const THREEID2_MOCK = {
   getDid: () => 'did:3:mydid2'
 }
 
+const ensureConnected = jest.fn()
 const subscribeMock = jest.fn()
 
 describe('Thread', () => {
@@ -40,11 +41,12 @@ describe('Thread', () => {
   })
 
   beforeEach(() => {
+    ensureConnected.mockClear()
     subscribeMock.mockClear()
   })
 
   it('creates thread correctly', async () => {
-    thread = new Thread(orbitdb, THREAD1_NAME, THREEID1_MOCK, subscribeMock)
+    thread = new Thread(orbitdb, THREAD1_NAME, THREEID1_MOCK, subscribeMock, ensureConnected)
   })
 
   it('should throw if not loaded', async () => {
@@ -57,6 +59,8 @@ describe('Thread', () => {
     storeAddr = await thread._load()
     expect(storeAddr.split('/')[3]).toEqual(THREAD1_NAME)
     expect(await thread.getPosts()).toEqual([])
+    expect(ensureConnected).toHaveBeenCalledTimes(1)
+    expect(ensureConnected).toHaveBeenCalledWith(storeAddr, true)
   })
 
   it('adding posts works as expected', async () => {
@@ -65,12 +69,16 @@ describe('Thread', () => {
     expect(posts[0].author).toEqual(THREEID1_MOCK.getDid())
     expect(posts[0].message).toEqual(MSG1)
     expect(subscribeMock).toHaveBeenCalledTimes(1)
+    expect(ensureConnected).toHaveBeenCalledTimes(1)
+    expect(ensureConnected).toHaveBeenNthCalledWith(1, storeAddr, true)
 
     await thread.post(MSG2)
     posts = await thread.getPosts()
     expect(posts[0].message).toEqual(MSG1)
     expect(posts[1].message).toEqual(MSG2)
     expect(subscribeMock).toHaveBeenCalledTimes(2)
+    expect(ensureConnected).toHaveBeenCalledTimes(2)
+    expect(ensureConnected).toHaveBeenNthCalledWith(2, storeAddr, true)
 
     await thread.post(MSG3)
     posts = await thread.getPosts()
@@ -78,6 +86,8 @@ describe('Thread', () => {
     expect(posts[1].message).toEqual(MSG2)
     expect(posts[2].message).toEqual(MSG3)
     expect(subscribeMock).toHaveBeenCalledTimes(3)
+    expect(ensureConnected).toHaveBeenCalledTimes(3)
+    expect(ensureConnected).toHaveBeenNthCalledWith(3, storeAddr, true)
   })
 
   describe('multi user interaction', () => {
@@ -91,9 +101,9 @@ describe('Thread', () => {
     })
 
     it('syncs thread between users', async () => {
-      threadUser1 = new Thread(orbitdb, THREAD2_NAME, THREEID1_MOCK, subscribeMock)
+      threadUser1 = new Thread(orbitdb, THREAD2_NAME, THREEID1_MOCK, subscribeMock, ensureConnected)
       await threadUser1._load()
-      threadUser2 = new Thread(orbitdb2, THREAD2_NAME, THREEID2_MOCK, subscribeMock)
+      threadUser2 = new Thread(orbitdb2, THREAD2_NAME, THREEID2_MOCK, subscribeMock, ensureConnected)
       await threadUser2._load()
       // user1 posts and user2 receives
       let postPromise = new Promise((resolve, reject) => {

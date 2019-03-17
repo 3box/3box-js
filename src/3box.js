@@ -412,12 +412,16 @@ class Box {
     }
   }
 
-  async _ensurePinningNodeConnected (odbAddress) {
+  async _ensurePinningNodeConnected (odbAddress, isThread) {
     const roomPeers = await this._ipfs.pubsub.peers(odbAddress)
     if (!roomPeers.find(p => p === this.pinningNode.split('/').pop())) {
       this._ipfs.swarm.connect(this.pinningNode, () => {})
       const rootStoreAddress = this._rootStore.address.toString()
-      this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
+      if (isThread) {
+        this._pubsub.publish(PINNING_ROOM, { type: 'SYNC_DB', odbAddress, thread: true })
+      } else {
+        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
+      }
     }
   }
 
