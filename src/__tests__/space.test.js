@@ -1,4 +1,6 @@
 jest.mock('../keyValueStore')
+jest.mock('../thread')
+const Thread = require('../thread')
 const ENSURE_CONNECTED = 'ensure connected function'
 const ORBITDB = 'orbitdb instance'
 const threeIdMock = {
@@ -139,6 +141,48 @@ describe('Space', () => {
         k1: 'sv1',
         k3: 'sv3'
       })
+    })
+  })
+
+  describe('Threads', () => {
+    beforeEach(() => {
+      Thread.mockClear()
+    })
+
+    it('subscribes to thread correctly', async () => {
+      await space.subscribeThread('t1')
+      expect(await space.public.get('follow-thread-t1')).toEqual({ name: 't1' })
+      expect(await space.subscribedThreads()).toEqual(['t1'])
+    })
+
+    it('unsubscribes from thread correctly', async () => {
+      await space.unsubscribeThread('t1')
+      expect(await space.public.get('follow-thread-t1')).toEqual()
+      expect(await space.subscribedThreads()).toEqual([])
+    })
+
+    it('joins thread correctly', async () => {
+      const t1 = await space.joinThread('t2')
+      expect(Thread).toHaveBeenCalledTimes(1)
+      expect(Thread.mock.calls[0][0]).toEqual(ORBITDB)
+      expect(Thread.mock.calls[0][1]).toEqual(`3box.thread.${NAME2}.t2`)
+      expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
+      expect(t1._load).toHaveBeenCalledTimes(1)
+      // function for autosubscribing works as intended
+      await Thread.mock.calls[0][3]()
+      expect(await space.subscribedThreads()).toEqual(['t2'])
+    })
+
+    it('joins thread correctly, no auto subscription', async () => {
+      const t1 = await space.joinThread('t3', { noAutoSub: true })
+      expect(Thread).toHaveBeenCalledTimes(1)
+      expect(Thread.mock.calls[0][0]).toEqual(ORBITDB)
+      expect(Thread.mock.calls[0][1]).toEqual(`3box.thread.${NAME2}.t3`)
+      expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
+      expect(t1._load).toHaveBeenCalledTimes(1)
+      // function for autosubscribing works as intended
+      await Thread.mock.calls[0][3]()
+      expect(await space.subscribedThreads()).toEqual(['t2'])
     })
   })
 })
