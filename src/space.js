@@ -13,7 +13,8 @@ class Space {
   constructor (name, threeId, orbitdb, rootStore, ensureConnected) {
     this._name = name
     this._3id = threeId
-    this._store = new KeyValueStore(orbitdb, nameToSpaceName(this._name), ensureConnected, this._3id)
+    this._ensureConnected = ensureConnected
+    this._store = new KeyValueStore(orbitdb, nameToSpaceName(this._name), this._ensureConnected, this._3id)
     this._orbitdb = orbitdb
     this._activeThreads = {}
     this._rootStore = rootStore
@@ -62,7 +63,7 @@ class Space {
   async joinThread (name, opts = {}) {
     if (this._activeThreads[name]) return this._activeThreads[name]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, subscribeFn)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, subscribeFn, this._ensureConnected)
     await thread._load()
     this._activeThreads[name] = thread
     return thread

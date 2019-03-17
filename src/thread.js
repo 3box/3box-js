@@ -2,11 +2,12 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (orbitdb, name, threeId, subscribe) {
+  constructor (orbitdb, name, threeId, subscribe, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
     this._3id = threeId
     this._subscribe = subscribe
+    this._ensureConnected = ensureConnected
   }
 
   /**
@@ -18,6 +19,7 @@ class Thread {
   async post (message) {
     this._requireLoad()
     this._subscribe()
+    this._ensureConnected(this._address, true)
     return this._db.add({
       author: this._3id.getDid(),
       message,
@@ -74,7 +76,9 @@ class Thread {
       write: ['*']
     })
     await this._db.load()
-    return this._db.address.toString()
+    this._address = this._db.address.toString()
+    this._ensureConnected(this._address, true)
+    return this._address
   }
 
   _requireLoad () {
