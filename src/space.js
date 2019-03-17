@@ -1,8 +1,10 @@
 const KeyValueStore = require('./keyValueStore')
+const Thread = require('./thread')
 const { sha256Multihash } = require('./utils')
 
 const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
+const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
 
 class Space {
   /**
@@ -12,6 +14,8 @@ class Space {
     this._name = name
     this._3id = threeId
     this._store = new KeyValueStore(orbitdb, nameToSpaceName(this._name), ensureConnected, this._3id)
+    this._orbitdb = orbitdb
+    this._activeThreads = {}
     this._rootStore = rootStore
     /**
      * @property {KeyValueStore} public         access the profile store of the space
@@ -40,10 +44,68 @@ class Space {
         await this._store._sync(numEntries)
         if (opts.onSyncDone) opts.onSyncDone()
       }
-      syncSpace()
+      this._syncSpacePromise = syncSpace()
       this.public = publicStoreReducer(this._store)
       this.private = privateStoreReducer(this._store, this._3id.getKeyringBySpaceName(nameToSpaceName(this._name)))
     }
+  }
+
+  /**
+   * Join a thread. Use this to start receiving updates from, and to post in threads
+   *
+   * @param     {String}    name                    The name of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
+   *
+   * @return    {Thread}                            An instance of the thread class for the joined thread
+   */
+  async joinThread (name, opts = {}) {
+    if (this._activeThreads[name]) return this._activeThreads[name]
+    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, subscribeFn)
+    await thread._load()
+    this._activeThreads[name] = thread
+    return thread
+  }
+
+  /**
+   * Subscribe to the given thread, if not already subscribed
+   *
+   * @param     {String}    name                    The name of the thread
+   */
+  async subscribeThread (name) {
+    const threadKey = `follow-thread-${name}`
+    await this._syncSpacePromise
+    if (!(await this.public.get(threadKey))) {
+      await this.public.set(threadKey, { name })
+    }
+  }
+
+  /**
+   * Unsubscribe from the given thread, if subscribed
+   *
+   * @param     {String}    name                    The name of the thread
+   */
+  async unsubscribeThread (name) {
+    const threadKey = `follow-thread-${name}`
+    if (await this.public.get(threadKey)) {
+      await this.public.remove(threadKey)
+    }
+  }
+
+  /**
+   * Get a list of all the threads subscribed to in this space
+   *
+   * @return    {Array<String>}                     A list of thread names
+   */
+  async subscribedThreads () {
+    const allEntries = await this.public.all()
+    return Object.keys(allEntries).reduce((threads, key) => {
+      if (key.startsWith('follow-thread')) {
+        threads.push(allEntries[key].name)
+      }
+      return threads
+    }, [])
   }
 }
 
