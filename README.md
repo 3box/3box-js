@@ -215,6 +215,7 @@ const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
         * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
         * [.getSpace(address, name, opts)](#Box.getSpace) ⇒ <code>Object</code>
+        * [.getThread(space, name, opts)](#Box.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
         * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
@@ -343,6 +344,21 @@ Get the public data in a space of a given address with the given name
 | --- | --- | --- |
 | address | <code>String</code> | An ethereum address |
 | name | <code>String</code> | A space name |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.getThread"></a>
+
+#### Box.getThread(space, name, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get all posts that are made to a thread.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| space | <code>String</code> | The name of the space the thread is in |
+| name | <code>String</code> | The name of the thread |
 | opts | <code>Object</code> | Optional parameters |
 | opts.profileServer | <code>String</code> | URL of Profile API server |
 
@@ -494,6 +510,10 @@ Remove the value for the given key
     * [new Space()](#new_Space_new)
     * [.public](#Space+public)
     * [.private](#Space+private)
+    * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
+    * [.subscribeThread(name)](#Space+subscribeThread)
+    * [.unsubscribeThread(name)](#Space+unsubscribeThread)
+    * [.subscribedThreads()](#Space+subscribedThreads) ⇒ <code>Array.&lt;String&gt;</code>
 
 <a name="new_Space_new"></a>
 
@@ -519,6 +539,110 @@ Please use **box.openSpace** to get the instance of this class
 | Name | Type | Description |
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the space |
+
+<a name="Space+joinThread"></a>
+
+#### space.joinThread(name, opts) ⇒ [<code>Thread</code>](#Thread)
+Join a thread. Use this to start receiving updates from, and to post in threads
+
+**Kind**: instance method of [<code>Space</code>](#Space)  
+**Returns**: [<code>Thread</code>](#Thread) - An instance of the thread class for the joined thread  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The name of the thread |
+| opts | <code>Object</code> | Optional parameters |
+| opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
+
+<a name="Space+subscribeThread"></a>
+
+#### space.subscribeThread(name)
+Subscribe to the given thread, if not already subscribed
+
+**Kind**: instance method of [<code>Space</code>](#Space)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The name of the thread |
+
+<a name="Space+unsubscribeThread"></a>
+
+#### space.unsubscribeThread(name)
+Unsubscribe from the given thread, if subscribed
+
+**Kind**: instance method of [<code>Space</code>](#Space)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The name of the thread |
+
+<a name="Space+subscribedThreads"></a>
+
+#### space.subscribedThreads() ⇒ <code>Array.&lt;String&gt;</code>
+Get a list of all the threads subscribed to in this space
+
+**Kind**: instance method of [<code>Space</code>](#Space)  
+**Returns**: <code>Array.&lt;String&gt;</code> - A list of thread names  
+<a name="Thread"></a>
+
+### Thread
+**Kind**: global class  
+
+* [Thread](#Thread)
+    * [new Thread()](#new_Thread_new)
+    * [.post(message)](#Thread+post) ⇒ <code>String</code>
+    * [.getPosts(opts)](#Thread+getPosts) ⇒ <code>Array.&lt;Object&gt;</code>
+    * [.onNewPost(newPostFn)](#Thread+onNewPost)
+
+<a name="new_Thread_new"></a>
+
+#### new Thread()
+Please use **space.joinThread** to get the instance of this class
+
+<a name="Thread+post"></a>
+
+#### thread.post(message) ⇒ <code>String</code>
+Post a message to the thread
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+**Returns**: <code>String</code> - The postId of the new post  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| message | <code>Object</code> | The message |
+
+<a name="Thread+getPosts"></a>
+
+#### thread.getPosts(opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Returns an array of posts, based on the options.
+If hash not found when passing gt, gte, lt, or lte,
+the iterator will return all items (respecting limit and reverse).
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - true if successful  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| opts | <code>Object</code> | Optional parameters |
+| opts.gt | <code>String</code> | Greater than, takes an postId |
+| opts.gte | <code>String</code> | Greater than or equal to, takes an postId |
+| opts.lt | <code>String</code> | Less than, takes an postId |
+| opts.lte | <code>String</code> | Less than or equal to, takes an postId |
+| opts.limit | <code>Integer</code> | Limiting the number of entries in result, defaults to -1 (no limit) |
+| opts.reverse | <code>Boolean</code> | If set to true will result in reversing the result |
+
+<a name="Thread+onNewPost"></a>
+
+#### thread.onNewPost(newPostFn)
+Register a function to be called for every new
+post that is received from the network.
+The function takes one parameter, which is the post
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| newPostFn | <code>function</code> | The function that will get called |
 
 <a name="Verified"></a>
 
