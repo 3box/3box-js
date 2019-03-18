@@ -30,6 +30,17 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL) {
   }
 }
 
+async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.fetchJson(serverUrl + `/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`)
+      resolve(res)
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
 async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
   try {
     // we await explicitly here to make sure the error is catch'd in the correct scope
@@ -75,4 +86,4 @@ async function getVerifiedAccounts (profile) {
   return verifs
 }
 
-module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getRootStoreAddress, getProfiles, getVerifiedAccounts }
+module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getThread, getRootStoreAddress, getProfiles, getVerifiedAccounts }
