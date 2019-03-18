@@ -206,6 +206,19 @@ class Box {
   }
 
   /**
+   * Get all posts that are made to a thread.
+   *
+   * @param     {String}    space                   The name of the space the thread is in
+   * @param     {String}    name                    The name of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Array<Object>}                     An array of posts
+   */
+  static async getThread (space, name, opts = {}) {
+    return API.getThread(space, name, opts.profileServer)
+  }
+
+  /**
    * Get the names of all spaces a user has
    *
    * @param     {String}    address                 An ethereum address
