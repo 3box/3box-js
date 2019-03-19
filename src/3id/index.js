@@ -108,7 +108,7 @@ class ThreeId {
       const mnemonic = HDNode.entropyToMnemonic(entropy)
       const seed = HDNode.mnemonicToSeed(mnemonic)
       serialized3id = JSON.stringify({
-        managementAddress: address,
+        managementAddress: normalizedAddress,
         seed,
         spaceSeeds: {}
       })
