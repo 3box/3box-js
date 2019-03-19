@@ -1,4 +1,5 @@
 const ThreeId = require('../index')
+const localstorage = require('store')
 
 jest.mock('../../utils/index', () => {
   const sha256 = require('js-sha256').sha256
@@ -12,6 +13,11 @@ jest.mock('../../utils/index', () => {
     sha256
   }
 })
+
+const STORAGE_KEY = 'serialized3id_'
+const clearLocalStorage3id = (address) => {
+  localstorage.remove(STORAGE_KEY + address)
+}
 
 const ADDR_1 = '0x12345'
 const ADDR_2 = '0xabcde'
@@ -46,6 +52,14 @@ describe('3id', () => {
       expect(threeId.getDid()).toEqual('did:muport:Qmasd08j34t')
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
+    })
+
+    it('should create the same identity given the same address', async () => {
+      // did is mocked, so compares serialized state
+      const threeId1 = await ThreeId.getIdFromEthAddress('0xabcde1', ETHEREUM, ipfsMock)
+      clearLocalStorage3id('0xabcde1')
+      const threeId2 = await ThreeId.getIdFromEthAddress('0xABCDE1', ETHEREUM, ipfsMock)
+      expect(threeId1.serializeState()).toEqual(threeId2.serializeState())
     })
 
     it('should create a new identity for other eth addr', async () => {
@@ -117,4 +131,3 @@ describe('3id', () => {
     })
   })
 })
-
