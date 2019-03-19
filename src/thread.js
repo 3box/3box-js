@@ -8,6 +8,7 @@ class Thread {
     this._3id = threeId
     this._subscribe = subscribe
     this._ensureConnected = ensureConnected
+    this._queuedNewPosts = []
   }
 
   /**
@@ -55,15 +56,27 @@ class Thread {
   /**
    * Register a function to be called for every new
    * post that is received from the network.
-   * The function takes one parameter, which is the post
+   * The function takes one parameter, which is the post.
+   * Note that posts here might be out of order.
    *
    * @param     {Function}  newPostFn               The function that will get called
    */
   async onNewPost (newPostFn) {
     this._requireLoad()
-    this._db.events.on('replicate.progress', (address, hash, entry) => {
+    this._db.events.on('replicate.progress', (address, hash, entry, prog, tot) => {
       let post = entry.payload.value
       post.postId = hash
+      if (prog === tot) {
+        newPostFn(post)
+        this._queuedNewPosts.map(newPostFn)
+        this._queuedNewPosts = []
+      } else {
+        this._queuedNewPosts.unshift(post)
+      }
+    })
+    this._db.events.on('write', (dbname, entry) => {
+      let post = entry.payload.value
+      post.postId = entry.hash
       newPostFn(post)
     })
   }
