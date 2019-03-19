@@ -106,9 +106,14 @@ describe('Thread', () => {
       threadUser2 = new Thread(orbitdb2, THREAD2_NAME, THREEID2_MOCK, subscribeMock, ensureConnected)
       await threadUser2._load()
       // user1 posts and user2 receives
+      // done needed to not catch the write event
+      let done = false
       let postPromise = new Promise((resolve, reject) => {
         threadUser2.onNewPost(post => {
-          expect(post.message).toEqual(MSG1)
+          if (!done) {
+            expect(post.message).toEqual(MSG1)
+            done = true
+          }
           resolve()
         })
       })
@@ -117,6 +122,7 @@ describe('Thread', () => {
       expect(posts1[0].author).toEqual(THREEID1_MOCK.getDid())
       expect(posts1[0].message).toEqual(MSG1)
       await postPromise
+      threadUser2.onNewPost(() => {})
       await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
       let posts2 = await threadUser2.getPosts()
       expect(posts2[0].author).toEqual(THREEID1_MOCK.getDid())
