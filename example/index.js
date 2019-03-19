@@ -91,6 +91,31 @@ bopen.addEventListener('click', event => {
         })
       }
 
+      joinThread.addEventListener('click', () => {
+        const name = threadName.value
+        posts.style.display = 'block'
+        box.spaces[window.currentSpace].joinThread(name).then(thread => {
+          window.currentThread = thread
+          thread.onNewPost(post => {
+            threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
+          })
+          updateThreadData()
+        })
+      })
+
+      const updateThreadData = () => {
+        threadData.innerHTML = ''
+        window.currentThread.getPosts().then(posts => {
+          posts.map(post => {
+            threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
+          })
+        })
+      }
+
+      postThread.addEventListener('click', () => {
+        window.currentThread.post(postMsg.value)
+      })
+
       bclose.addEventListener('click', () => {
         logout(box)
       })
