@@ -44,7 +44,10 @@ class ThreeId {
 
   _init3id (serializeState) {
     const state = JSON.parse(serializeState)
-    this.managementAddress = state.managementAddress
+    // TODO remove toLowerCase() in future, should be sanitized elsewhere
+    //      this forces existing state to correct state so that address <->
+    //      rootstore relation holds
+    this.managementAddress = state.managementAddress.toLowerCase()
     this._mainKeyring = new Keyring(state.seed)
     Object.keys(state.spaceSeeds).map(name => {
       this._keyrings[name] = new Keyring(state.spaceSeeds[name])
