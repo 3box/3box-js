@@ -169,12 +169,12 @@ class Box {
    * @return    {Object}                            a json object with the profile for the given address
    */
   static async getProfile (address, opts = {}) {
-    const normalizedAddress = address.toLowerCase()
     opts = Object.assign({ useCacheService: true }, opts)
     let profile
     if (opts.useCacheService) {
-      profile = await API.getProfile(normalizedAddress, opts.profileServer)
+      profile = await API.getProfile(address, opts.profileServer)
     } else {
+      const normalizedAddress = address.toLowerCase()
       profile = await this._getProfileOrbit(normalizedAddress, opts)
     }
     return profile
