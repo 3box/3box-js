@@ -39,14 +39,12 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL) {
 }
 
 async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await utils.fetchJson(serverUrl + '/profile?address=' + encodeURIComponent(address))
-      resolve(res)
-    } catch (err) {
-      reject(err)
-    }
-  })
+  try {
+    // we await explicitly here to make sure the error is catch'd in the correct scope
+    return await utils.fetchJson(serverUrl + '/profile?address=' + encodeURIComponent(address))
+  } catch (err) {
+    return {} // empty profile
+  }
 }
 
 async function getProfiles (addressArray, opts = {}) {

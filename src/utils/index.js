@@ -81,11 +81,23 @@ module.exports = {
     if (body) {
       opts = { body: JSON.stringify(body), method: 'POST', headers: { 'Content-Type': 'application/json' } }
     }
-    return (await fetch(url, opts)).json()
+    const r = await fetch(url, opts)
+
+    if (r.ok) {
+      return r.json()
+    } else {
+      throw new Error(`Invalid response (${r.status}) for query at ${url}`)
+    }
   },
 
   fetchText: async (url, opts) => {
-    return (await fetch(url, opts)).text()
+    const r = await fetch(url, opts)
+
+    if (r.ok) {
+      return r.text()
+    } else {
+      throw new Error(`Invalid response (${r.status}) for query at ${url}`)
+    }
   },
 
   sha256Multihash: str => {
