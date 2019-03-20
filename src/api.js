@@ -41,10 +41,19 @@ async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
   })
 }
 
+const DID_MUPORT_PREFIX = 'did:muport:'
+const isMuportDID = (address) => address.startsWith(DID_MUPORT_PREFIX)
+
 async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
   try {
-    // we await explicitly here to make sure the error is catch'd in the correct scope
-    return await utils.fetchJson(serverUrl + '/profile?address=' + encodeURIComponent(address))
+    // Note: we await explicitly here to make sure the error is catch'd in the correct scope
+    if (isMuportDID(address)) {
+      const normalized = encodeURIComponent(address) // uppercase is significant in did:muport
+      return await utils.fetchJson(serverUrl + '/profile?did=' + normalized)
+    } else {
+      const normalized = encodeURIComponent(address.toLowerCase())
+      return await utils.fetchJson(serverUrl + '/profile?address=' + normalized)
+    }
   } catch (err) {
     return {} // empty profile
   }
