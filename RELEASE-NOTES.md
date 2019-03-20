@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.5.1 - 2019-03-20
+* Fix for profiles/stores in Trustwallet, now expected stores will be created and loaded
+
 ## v1.5.0 - 2019-03-12
 * Add support for getting public space data
 * Add support for listing spaces of a user
