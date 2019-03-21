@@ -372,7 +372,11 @@ class Box {
         address_token: addressToken
       })
     } catch (err) {
-      throw new Error(err)
+      // we capture http errors (500, etc)
+      // see: https://github.com/3box/3box-js/pull/351
+      if (!err.statusCode) {
+        throw new Error(err)
+      }
     }
     return true
   }
