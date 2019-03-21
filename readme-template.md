@@ -172,7 +172,7 @@ const config = await space.private.get('dapp-config')
 
 
 ## <a name="dappdata"></a> Dapp data
-Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](./KEY-CONVENTIONS.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
+Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](https://github.com/3box/3box/blob/master/community/key-conventions.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
 
 ## <a name="example"></a> Example
 
