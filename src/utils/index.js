@@ -2,6 +2,8 @@ const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
 
+const DID_MUPORT_PREFIX = 'did:muport:'
+
 const HTTPError = (status, message) => {
   const e = new Error(message)
   e.statusCode = status
@@ -9,6 +11,8 @@ const HTTPError = (status, message) => {
 }
 
 module.exports = {
+  isMuportDID:  (address) => address.startsWith(DID_MUPORT_PREFIX),
+
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')

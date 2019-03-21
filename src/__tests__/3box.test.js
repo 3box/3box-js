@@ -73,13 +73,16 @@ jest.mock('../space', () => {
   })
 })
 
+
 jest.mock('../utils/verifier')
 jest.mock('../utils/index', () => {
+  const actualUtils = jest.requireActual('../utils/index')
   const sha256 = require('js-sha256').sha256
   let addressMap = {}
   let linkmap = {}
   let linkNum = 0
   return {
+    isMuportDID: actualUtils.isMuportDID,
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
     fetchJson: jest.fn(async (url, body) => {
       const split = url.split('/')
