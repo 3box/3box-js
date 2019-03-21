@@ -231,6 +231,10 @@ class Box {
   }
 
   static async _getProfileOrbit (address, opts = {}) {
+    if (utils.isMuportDID(address)) {
+      throw new Error('DID are supported in the cached version only')
+    }
+
     // opts = Object.assign({ iframeStore: true }, opts)
     console.log(opts.addressServer)
     const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
