@@ -7,6 +7,9 @@ const GRAPHQL_SERVER_URL = config.graphql_server_url
 const PROFILE_SERVER_URL = config.profile_server_url
 const ADDRESS_SERVER_URL = config.address_server_url
 
+const DID_MUPORT_PREFIX = 'did:muport:'
+const isMuportDID = (address) => address.startsWith(DID_MUPORT_PREFIX)
+
 async function getRootStoreAddress (identifier, serverUrl = ADDRESS_SERVER_URL) {
   // read orbitdb root store address from the 3box-address-server
   const res = await utils.fetchJson(serverUrl + '/odbAddress/' + identifier)
@@ -16,7 +19,11 @@ async function getRootStoreAddress (identifier, serverUrl = ADDRESS_SERVER_URL) 
 async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
   try {
     // we await explicitly here to make sure the error is catch'd in the correct scope
-    return await utils.fetchJson(serverUrl + '/list-spaces?address=' + encodeURIComponent(address))
+    if (isMuportDID(address)) {
+      return await utils.fetchJson(serverUrl + '/list-spaces?did=' + encodeURIComponent(address))
+    } else {
+      return await utils.fetchJson(serverUrl + '/list-spaces?address=' + encodeURIComponent(address))
+    }
   } catch (err) {
     return []
   }
@@ -24,7 +31,12 @@ async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
 
 async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL) {
   try {
-    return await utils.fetchJson(serverUrl + `/space?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+    // we await explicitly here to make sure the error is catch'd in the correct scope
+    if (isMuportDID(address)) {
+      return await utils.fetchJson(serverUrl + `/space?did=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+    } else {
+      return await utils.fetchJson(serverUrl + `/space?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+    }
   } catch (err) {
     return {}
   }
@@ -41,12 +53,9 @@ async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
   })
 }
 
-const DID_MUPORT_PREFIX = 'did:muport:'
-const isMuportDID = (address) => address.startsWith(DID_MUPORT_PREFIX)
-
 async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
   try {
-    // Note: we await explicitly here to make sure the error is catch'd in the correct scope
+    // Note: we await explicitly to make sure the error is catch'd in the correct scope
     if (isMuportDID(address)) {
       const normalized = encodeURIComponent(address) // uppercase is significant in did:muport
       return await utils.fetchJson(serverUrl + '/profile?did=' + normalized)
