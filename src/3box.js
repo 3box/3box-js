@@ -382,26 +382,27 @@ class Box {
   }
 
   async _linkProfile () {
-    const address = this._3id.managementAddress
-    if (!localstorage.get('linkConsent_' + address)) {
+    let linkData = await this.public.get('ethereum_proof')
+
+    if (!linkData) {
+      const address = this._3id.managementAddress
       const did = this._3id.getDid()
-      let linkData = await this.public.get('ethereum_proof')
-      if (!linkData) {
-        const consent = await utils.getLinkConsent(address, did, this._web3provider)
-        linkData = {
-          consent_msg: consent.msg,
-          consent_signature: consent.sig,
-          linked_did: did
-        }
-        await this.public.set('ethereum_proof', linkData)
+
+      const consent = await utils.getLinkConsent(address, did, this._web3provider)
+
+      linkData = {
+        consent_msg: consent.msg,
+        consent_signature: consent.sig,
+        linked_did: did
       }
-      // Send consentSignature to 3box-address-server to link profile with ethereum address
-      try {
-        await utils.fetchJson(this._serverUrl + '/link', linkData)
-        localstorage.set('linkConsent_' + address, true)
-      } catch (err) {
-        console.error(err)
-      }
+      await this.public.set('ethereum_proof', linkData)
+    }
+
+    // Send consentSignature to 3box-address-server to link profile with ethereum address
+    try {
+      await utils.fetchJson(this._serverUrl + '/link', linkData)
+    } catch (err) {
+      console.error(err)
     }
   }
 
