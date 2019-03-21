@@ -10,32 +10,24 @@ const ADDRESS_SERVER_URL = config.address_server_url
 async function getRootStoreAddress (identifier, serverUrl = ADDRESS_SERVER_URL) {
   // read orbitdb root store address from the 3box-address-server
   const res = await utils.fetchJson(serverUrl + '/odbAddress/' + identifier)
-  if (res.status === 'success') {
-    return res.data.rootStoreAddress
-  } else {
-    throw new Error(res.message)
-  }
+  return res.data.rootStoreAddress
 }
+
 async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await utils.fetchJson(serverUrl + '/list-spaces?address=' + encodeURIComponent(address))
-      resolve(res)
-    } catch (err) {
-      reject(err)
-    }
-  })
+  try {
+    // we await explicitly here to make sure the error is catch'd in the correct scope
+    return await utils.fetchJson(serverUrl + '/list-spaces?address=' + encodeURIComponent(address))
+  } catch (err) {
+    return []
+  }
 }
 
 async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await utils.fetchJson(serverUrl + `/space?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
-      resolve(res)
-    } catch (err) {
-      reject(err)
-    }
-  })
+  try {
+    return await utils.fetchJson(serverUrl + `/space?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+  } catch (err) {
+    return {}
+  }
 }
 
 async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {

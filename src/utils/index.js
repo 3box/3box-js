@@ -2,6 +2,12 @@ const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
 
+const HTTPError = (status, message) => {
+  const e = new Error(message)
+  e.statusCode = status
+  return e
+}
+
 module.exports = {
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
@@ -86,7 +92,7 @@ module.exports = {
     if (r.ok) {
       return r.json()
     } else {
-      throw new Error(`Invalid response (${r.status}) for query at ${url}`)
+      throw HTTPError(r.status, `Invalid response (${r.status}) for query at ${url}`)
     }
   },
 
@@ -96,7 +102,7 @@ module.exports = {
     if (r.ok) {
       return r.text()
     } else {
-      throw new Error(`Invalid response (${r.status}) for query at ${url}`)
+      throw HTTPError(r.status, `Invalid response (${r.status}) for query at ${url}`)
     }
   },
 
