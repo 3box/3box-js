@@ -67,7 +67,17 @@ async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
 
 async function getProfiles (addressArray, opts = {}) {
   opts = Object.assign({ profileServer: PROFILE_SERVER_URL }, opts)
-  const req = { addressList: addressArray }
+  const req = { addressList: [], didList: [] }
+
+  // Split addresses on ethereum / dids
+  addressArray.forEach(address => {
+    if (utils.isMuportDID(address)) {
+      req.didList.push(address)
+    } else {
+      req.addressList.push(address)
+    }
+  })
+
   const url = `${opts.profileServer}/profileList`
   return utils.fetchJson(url, req)
 }

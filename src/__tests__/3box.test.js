@@ -420,7 +420,8 @@ describe('3Box', () => {
       name: 'zfer',
       email: 'zfer@mail.com'
     })
-    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('profile-server/profileList', { addressList: ['0x12345'] })
+    expect(mockedUtils.fetchJson)
+      .toHaveBeenCalledWith('profile-server/profileList', { addressList: ['0x12345'], didList: [] })
   })
 
   it('should be logged in', async () => {
