@@ -10,8 +10,13 @@ const HTTPError = (status, message) => {
   return e
 }
 
+const getMessageConsent = (did) => (
+  'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
+)
+
 module.exports = {
-  isMuportDID:  (address) => address.startsWith(DID_MUPORT_PREFIX),
+  getMessageConsent,
+  isMuportDID: (address) => address.startsWith(DID_MUPORT_PREFIX),
 
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
@@ -60,10 +65,11 @@ module.exports = {
   },
 
   getLinkConsent: (fromAddress, toDID, ethereum) => {
-    const text = 'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + toDID
-    var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
-    var params = [msg, fromAddress]
-    var method = 'personal_sign'
+    const text = getMessageConsent(toDID)
+    const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
+    const params = [msg, fromAddress]
+    const method = 'personal_sign'
+
     return new Promise((resolve, reject) => {
       ethereum.sendAsync(
         {
