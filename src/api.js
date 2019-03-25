@@ -110,7 +110,7 @@ async function getVerifiedAccounts (profile) {
     }
     if (profile.ethereum_proof) {
       try {
-        verifs.ethereum = await verifier.verifyEthereum(profile.ethereum_proof)
+        verifs.ethereum = await verifier.verifyEthereum(profile.ethereum_proof, did)
       } catch (err) {
         // Invalid eth verification
       }
