@@ -472,17 +472,26 @@ describe('3Box', () => {
       proof_github: 'github proof url',
       proof_twitter: 'twitter proof claim jwt'
     }
+    const userDID = 'did:muport:Qmsdpuhs'
+
     let verifier = require('../utils/verifier')
+
     verifier.verifyDID.mockImplementationOnce(() => { throw new Error() })
     expect(Box.getVerifiedAccounts(profile)).rejects.toEqual(new Error())
-    verifier.verifyDID.mockImplementationOnce(() => 'did:muport:Qmsdpuhs')
+
+    verifier.verifyDID.mockImplementationOnce(() => userDID)
     verifier.verifyGithub.mockImplementationOnce(() => {
       return { username: 'test', proof: 'some url' }
     })
     verifier.verifyTwitter.mockImplementationOnce(() => {
       return { username: 'test', proof: 'some url' }
     })
+
     const verifiedAccounts = await Box.getVerifiedAccounts(profile)
-    expect(verifiedAccounts).toEqual({ 'github': { 'proof': 'some url', 'username': 'test' }, 'twitter': { 'proof': 'some url', 'username': 'test' } })
+    expect(verifiedAccounts).toEqual({
+      'github': { 'proof': 'some url', 'username': 'test' },
+      'twitter': { 'proof': 'some url', 'username': 'test' },
+      'did': userDID
+    })
   })
 })
