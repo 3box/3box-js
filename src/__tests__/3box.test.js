@@ -207,8 +207,6 @@ describe('3Box', () => {
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
     await syncPromise
-    expect(box.public.get).toHaveBeenNthCalledWith(1, 'proof_did')
-    expect(box.public.set).toHaveBeenNthCalledWith(1, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7')
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress', {
       address_token: 'veryJWT,/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root,did:muport:Qmsdfp98yw4t7'
@@ -244,7 +242,6 @@ describe('3Box', () => {
     box.public.get.mockImplementationOnce(() => 'did proof JWT')
     const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
     await syncPromise
-    expect(box.public.get).toHaveBeenCalledWith('proof_did')
     expect(box.public.set).toHaveBeenCalledTimes(0)
 
     expect(box.public._sync).toHaveBeenCalledTimes(1)
@@ -298,6 +295,13 @@ describe('3Box', () => {
     box.public.get = jest.fn()
     global.console.error = jest.fn()
     await box._linkProfile()
+
+    expect(box.public.set).toHaveBeenCalledTimes(2) // ethereum & proof
+
+    // It will check the self-signed did
+    expect(box.public.get).toHaveBeenNthCalledWith(2, 'proof_did')
+    expect(box.public.set).toHaveBeenNthCalledWith(2, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7')
+
     expect(global.console.error).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
@@ -306,7 +310,6 @@ describe('3Box', () => {
       linked_did: 'did:muport:Qmsdfp98yw4t7'
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
-    expect(box.public.set).toHaveBeenCalledTimes(1)
   })
 
   it('should not call getLinkConsent if ethereum_proof in publicStore on call to _linkProfile', async () => {
@@ -344,15 +347,30 @@ describe('3Box', () => {
       linked_did: 'did:muport:Qmsdfp98yw4t7'
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
-    expect(box.public.set).toHaveBeenCalledTimes(1)
+    expect(box.public.set).toHaveBeenCalledTimes(2) // ethereum && proof
   })
 
-  it('should not link profile on second call to _linkProfile', async () => {
+  it('should not recompute link data for profile on second call to _linkProfile', async () => {
     box.public.set.mockClear()
+    box.public.get
+      .mockImplementationOnce(x => {
+        if (x === 'ethereum_proof') {
+          return Promise.resolve('thisissomeproof')
+        } else {
+          throw new Error('Mock invalid')
+        }
+      }).mockImplementationOnce(x => {
+        if (x === 'proof_did') {
+          return Promise.resolve('thisissomeproof')
+        } else {
+          throw new Error('Mock invalid')
+        }
+      })
+
     await box._linkProfile()
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(0)
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(0)
-    expect(box.public.set).toHaveBeenCalledTimes(0)
+    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(0) // do not recompute
+    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1) // do re-link the profile
+    expect(box.public.set).toHaveBeenCalledTimes(0) // do no update data we already know
   })
 
   it('should handle a second address/account correctly', async () => {
