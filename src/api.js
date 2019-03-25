@@ -108,6 +108,13 @@ async function getVerifiedAccounts (profile) {
         // Invalid twitter verification
       }
     }
+    if (profile.ethereum_proof) {
+      try {
+        verifs.ethereum = await verifier.verifyEthereum(profile.ethereum_proof)
+      } catch (err) {
+        // Invalid eth verification
+      }
+    }
   } catch (err) {
     // Invalid proof for DID return an empty profile
   }
