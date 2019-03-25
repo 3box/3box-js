@@ -15,7 +15,7 @@ module.exports = {
       Bootstrap: [ ]
     }
   },
-  graphql_server_url: process.env.GRAPHQL_SERVER_URL || 'https://aic67onptg.execute-api.us-west-2.amazonaws.com/develop/graphql',
+  graphql_server_url: process.env.GRAPHQL_SERVER_URL || 'https://api.3box.io/graph/',
   profile_server_url: process.env.PROFILE_SERVER_URL || 'https://ipfs.3box.io',
   muport_ipfs_host: process.env.MUPORT_IPFS_HOST || 'ipfs.infura.io',
   muport_ipfs_port: process.env.MUPORT_IPFS_PORT || 5001,
