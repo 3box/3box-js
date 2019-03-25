@@ -91,6 +91,9 @@ async function getVerifiedAccounts (profile) {
   let verifs = {}
   try {
     const did = await verifier.verifyDID(profile.proof_did)
+
+    verifs.did = did
+
     if (profile.proof_github) {
       try {
         verifs.github = await verifier.verifyGithub(did, profile.proof_github)
