@@ -4,16 +4,13 @@ const didJWT = require('did-jwt')
 const { registerMethod } = require('did-resolver')
 
 const GITHUB_LINK1_URL = 'https://gist.githubusercontent.com/user1/12345'
-const GITHUB_LINK1_CONTENT = 'some random text did:muport:0x12345 more random text'
 const GITHUB_LINK1_USER = 'user1'
 const GITHUB_LINK2_URL = 'https://gist.githubusercontent.com/user1/wrongLink'
-const GITHUB_LINK2_CONTENT = 'wrong did'
 
 jest.mock('../3box')
 jest.mock('../utils', () => {
   const GITHUB_LINK1_URL = 'https://gist.githubusercontent.com/user1/12345'
   const GITHUB_LINK1_CONTENT = 'some random text did:muport:0x12345 more random text'
-  const GITHUB_LINK1_USER = 'user1'
   const GITHUB_LINK2_URL = 'https://gist.githubusercontent.com/user1/wrongLink'
   const GITHUB_LINK2_CONTENT = 'wrong did'
   return {
@@ -28,9 +25,7 @@ jest.mock('../utils', () => {
     })
   }
 })
-//jest.mock('https-did-resolver', () => {
-  //return { default: jest.fn() }
-//})
+
 registerMethod('https', async () => {
   return {
     '@context': 'https://w3id.org/did/v1',
