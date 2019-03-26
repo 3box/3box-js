@@ -83,6 +83,8 @@ jest.mock('../utils/index', () => {
   let linkNum = 0
   return {
     isMuportDID: actualUtils.isMuportDID,
+    getMessageConsent: actualUtils.getMessageConsent,
+
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
     fetchJson: jest.fn(async (url, body) => {
       const split = url.split('/')
@@ -477,7 +479,7 @@ describe('3Box', () => {
     let verifier = require('../utils/verifier')
 
     verifier.verifyDID.mockImplementationOnce(() => { throw new Error() })
-    expect(Box.getVerifiedAccounts(profile)).rejects.toEqual(new Error())
+    expect(await Box.getVerifiedAccounts(profile)).toEqual({})
 
     verifier.verifyDID.mockImplementationOnce(() => userDID)
     verifier.verifyGithub.mockImplementationOnce(() => {
@@ -492,6 +494,41 @@ describe('3Box', () => {
       'github': { 'proof': 'some url', 'username': 'test' },
       'twitter': { 'proof': 'some url', 'username': 'test' },
       'did': userDID
+    })
+  })
+
+  describe('verify eth', () => {
+    let verifier = jest.requireActual('../utils/verifier')
+
+    const ethProof = {
+      consent_msg: 'Create a new 3Box profile\n\n- \nYour unique profile ID is did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr',
+      consent_signature: '0x851554733a2989555233f1845ae1a9a7a80cd080afa2cde9a5ccc21b98f0438317fed99955d1d9b32d7f94adae500e36c508a8fe976614088ad6026831f0e3261b',
+      linked_did: 'did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr'
+    }
+
+    const did = 'did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr'
+
+    const ethKey = '0x70509CAAf30Cd92D5f14ddcf98e84e1b38F10a4d'
+
+    it('should verify a regular eth profile', async () => {
+      const verif = await verifier.verifyEthereum(ethProof, did)
+      expect(verif).toEqual(ethKey)
+    })
+
+    it('should fail if you try to spoof another address', async () => {
+      // We generate a different message and sign it from another wallet.
+      const fakeProof = {
+        consent_msg: 'Create a new 3Box profile\n\n-\n Your unique profile ID is did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNw',
+        consent_signature: '0x1928698128a06d5a2005beaca13c42741254279a8759ce83aa16008713742e23038bc6183295f807dc1f475594094301ef02c7cf07eb319d1de08e3dae7aba9f1c',
+        linked_did: 'did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr'
+      }
+
+      try {
+        const verif = await verifier.verifyEthereum(fakeProof, did)
+        expect('should have failed and throw, but we got:').toEqual(verif)
+      } catch (e) {
+        expect(true).toBeTruthy()
+      }
     })
   })
 })
