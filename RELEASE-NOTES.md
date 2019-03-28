@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.6.0 - 2019-03-28
+* Feature: Experimental support for threads
+* Feature: Add support for DIDs in getProfile and getSpace
+* Fix: Handle errors in getProfile correctly
+* Fix: Better logic for linking profile to ethereum address
+
 ## v1.5.1 - 2019-03-20
 * Fix for profiles/stores in Trustwallet, now expected stores will be created and loaded
 
