@@ -84,6 +84,25 @@ describe('KeyValueStore', () => {
     // await ipfs2.stop()
   })
 
+  describe('metdata', () => {
+    it('should contain the metadata method', async () => {
+      await keyValueStore.set('some-key', 'some-value')
+
+      const v = await keyValueStore.get('some-key')
+      const m = await keyValueStore.getMetadata('some-key')
+
+      expect(v).toEqual('some-value')
+      expect(m).toBeDefined()
+      console.error(m)
+      expect(m.timestamp).toBeDefined()
+    })
+
+    it('should return an undefined value for unknown key', async () => {
+      const m = await keyValueStore.getMetadata('a key so complex no one would set it')
+      expect(m).toBeUndefined()
+    })
+  })
+
   describe('log', () => {
 
     let storeNum = 0
