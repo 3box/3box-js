@@ -43,44 +43,29 @@ Or optionally by loading remote copy from [unpkg](https://unpkg.com/) CDN.
 ### Get the public profile of an address
 3Box allows users to create a public profile. In your dapp you might have multiple ethereum addresses that you would like to display a name and picture for. The `getProfile` method allows you to retrieve the profile of any ethereum address (if it has one). This is a *static* method so you can call it directly from the **Box** object.
 
-Using `async/await`
 ```js
 const profile = await Box.getProfile('0x12345abcde')
 console.log(profile)
-```
-or using `.then`
-```js
-Box.getProfile('0x12345abcde').then(profile => {
-  console.log(profile)
-})
 ```
 
 ### Get, set, and remove data
 To get or modify data in a user's 3Box, first open their 3Box by calling the openBox method. This method prompts the user to authenticate your dapp and returns a promise with a threeBox instance. You can only set, get, and remove data of users that are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
 #### Open 3Box session
-Using `async/await`
 ```js
 const box = await Box.openBox('0x12345abcde', ethereumProvider)
 ```
-or using `.then`
-```js
-Box.openBox('0x12345abcde', ethereumProvider).then(box => {
-  // interact with 3Box data
-})
-```
 
 #### Network sync
-When you first open the box in your dapp all data might not be synced from the network yet. You should therefore add a listener using the `onSyncDone` method. This will allow you to know when all the users data is available to you. We advice against *setting* any data before this has happened.
+When you first open the box in your dapp all data might not be synced from the network yet. You should therefore add a listener using the `onSyncDone` method. This will allow you to know when all the users data is available to you. We advice against *setting* any data before this has happened. However reading data before is fine and encurraged, just remember to check for updates once this callback is fired!
 ```js
 box.onSyncDone(yourCallbackFunction)
 ```
 
 
-#### Interact with 3Box data
-You can now use the `box` instance object to interact with data in the users private store and profile. In both the profile and the private store you use a `key` to set a `value`.
+#### Interact with 3Box profile data
+You can now use the `box` instance object to interact with data in the users private and public data. In both the public and the private data store you use a `key` to set a `value`.
 
-Using `async/await`
 ```js
 // use the public profile
 // get
@@ -100,33 +85,8 @@ await box.private.set('email', 'oed@email.service')
 // remove
 await box.private.remove('email')
 ```
-or using `.then`
-```js
-// use the public profile
-// get
-box.public.get('name').then(nickname => {
-  console.log(nickname)
-  // set
-  box.public.set('name', 'oed').then(() => {
-    // remove
-    box.public.remove('name').then(() => {
-    })
-  })
-})
 
-// use the private store
-// get
-box.private.get('email').then(email => {
-  console.log(email)
-  // set
-  box.private.set('email', 'oed@email.service').then(() => {
-    // remove
-    box.private.remove('email').then(() => {
-    })
-  })
-})
-```
-
+<!-- commenting this out for now, not really needed when we're not using the iframe
 #### IPFS Configs
 
 Two options are available if you want to pass additional IPFS config options to the IPFS object used in the library.
@@ -156,6 +116,7 @@ box._ipfs.swarm.connect(pinningNode, () => {
 ```
 
 Reference [ipfs-js](https://github.com/ipfs/js-ipfs) for additional options.
+-->
 
 ### Open a space
 A space is a named section of a users 3Box. Each space has both a public and a private store, and for every space you open the user has to grant explicit consent to view that space. This means that if your dapp uses a space that no other dapp uses, only your dapp is allowed to update the data and read the private store of that particular space. To open a space called `narwhal` you simply call:
@@ -170,9 +131,37 @@ Interacting with data in a space is done in the same way as interacting with `bo
 const config = await space.private.get('dapp-config')
 ```
 
+### Using threads
+**WARNING: this is an experimental feature, the api will likely change in the future!**
+Threads are a type of datastore that can be used to communicate between users. For example they could be used to implement a commenting system, among other things. Threads are created within a space and users that join a thread with the same name will be able to communicate.
+#### Joining a thread
+```js
+const thread = await space.joinThread('myThread')
+```
+#### Posting to thread
+```js
+await thread.post('hello world')
+```
+#### Getting all posts in a thread
+```js
+const posts = await thread.getPosts()
+console.log(posts)
+```
+#### Listening for updates in thread
+```js
+thread.onNewPost(myCallbackFunction)
+```
+
+#### Get all posts in a thread without a space instance
+You can get all posts made in a thread without opening a space.
+```js
+const posts = await Box.getThread(spaceName, threadName)
+console.log(posts)
+```
+
 
 ## <a name="dappdata"></a> Dapp data
-Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](./KEY-CONVENTIONS.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
+Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](https://github.com/3box/3box/blob/master/community/key-conventions.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
 
 ## <a name="example"></a> Example
 
@@ -196,6 +185,7 @@ const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require
 ```
 
 ## <a name="api"></a> API Documentation
+
 <a name="Box"></a>
 
 ### Box
@@ -636,7 +626,8 @@ the iterator will return all items (respecting limit and reverse).
 #### thread.onNewPost(newPostFn)
 Register a function to be called for every new
 post that is received from the network.
-The function takes one parameter, which is the post
+The function takes one parameter, which is the post.
+Note that posts here might be out of order.
 
 **Kind**: instance method of [<code>Thread</code>](#Thread)  
 
