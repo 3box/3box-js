@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.6.1 - 2019-03-29
+* Fix: Add elliptic library to dependencies
+
 ## v1.6.0 - 2019-03-28
 * Feature: Experimental support for threads
 * Feature: Add support for DIDs in getProfile and getSpace
