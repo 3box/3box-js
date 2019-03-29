@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -45,6 +45,7 @@
   "dependencies": {
     "@babel/runtime": "^7.1.2",
     "did-jwt": "^0.1.1",
+    "elliptic": "^6.4.1",
     "ethers": "^4.0.20",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "^0.1.0",
