@@ -168,11 +168,17 @@ class Box {
    * @return    {Object}                            a json object with the profile for the given address
    */
   static async getProfile (address, opts = {}) {
+    const metadata = opts.metadata
     opts = Object.assign({ useCacheService: true }, opts)
+
     let profile
     if (opts.useCacheService) {
-      profile = await API.getProfile(address, opts.profileServer)
+      profile = await API.getProfile(address, opts.profileServer, { metadata })
     } else {
+      if (metadata) {
+        throw new Error('getting metadata is not yet supported outside of the API')
+      }
+
       const normalizedAddress = address.toLowerCase()
       profile = await this._getProfileOrbit(normalizedAddress, opts)
     }
@@ -198,10 +204,11 @@ class Box {
    * @param     {String}    name                    A space name
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.profileServer      URL of Profile API server
+   * @param     {String}    opts.metadata           flag to retrieve metadata
    * @return    {Object}                            a json object with the public space data
    */
   static async getSpace (address, name, opts = {}) {
-    return API.getSpace(address, name, opts.profileServer)
+    return API.getSpace(address, name, opts.profileServer, opts)
   }
 
   /**

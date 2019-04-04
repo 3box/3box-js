@@ -26,14 +26,28 @@ async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
   }
 }
 
-async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL) {
+async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metadata }) {
+  let url = `${serverUrl}/space`
+
   try {
-    // we await explicitly here to make sure the error is catch'd in the correct scope
+    // Add first parameter: address or did
     if (utils.isMuportDID(address)) {
-      return await utils.fetchJson(serverUrl + `/space?did=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+      url = `${url}?did=${encodeURIComponent(address)}`
     } else {
-      return await utils.fetchJson(serverUrl + `/space?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+      url = `${url}?address=${encodeURIComponent(address.toLowerCase())}`
     }
+
+    // Add name:
+    url = `${url}&name=${name}`
+
+    // Add metadata:
+    if (metadata) {
+      url = `${url}&metadata=${encodeURIComponent(metadata)}`
+    }
+
+    // Query:
+    // we await explicitly to make sure the error is catch'd in the correct scope
+    return await utils.fetchJson(url)
   } catch (err) {
     return {}
   }
@@ -50,16 +64,25 @@ async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
   })
 }
 
-async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
+async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata }) {
+  let url = `${serverUrl}/profile`
+
   try {
-    // Note: we await explicitly to make sure the error is catch'd in the correct scope
+    // Add first parameter: address or did
     if (utils.isMuportDID(address)) {
-      const normalized = encodeURIComponent(address) // uppercase is significant in did:muport
-      return await utils.fetchJson(serverUrl + '/profile?did=' + normalized)
+      url = `${url}?did=${encodeURIComponent(address)}`
     } else {
-      const normalized = encodeURIComponent(address.toLowerCase())
-      return await utils.fetchJson(serverUrl + '/profile?address=' + normalized)
+      url = `${url}?address=${encodeURIComponent(address.toLowerCase())}`
     }
+
+    // Add metadata:
+    if (metadata) {
+      url = `${url}&metadata=${encodeURIComponent(metadata)}`
+    }
+
+    // Query:
+    // we await explicitly to make sure the error is catch'd in the correct scope
+    return await utils.fetchJson(url)
   } catch (err) {
     return {} // empty profile
   }
