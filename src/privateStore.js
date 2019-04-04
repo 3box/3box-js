@@ -15,6 +15,11 @@ class PrivateStore extends KeyValueStore {
     return encryptedEntry ? this._decryptEntry(encryptedEntry) : null
   }
 
+  async getMetadata (key) {
+    // Note: assumes metadata is not encrypted.
+    return super.getMetadata(this._genDbKey(key))
+  }
+
   async set (key, value) {
     value = this._encryptEntry(value)
     key = this._genDbKey(key)
