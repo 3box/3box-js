@@ -61,6 +61,7 @@ class KeyValueStore {
 
   /**
    * Get the raw value of the given key
+   * @private
    *
    * @param     {String}    key                     the key
    * @return    {String}                            the value associated with the key
