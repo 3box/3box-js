@@ -93,7 +93,6 @@ describe('KeyValueStore', () => {
 
       expect(v).toEqual('some-value')
       expect(m).toBeDefined()
-      console.error(m)
       expect(m.timestamp).toBeDefined()
     })
 
