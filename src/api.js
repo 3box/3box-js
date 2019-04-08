@@ -38,7 +38,7 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metada
     }
 
     // Add name:
-    url = `${url}&name=${name}`
+    url = `${url}&name=${encodeURIComponent(name)}`
 
     // Add metadata:
     if (metadata) {
