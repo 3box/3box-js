@@ -151,13 +151,13 @@ describe('Space', () => {
 
     it('subscribes to thread correctly', async () => {
       await space.subscribeThread('t1')
-      expect(await space.public.get('follow-thread-t1')).toEqual({ name: 't1' })
+      expect(await space.public.get('thread-t1')).toEqual({ name: 't1' })
       expect(await space.subscribedThreads()).toEqual(['t1'])
     })
 
     it('unsubscribes from thread correctly', async () => {
       await space.unsubscribeThread('t1')
-      expect(await space.public.get('follow-thread-t1')).toEqual()
+      expect(await space.public.get('thread-t1')).toEqual()
       expect(await space.subscribedThreads()).toEqual([])
     })
 
