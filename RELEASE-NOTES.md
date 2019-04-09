@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.6.2 - 2019-04-09
+* Fix: Use correct key when subscribing to thread in a space.
+
 ## v1.6.1 - 2019-03-29
 * Fix: Add elliptic library to dependencies
 

@@ -76,7 +76,7 @@ class Space {
    * @param     {String}    name                    The name of the thread
    */
   async subscribeThread (name) {
-    const threadKey = `follow-thread-${name}`
+    const threadKey = `thread-${name}`
     await this._syncSpacePromise
     if (!(await this.public.get(threadKey))) {
       await this.public.set(threadKey, { name })
@@ -89,7 +89,7 @@ class Space {
    * @param     {String}    name                    The name of the thread
    */
   async unsubscribeThread (name) {
-    const threadKey = `follow-thread-${name}`
+    const threadKey = `thread-${name}`
     if (await this.public.get(threadKey)) {
       await this.public.remove(threadKey)
     }
@@ -103,7 +103,7 @@ class Space {
   async subscribedThreads () {
     const allEntries = await this.public.all()
     return Object.keys(allEntries).reduce((threads, key) => {
-      if (key.startsWith('follow-thread')) {
+      if (key.startsWith('thread')) {
         threads.push(allEntries[key].name)
       }
       return threads
