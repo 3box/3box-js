@@ -12,6 +12,7 @@ const Verified = require('./verified')
 const Space = require('./space')
 const utils = require('./utils/index')
 const { isMuportDID } = require('./utils/id')
+const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
 
@@ -496,5 +497,7 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
     })
   }
 }
+
+Box.idUtils = idUtils
 
 module.exports = Box
