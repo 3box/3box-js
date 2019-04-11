@@ -19,8 +19,8 @@ describe('basic utils tests', () => {
   })
 
   test('verifyClaim', async () => {
-    expect(await verifyClaim(CLAIM_1)).toBeTruthy()
-    expect(await verifyClaim(INVALID_CLAIM_FORMAT)).toBeFalsy()
-    expect(await verifyClaim(EXPIRED_CLAIM)).toBeFalsy()
+    expect(verifyClaim(CLAIM_1)).resolves.toBeTruthy()
+    expect(verifyClaim(INVALID_CLAIM_FORMAT)).rejects.toBeTruthy()
+    expect(verifyClaim(EXPIRED_CLAIM)).rejects.toBeTruthy()
   }, 100000)
 })
