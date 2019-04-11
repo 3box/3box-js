@@ -93,7 +93,7 @@ class Box {
 
     const onNewPeer = async (topic, peer) => {
       if (peer === this.pinningNode.split('/').pop()) {
-        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
+        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress, did: this._3id.getDid() })
       }
     }
 
