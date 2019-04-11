@@ -11,6 +11,7 @@ const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
 const Space = require('./space')
 const utils = require('./utils/index')
+const { isMuportDID } = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
 
@@ -237,7 +238,7 @@ class Box {
   }
 
   static async _getProfileOrbit (address, opts = {}) {
-    if (utils.isMuportDID(address)) {
+    if (isMuportDID(address)) {
       throw new Error('DID are supported in the cached version only')
     }
 
