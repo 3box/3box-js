@@ -82,7 +82,6 @@ jest.mock('../utils/index', () => {
   let linkmap = {}
   let linkNum = 0
   return {
-    isMuportDID: actualUtils.isMuportDID,
     getMessageConsent: actualUtils.getMessageConsent,
 
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
