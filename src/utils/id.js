@@ -11,11 +11,5 @@ module.exports = {
       return false
     }
   },
-  verifyClaim: async (claim, opts = {}) => {
-    try {
-      return await didJWT.verifyJWT(claim, opts)
-    } catch (e) {
-      return null
-    }
-  }
+  verifyClaim: didJWT.verifyJWT
 }
