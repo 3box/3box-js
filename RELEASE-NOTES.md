@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.7.0 - 2019-04-12
+* Feature: Add ability to get metadata for entries
+* Feature: Add idUtils helper functions
+* Feature: Send along DID when opening db with pinning node
+
 ## v1.6.2 - 2019-04-09
 * Fix: Use correct key when subscribing to thread in a space.
 

@@ -1,6 +1,7 @@
 const graphQLRequest = require('graphql-request').request
 const utils = require('./utils/index')
 const verifier = require('./utils/verifier')
+const { isMuportDID } = require('./utils/id')
 const config = require('./config.js')
 
 const GRAPHQL_SERVER_URL = config.graphql_server_url
@@ -16,7 +17,7 @@ async function getRootStoreAddress (identifier, serverUrl = ADDRESS_SERVER_URL) 
 async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
   try {
     // we await explicitly here to make sure the error is catch'd in the correct scope
-    if (utils.isMuportDID(address)) {
+    if (isMuportDID(address)) {
       return await utils.fetchJson(serverUrl + '/list-spaces?did=' + encodeURIComponent(address))
     } else {
       return await utils.fetchJson(serverUrl + '/list-spaces?address=' + encodeURIComponent(address))
@@ -26,14 +27,28 @@ async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
   }
 }
 
-async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL) {
+async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metadata }) {
+  let url = `${serverUrl}/space`
+
   try {
-    // we await explicitly here to make sure the error is catch'd in the correct scope
-    if (utils.isMuportDID(address)) {
-      return await utils.fetchJson(serverUrl + `/space?did=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+    // Add first parameter: address or did
+    if (isMuportDID(address)) {
+      url = `${url}?did=${encodeURIComponent(address)}`
     } else {
-      return await utils.fetchJson(serverUrl + `/space?address=${encodeURIComponent(address)}&name=${encodeURIComponent(name)}`)
+      url = `${url}?address=${encodeURIComponent(address.toLowerCase())}`
     }
+
+    // Add name:
+    url = `${url}&name=${encodeURIComponent(name)}`
+
+    // Add metadata:
+    if (metadata) {
+      url = `${url}&metadata=${encodeURIComponent(metadata)}`
+    }
+
+    // Query:
+    // we await explicitly to make sure the error is catch'd in the correct scope
+    return await utils.fetchJson(url)
   } catch (err) {
     return {}
   }
@@ -50,16 +65,25 @@ async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
   })
 }
 
-async function getProfile (address, serverUrl = PROFILE_SERVER_URL) {
+async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata }) {
+  let url = `${serverUrl}/profile`
+
   try {
-    // Note: we await explicitly to make sure the error is catch'd in the correct scope
-    if (utils.isMuportDID(address)) {
-      const normalized = encodeURIComponent(address) // uppercase is significant in did:muport
-      return await utils.fetchJson(serverUrl + '/profile?did=' + normalized)
+    // Add first parameter: address or did
+    if (isMuportDID(address)) {
+      url = `${url}?did=${encodeURIComponent(address)}`
     } else {
-      const normalized = encodeURIComponent(address.toLowerCase())
-      return await utils.fetchJson(serverUrl + '/profile?address=' + normalized)
+      url = `${url}?address=${encodeURIComponent(address.toLowerCase())}`
     }
+
+    // Add metadata:
+    if (metadata) {
+      url = `${url}&metadata=${encodeURIComponent(metadata)}`
+    }
+
+    // Query:
+    // we await explicitly to make sure the error is catch'd in the correct scope
+    return await utils.fetchJson(url)
   } catch (err) {
     return {} // empty profile
   }
@@ -71,7 +95,7 @@ async function getProfiles (addressArray, opts = {}) {
 
   // Split addresses on ethereum / dids
   addressArray.forEach(address => {
-    if (utils.isMuportDID(address)) {
+    if (isMuportDID(address)) {
       req.didList.push(address)
     } else {
       req.addressList.push(address)

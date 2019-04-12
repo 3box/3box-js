@@ -117,6 +117,7 @@ const publicStoreReducer = (store) => {
   const PREFIX = 'pub_'
   return {
     get: async key => store.get(PREFIX + key),
+    getMetadata: async key => store.getMetadata(PREFIX + key),
     set: async (key, value) => store.set(PREFIX + key, value),
     remove: async key => store.remove(PREFIX + key),
     get log () {
@@ -158,6 +159,7 @@ const privateStoreReducer = (store, keyring) => {
       const entry = await store.get(dbKey(key))
       return entry ? decryptEntry(entry).value : null
     },
+    getMetadata: async key => store.getMetadata(dbKey(key)),
     set: async (key, value) => store.set(dbKey(key), encryptEntry({ key, value })),
     remove: async key => store.remove(dbKey(key)),
     get log () {

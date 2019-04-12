@@ -13,12 +13,22 @@ class KeyValueStore {
    * Get the value of the given key
    *
    * @param     {String}    key                     the key
-   * @return    {String}                            the value associated with the key
+   * @return    {String}                            the value associated with the key, undefined if there's no such key
    */
   async get (key) {
-    this._requireLoad()
-    const dbGetRes = await this._db.get(key)
-    return dbGetRes ? dbGetRes.value : dbGetRes
+    const x = await this._get(key)
+    return x ? x.value : x
+  }
+
+  /**
+   * Get metadata for for a given key
+   *
+   * @param     {String}    key                     the key
+   * @return    {Metadata}                          Metadata for the key, undefined if there's no such key
+   */
+  async getMetadata (key) {
+    const x = await this._get(key)
+    return x ? { timestamp: x.timeStamp } : x
   }
 
   /**
@@ -47,6 +57,18 @@ class KeyValueStore {
     this._ensureConnected()
     await this._db.del(key)
     return true
+  }
+
+  /**
+   * Get the raw value of the given key
+   * @private
+   *
+   * @param     {String}    key                     the key
+   * @return    {String}                            the value associated with the key
+   */
+  async _get (key) {
+    this._requireLoad()
+    return this._db.get(key)
   }
 
   async _sync (numRemoteEntries) {
