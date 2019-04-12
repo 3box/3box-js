@@ -336,6 +336,7 @@ Get the public data in a space of a given address with the given name
 | name | <code>String</code> | A space name |
 | opts | <code>Object</code> | Optional parameters |
 | opts.profileServer | <code>String</code> | URL of Profile API server |
+| opts.metadata | <code>String</code> | flag to retrieve metadata |
 
 <a name="Box.getThread"></a>
 
@@ -431,6 +432,7 @@ Check if the given address is logged in
     * [new KeyValueStore()](#new_KeyValueStore_new)
     * [.log](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
     * [.get(key)](#KeyValueStore+get) ⇒ <code>String</code>
+    * [.getMetadata(key)](#KeyValueStore+getMetadata) ⇒ <code>Metadata</code>
     * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
     * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
 
@@ -460,7 +462,19 @@ const log = store.log
 Get the value of the given key
 
 **Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
-**Returns**: <code>String</code> - the value associated with the key  
+**Returns**: <code>String</code> - the value associated with the key, undefined if there's no such key  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>String</code> | the key |
+
+<a name="KeyValueStore+getMetadata"></a>
+
+#### keyValueStore.getMetadata(key) ⇒ <code>Metadata</code>
+Get metadata for for a given key
+
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Metadata</code> - Metadata for the key, undefined if there's no such key  
 
 | Param | Type | Description |
 | --- | --- | --- |
