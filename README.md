@@ -40,6 +40,7 @@ Or optionally by loading remote copy from [unpkg](https://unpkg.com/) CDN.
 <script src="https://unpkg.com/3box@<version>/dist/3box.js"></script>
 ```
 
+## Profiles API
 ### Get the public profile of an address
 3Box allows users to create a public profile. In your dapp you might have multiple ethereum addresses that you would like to display a name and picture for. The `getProfile` method allows you to retrieve the profile of any ethereum address (if it has one). This is a *static* method so you can call it directly from the **Box** object.
 
@@ -118,6 +119,7 @@ box._ipfs.swarm.connect(pinningNode, () => {
 Reference [ipfs-js](https://github.com/ipfs/js-ipfs) for additional options.
 -->
 
+## Spaces API (Storage)
 ### Open a space
 A space is a named section of a users 3Box. Each space has both a public and a private store, and for every space you open the user has to grant explicit consent to view that space. This means that if your dapp uses a space that no other dapp uses, only your dapp is allowed to update the data and read the private store of that particular space. To open a space called `narwhal` you simply call:
 
@@ -131,6 +133,7 @@ Interacting with data in a space is done in the same way as interacting with `bo
 const config = await space.private.get('dapp-config')
 ```
 
+## Threads API (Messaging)
 ### Using threads
 **WARNING: this is an experimental feature, the api will likely change in the future!**
 Threads are a type of datastore that can be used to communicate between users. For example they could be used to implement a commenting system, among other things. Threads are created within a space and users that join a thread with the same name will be able to communicate.
