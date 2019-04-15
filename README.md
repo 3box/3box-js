@@ -201,6 +201,66 @@ Dapps can store data about users that relate to only their dapp. However we encu
 
 
 ## <a name="api"></a> API Documentation
+### Modules
+
+<dl>
+<dt><a href="#module_idUtils">idUtils</a></dt>
+<dd><p>A module to verify &amp; validate claims</p>
+</dd>
+</dl>
+
+<a name="module_idUtils"></a>
+
+### idUtils
+A module to verify & validate claims
+
+
+* [idUtils](#module_idUtils)
+    * [.verifyClaim](#module_idUtils.verifyClaim) ⇒ <code>Object</code>
+    * [.isMuportDID(address)](#module_idUtils.isMuportDID) ⇒ <code>\*</code> \| <code>boolean</code>
+    * [.isClaim(claim, opts)](#module_idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
+
+<a name="module_idUtils.verifyClaim"></a>
+
+#### idUtils.verifyClaim ⇒ <code>Object</code>
+Verify a claim and return its content
+See https://github.com/uport-project/did-jwt/ for more details
+
+**Kind**: static property of [<code>idUtils</code>](#module_idUtils)  
+**Returns**: <code>Object</code> - The validated claim  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| claim | <code>String</code> |  |
+| opts | <code>Object</code> | Optional parameters |
+| opts.audience | <code>string</code> | The DID of the audience of the JWT |
+
+<a name="module_idUtils.isMuportDID"></a>
+
+#### idUtils.isMuportDID(address) ⇒ <code>\*</code> \| <code>boolean</code>
+Check whether a string is a muport did or not
+
+**Kind**: static method of [<code>idUtils</code>](#module_idUtils)  
+**Returns**: <code>\*</code> \| <code>boolean</code> - Whether the address is a muport did or not  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | A string containing with a user profile address |
+
+<a name="module_idUtils.isClaim"></a>
+
+#### idUtils.isClaim(claim, opts) ⇒ <code>Promise.&lt;boolean&gt;</code>
+Check whether a string is a valid claim or not
+
+**Kind**: static method of [<code>idUtils</code>](#module_idUtils)  
+**Returns**: <code>Promise.&lt;boolean&gt;</code> - A boolean which indicates if the parameter is an actual claim  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| claim | <code>String</code> |  |
+| opts | <code>Object</code> | Optional parameters |
+| opts.audience | <code>string</code> | The DID of the audience of the JWT |
+
 <a name="Box"></a>
 
 ### Box
