@@ -1,3 +1,8 @@
+/**
+ * A module to verify & validate claims
+ *
+ * @module idUtils
+ */
 const didJWT = require('did-jwt')
 const DID_MUPORT_PREFIX = 'did:muport:'
 
