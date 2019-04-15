@@ -18,7 +18,7 @@
     "prepublishOnly": "npm run build; npm run generate-readme",
     "example-server:start": "node example/server.js",
     "example:start": "npm run build:dist; npm run example-server:start",
-    "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 src/*.js >> README.md"
+    "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 'src/**/*.js' >> README.md"
   },
   "browser": {
     "fs": false,
