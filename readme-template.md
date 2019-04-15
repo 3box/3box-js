@@ -199,5 +199,17 @@ const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require
 ## <a name="datastandards"></a> Data Standards
 Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](https://github.com/3box/3box/blob/master/community/key-conventions.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
 
+## <a nam="idUtils"></a> Validate claims
+Use the `idUtils` module to [validate claims](https://www.w3.org/TR/verifiable-claims-data-model/). See
+the [did-jwt](https://github.com/uport-project/did-jwt) library for more details.
+
+```js
+const { idUtils } = require('3box')
+
+const claim = 'eyJ0eX...'
+idUtils.verifyClaim(claim)
+  .then(valid => console.info('details:', valid)
+  .catch(err => console.error('claim verification failed:', err)
+```
 
 ## <a name="api"></a> API Documentation
