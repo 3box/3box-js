@@ -10,7 +10,7 @@ module.exports = {
   /**
    * Check whether a string is a muport did or not
    *
-   * @param   {String}     address  A string containing with a user profile address
+   * @param   {String}     address  A string containing a user profile address
    * @return  {*|boolean}           Whether the address is a muport did or not
    */
   isMuportDID: (address) => address.startsWith(DID_MUPORT_PREFIX),
@@ -21,7 +21,7 @@ module.exports = {
    * @param  {String}             claim
    * @param  {Object}             opts            Optional parameters
    * @param  {string}             opts.audience   The DID of the audience of the JWT
-   * @return {Promise<boolean>}                   A boolean which indicates if the parameter is an actual claim
+   * @return {Promise<boolean>}                   whether the parameter is an actual claim
    */
   isClaim: async (claim, opts = {}) => {
     try {
@@ -33,12 +33,12 @@ module.exports = {
   },
 
   /**
-   * Verify a claim and return its content
-   * See https://github.com/uport-project/did-jwt/ for more details
+   * Verify a claim and return its content.
+   * See https://github.com/uport-project/did-jwt/ for more details.
    *
    * @param  {String}             claim
    * @param  {Object}             opts            Optional parameters
-   * @param  {string}             opts.audience   The DID of the audience of the JWT
+   * @param  {string}             opts.audience   The DID of the JWT's audience
    * @return {Object}                             The validated claim
    */
   verifyClaim: didJWT.verifyJWT
