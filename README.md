@@ -235,8 +235,8 @@ A module to verify & validate claims
 <a name="module_idUtils.verifyClaim"></a>
 
 #### idUtils.verifyClaim ⇒ <code>Object</code>
-Verify a claim and return its content
-See https://github.com/uport-project/did-jwt/ for more details
+Verify a claim and return its content.
+See https://github.com/uport-project/did-jwt/ for more details.
 
 **Kind**: static property of [<code>idUtils</code>](#module_idUtils)  
 **Returns**: <code>Object</code> - The validated claim  
@@ -245,7 +245,7 @@ See https://github.com/uport-project/did-jwt/ for more details
 | --- | --- | --- |
 | claim | <code>String</code> |  |
 | opts | <code>Object</code> | Optional parameters |
-| opts.audience | <code>string</code> | The DID of the audience of the JWT |
+| opts.audience | <code>string</code> | The DID of the JWT's audience |
 
 <a name="module_idUtils.isMuportDID"></a>
 
@@ -257,7 +257,7 @@ Check whether a string is a muport did or not
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | A string containing with a user profile address |
+| address | <code>String</code> | A string containing a user profile address |
 
 <a name="module_idUtils.isClaim"></a>
 
@@ -265,7 +265,7 @@ Check whether a string is a muport did or not
 Check whether a string is a valid claim or not
 
 **Kind**: static method of [<code>idUtils</code>](#module_idUtils)  
-**Returns**: <code>Promise.&lt;boolean&gt;</code> - A boolean which indicates if the parameter is an actual claim  
+**Returns**: <code>Promise.&lt;boolean&gt;</code> - whether the parameter is an actual claim  
 
 | Param | Type | Description |
 | --- | --- | --- |
