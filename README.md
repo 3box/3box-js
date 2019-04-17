@@ -6,7 +6,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/3boxdb.svg?style=for-the-badge&label=Twitter)](https://twitter.com/3boxdb)
 [![Greenkeeper badge](https://badges.greenkeeper.io/3box/3box-js.svg)](https://greenkeeper.io/)
 
-[Install](#install) | [Usage](#usage) | [Example](#example) | [Dapp data](#dappdata) | [API Docs](#api)
+[Install](#install) | [Usage](#usage) | [Example](#example) | [Data Standards](#datastandards) | [API Docs](#api)
 
 # 3box-js
 
@@ -196,7 +196,7 @@ const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require
 <script src="https://unpkg.com/3box/dist/3box.api.min.js"></script>
 ```
 
-## <a name="dappdata"></a> Data Standards
+## <a name="datastandards"></a> Data Standards
 Dapps can store data about users that relate to only their dapp. However we encurage dapps to share data between them for a richer web3 experience. Therefore we have created [**Key Conventions**](https://github.com/3box/3box/blob/master/community/key-conventions.md) in order to facilitate this. Feel free to make a PR to this file to explain to the community how you use 3Box!
 
 
