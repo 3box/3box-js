@@ -94,6 +94,7 @@ describe('KeyValueStore', () => {
       expect(v).toEqual('some-value')
       expect(m).toBeDefined()
       expect(m.timestamp).toBeDefined()
+      expect('' + m.timestamp).toHaveLength(10) // this will break around year 2286
     })
 
     it('should return an undefined value for unknown key', async () => {

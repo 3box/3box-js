@@ -28,7 +28,15 @@ class KeyValueStore {
    */
   async getMetadata (key) {
     const x = await this._get(key)
-    return x ? { timestamp: x.timeStamp } : x
+
+    if (!x) {
+      return x
+    }
+
+    // ms -> seconds, see issue #396 for details
+    const timestamp = Math.floor(x.timeStamp / 1000)
+
+    return { timestamp }
   }
 
   /**
