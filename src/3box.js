@@ -368,8 +368,12 @@ class Box {
         opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
       } catch (e) {
-        console.log(e)
         delete this.spaces[name]
+        if (e.message.includes('User denied message signature.')) {
+          throw new Error('User denied space consent.')
+        } else {
+          throw new Error('An error occured while opening space: ', e.message)
+        }
       }
     } else if (opts.onSyncDone) {
       // since the space is already open we can call onSyncDone directly
