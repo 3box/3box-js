@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.7.1 - 2019-04-25
+* Fix: Throw error on openSpace if user denies consent
+* Fix: Return correct timestamp format in metadata
+* Docs: Updated documentation for idUtils, and added better general api description
+
 ## v1.7.0 - 2019-04-12
 * Feature: Add ability to get metadata for entries
 * Feature: Add idUtils helper functions
