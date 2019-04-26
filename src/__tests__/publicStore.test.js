@@ -25,6 +25,11 @@ describe('PublicStore', () => {
     expect(linkProfile).toHaveBeenCalledWith()
   })
 
+  it('should throw if key not given', async () => {
+    expect(publicStore.set()).rejects.toEqual(new Error('key is a required argument'))
+    expect(publicStore.remove()).rejects.toEqual(new Error('key is a required argument'))
+  })
+
   it('should return profile correctly', async () => {
     expect(await publicStore.all()).toEqual({ key1: 'value1' })
   })

@@ -1,6 +1,6 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
-const { sha256Multihash } = require('./utils')
+const { sha256Multihash, throwIfUndefined } = require('./utils')
 
 const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
@@ -118,8 +118,14 @@ const publicStoreReducer = (store) => {
   return {
     get: async key => store.get(PREFIX + key),
     getMetadata: async key => store.getMetadata(PREFIX + key),
-    set: async (key, value) => store.set(PREFIX + key, value),
-    remove: async key => store.remove(PREFIX + key),
+    set: async (key, value) => {
+      throwIfUndefined(key, 'key')
+      store.set(PREFIX + key, value)
+    },
+    remove: async key => {
+      throwIfUndefined(key, 'key')
+      store.remove(PREFIX + key)
+    },
     get log () {
       return store.log.reduce((newLog, entry) => {
         if (entry.key.startsWith(PREFIX)) {
@@ -144,7 +150,10 @@ const publicStoreReducer = (store) => {
 const privateStoreReducer = (store, keyring) => {
   const PREFIX = 'priv_'
   const SALT = keyring.getDBSalt()
-  const dbKey = key => PREFIX + sha256Multihash(SALT + key)
+  const dbKey = key => {
+    throwIfUndefined(key, 'key')
+    return PREFIX + sha256Multihash(SALT + key)
+  }
   const pad = (val, blockSize = ENC_BLOCK_SIZE) => {
     const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
     return `${val}${'\0'.repeat(blockDiff)}`

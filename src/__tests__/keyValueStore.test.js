@@ -67,6 +67,11 @@ describe('KeyValueStore', () => {
     expect(ensureConnected).toHaveBeenCalledTimes(2)
   })
 
+  it('should throw if key not given', async () => {
+    expect(keyValueStore.set()).rejects.toEqual(new Error('key is a required argument'))
+    expect(keyValueStore.remove()).rejects.toEqual(new Error('key is a required argument'))
+  })
+
   it('should sync an old profile correctly', async () => {
     let ipfs2 = await utils.initIPFS(3)
     let orbitdb2 = new OrbitDB(ipfs2, './tmp/orbitdb2')

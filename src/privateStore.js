@@ -51,6 +51,7 @@ class PrivateStore extends KeyValueStore {
   }
 
   _genDbKey (key) {
+    utils.throwIfUndefined(key, 'key')
     return utils.sha256Multihash(this._salt + key)
   }
 

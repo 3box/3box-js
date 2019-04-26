@@ -1,3 +1,5 @@
+const { throwIfUndefined } = require('./utils/index')
+
 class KeyValueStore {
   /**
    * Please use **box.public** or **box.private** to get the instance of this class
@@ -47,6 +49,7 @@ class KeyValueStore {
    * @return    {Boolean}                           true if successful
    */
   async set (key, value) {
+    throwIfUndefined(key, 'key')
     this._requireLoad()
     this._ensureConnected()
     const timeStamp = new Date().getTime()
@@ -61,6 +64,7 @@ class KeyValueStore {
    * @return    {Boolean}                           true if successful
    */
   async remove (key) {
+    throwIfUndefined(key, 'key')
     this._requireLoad()
     this._ensureConnected()
     await this._db.del(key)

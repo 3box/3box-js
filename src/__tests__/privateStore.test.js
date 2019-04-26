@@ -106,6 +106,11 @@ describe('PrivateStore', () => {
     expect(await privateStore.get('key2')).toBeNull()
   })
 
+  it('should throw if key not given', async () => {
+    expect(privateStore.set()).rejects.toEqual(new Error('Entry to encrypt cannot be undefined'))
+    expect(privateStore.remove()).rejects.toEqual(new Error('key is a required argument'))
+  })
+
   describe('log', () => {
 
     beforeEach(async () => {
