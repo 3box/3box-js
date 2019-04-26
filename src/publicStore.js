@@ -1,4 +1,5 @@
 const KeyValueStore = require('./keyValueStore')
+const { throwIfUndefined } = require('./utils/index')
 
 class ProfileStore extends KeyValueStore {
   constructor (orbitdb, name, linkProfile, ensureConnected, _3id) {
@@ -7,6 +8,7 @@ class ProfileStore extends KeyValueStore {
   }
 
   async set (key, value) {
+    throwIfUndefined(key, 'key')
     this._linkProfile()
     return super.set(key, value)
   }
