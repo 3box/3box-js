@@ -304,7 +304,7 @@ describe('3Box', () => {
 
     // It will check the self-signed did
     expect(box.public.get).toHaveBeenNthCalledWith(2, 'proof_did')
-    expect(box.public.set).toHaveBeenNthCalledWith(2, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7')
+    expect(box.public.set).toHaveBeenNthCalledWith(2, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7', { noLink: true })
 
     expect(global.console.error).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
