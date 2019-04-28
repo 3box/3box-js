@@ -423,7 +423,13 @@ class Box {
         consent_signature: consent.sig,
         linked_did: did
       }
-      await this.public.set('ethereum_proof', linkData)
+      await this.public.set('ethereum_proof', linkData, { noLink: true })
+    }
+
+    // Ensure we self-published our did
+    if (!(await this.public.get('proof_did'))) {
+      // we can just sign an empty JWT as a proof that we own this DID
+      await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
     }
 
     // Send consentSignature to 3box-address-server to link profile with ethereum address
@@ -431,12 +437,6 @@ class Box {
       await utils.fetchJson(this._serverUrl + '/link', linkData)
     } catch (err) {
       console.error(err)
-    }
-
-    // Ensure we self-published our did
-    if (!(await this.public.get('proof_did'))) {
-      // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', await this._3id.signJWT())
     }
   }
 

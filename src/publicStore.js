@@ -7,9 +7,10 @@ class ProfileStore extends KeyValueStore {
     this._linkProfile = linkProfile
   }
 
-  async set (key, value) {
+  async set (key, value, opts = {}) {
     throwIfUndefined(key, 'key')
-    this._linkProfile()
+    // if this is the noLink call we shouldn't call _linkProfile.
+    if (!opts.noLink) this._linkProfile()
     return super.set(key, value)
   }
 }
