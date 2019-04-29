@@ -26,6 +26,13 @@ class PrivateStore extends KeyValueStore {
     return super.set(key, value)
   }
 
+  async setMultiple (keys, values) {
+    utils.throwIfNotEqualLenArrays(keys, values)
+    const dbKeys = keys.map(this._genDbKey, this)
+    const encryptedValues = values.map(this._encryptEntry, this)
+    return super.setMultiple(dbKeys, encryptedValues)
+  }
+
   async remove (key) {
     key = this._genDbKey(key)
     return super.remove(key)

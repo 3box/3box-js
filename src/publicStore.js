@@ -1,5 +1,5 @@
 const KeyValueStore = require('./keyValueStore')
-const { throwIfUndefined } = require('./utils/index')
+const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils/index')
 
 class ProfileStore extends KeyValueStore {
   constructor (orbitdb, name, linkProfile, ensureConnected, _3id) {
@@ -12,6 +12,12 @@ class ProfileStore extends KeyValueStore {
     // if this is the noLink call we shouldn't call _linkProfile.
     if (!opts.noLink) this._linkProfile()
     return super.set(key, value)
+  }
+
+  async setMultiple(keys, values) {
+    throwIfNotEqualLenArrays(keys, values)
+    this._linkProfile()
+    return super.setMultiple(keys, values)
   }
 }
 

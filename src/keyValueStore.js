@@ -1,4 +1,4 @@
-const { throwIfUndefined } = require('./utils/index')
+const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils/index')
 
 class KeyValueStore {
   /**
@@ -55,6 +55,30 @@ class KeyValueStore {
     const timeStamp = new Date().getTime()
     await this._db.put(key, { value, timeStamp })
     return true
+  }
+
+  /**
+  * Set multiple values for multiple keys
+  *
+  * @param     {Array<String>}    keys                     the keys
+  * @param     {Array<String>}    values                   the values
+  * @return    {Boolean}                                  true if successful, throw error if not
+  */
+  async setMultiple (keys, values) {
+    throwIfNotEqualLenArrays(keys, values)
+    this._requireLoad()
+    this._ensureConnected()
+    try {
+      await keys.reduce(async (previousPromise, nextKey, index) => {
+        await previousPromise
+        throwIfUndefined(nextKey, 'key')
+        const timeStamp = new Date().getTime()
+        return this._db.put(nextKey, { value: values[index], timeStamp })
+      }, Promise.resolve())
+      return true
+    } catch (error) {
+      throw new Error(error)
+    }
   }
 
   /**
