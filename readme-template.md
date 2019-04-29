@@ -88,6 +88,19 @@ await box.private.set('email', 'oed@email.service')
 await box.private.remove('email')
 ```
 
+##### Set multiple fields at once:
+```js
+const fields = ['name', 'website', 'employer']
+const values = ['Jon Schwartz', 'openworklabs.com', 'Open Work Labs']
+
+await box.public.setMultiple(fields, values)
+
+const privateFields = ['age', 'coinBalance']
+const privateValues = ['xxx', 'yyy']
+
+await box.private.setMultiple(privateFields, privateValues)
+```
+
 <!-- commenting this out for now, not really needed when we're not using the iframe
 #### IPFS Configs
 
@@ -143,7 +156,7 @@ For the fully detailed spec, view the [documentation](https://github.com/3box/3b
 **WARNING: this is an experimental feature, the API will likely change in the future!**
 
 #### Viewing a Thread
-You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. 
+You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object.
 ```js
 const posts = await Box.getThread(spaceName, threadName)
 console.log(posts)

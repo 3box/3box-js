@@ -98,8 +98,20 @@ describe('Space', () => {
       expect(await space.public.get('k2')).toBeUndefined()
     })
 
+    it('setMultiple works correctly', async () => {
+      await space.public.setMultiple(['k4', 'k5', 'k6'], ['v4', 'v5', 'v6'])
+      expect(await space.public.get('k4')).toEqual('v4')
+      expect(await space.public.get('k5')).toEqual('v5')
+      expect(await space.public.get('k6')).toEqual('v6')
+      await space.public.remove('k6')
+      expect(await space.public.get('k6')).toBeUndefined()
+
+      expect(space.public.setMultiple(['key'], ['value', 'value1'])).rejects.toEqual(new Error('Arrays must be of the same length'))
+      expect(space.public.setMultiple('key', ['value', 'value1'])).rejects.toEqual(new Error('One or more arguments are not an array'))
+    })
+
     it('log should only return public values', async () => {
-      const refLog = [ { key: 'k1', op: 'PUT', timeStamp: 123, value: 'v1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'v3' } ]
+      const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'v1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'v3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'v4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'v5' } ]
       const log1 = space.public.log
       expect(log1).toEqual(refLog)
       space._store.set('key', 'value')
@@ -110,7 +122,9 @@ describe('Space', () => {
     it('all should return all values from public store', async () => {
       expect(await space.public.all()).toEqual({
         k1: 'v1',
-        k3: 'v3'
+        k3: 'v3',
+        k4: 'v4',
+        k5: 'v5',
       })
     })
 
@@ -132,8 +146,20 @@ describe('Space', () => {
       expect(await space.private.get('k2')).toEqual(null)
     })
 
+    it('setMultiple works correctly', async () => {
+      await space.private.setMultiple(['k4', 'k5', 'k6'], ['sv4', 'sv5', 'sv6'])
+      expect(await space.private.get('k4')).toEqual('sv4')
+      expect(await space.private.get('k5')).toEqual('sv5')
+      expect(await space.private.get('k6')).toEqual('sv6')
+      await space.private.remove('k6')
+      expect(await space.private.get('k6')).toEqual(null)
+
+      expect(space.private.setMultiple(['key'], ['value', 'value1'])).rejects.toEqual(new Error('Arrays must be of the same length'))
+      expect(space.private.setMultiple('key', ['value', 'value1'])).rejects.toEqual(new Error('One or more arguments are not an array'))
+    })
+
     it('log should only return private values', async () => {
-      const refLog = [ { key: 'k1', op: 'PUT', timeStamp: 123, value: 'sv1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'sv3' } ]
+      const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'sv1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'sv3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'sv4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'sv5' } ]
       const log1 = space.private.log
       expect(log1).toEqual(refLog)
       space._store.set('key', 'value')
@@ -144,7 +170,9 @@ describe('Space', () => {
     it('all should return all values from private store', async () => {
       expect(await space.private.all()).toEqual({
         k1: 'sv1',
-        k3: 'sv3'
+        k3: 'sv3',
+        k4: 'sv4',
+        k5: 'sv5'
       })
     })
 

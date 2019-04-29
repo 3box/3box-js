@@ -119,6 +119,16 @@ module.exports = {
     }
   },
 
+  throwIfNotEqualLenArrays: (arr1, arr2) => {
+    if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
+      throw new Error('One or more arguments are not an array')
+    }
+
+    if (arr1.length !== arr2.length) {
+      throw new Error('Arrays must be of the same length')
+    }
+  },
+
   sha256Multihash: str => {
     const digest = Buffer.from(sha256.digest(str))
     return Multihash.encode(digest, 'sha2-256').toString('hex')

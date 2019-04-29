@@ -1,3 +1,5 @@
+import { throwIfNotEqualLenArrays } from '../utils'
+
 class KeyValueStore {
   constructor (orbitdb, name, ensureConnected, threeId) {
     this._orbitdb = orbitdb
@@ -15,6 +17,16 @@ class KeyValueStore {
     this._requireLoad()
     this._db.set(key, value)
     return true
+  }
+
+  async setMultiple(keys, values) {
+    this._requireLoad()
+    throwIfNotEqualLenArrays(keys, values)
+    try {
+      keys.map((key, i) => this._db.set(key, values[i]))
+    } catch (error) {
+      throw new Error(error)
+    }
   }
 
   async remove (key) {
