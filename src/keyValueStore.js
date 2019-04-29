@@ -117,7 +117,8 @@ class KeyValueStore {
   }
 
   async _load (odbAddress) {
-    const key = this._3id.getKeyringBySpaceName(this._name).getDBKey()
+    const dbKey = this._3id.getKeyringBySpaceName(this._name).getDBKey()
+    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
     this._db = await this._orbitdb.keyvalue(odbAddress || this._name, {
       key,
       write: [key.getPublic('hex')]

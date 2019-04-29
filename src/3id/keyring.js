@@ -1,8 +1,6 @@
 const { HDNode } = require('ethers').utils
 const nacl = require('tweetnacl')
 nacl.util = require('tweetnacl-util')
-const EC = require('elliptic').ec
-const ec = new EC('secp256k1')
 const SimpleSigner = require('did-jwt').SimpleSigner
 const { sha256 } = require('../utils/index')
 
@@ -60,7 +58,7 @@ class Keyring {
   }
 
   getDBKey () {
-    return ec.keyFromPrivate(this.signingKey.privateKey.slice(2))
+    return this.signingKey.privateKey.slice(2)
   }
 
   getDBSalt () {

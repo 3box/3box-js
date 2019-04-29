@@ -82,7 +82,8 @@ class Box {
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
     globalOrbitDB = this._orbitdb
 
-    const key = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
+    const dbKey = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
+    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
       key,
       write: [key.getPublic('hex')]
