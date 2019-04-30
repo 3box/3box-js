@@ -42,7 +42,7 @@ describe('Keyring', () => {
 
   it('getDBKey works correctly', async () => {
     const key = keyring1.getDBKey()
-    expect(key.getPublic('hex')).toEqual('048aaa695fa16f2a2279e1de718d80e00f4f4ddf30fe8674bbdb9e1f11778c2f77f8ffb5ad2bd3f1f9840b3462c26f756ec0f47626894c20ed247145f5c0e26fe8')
+    expect(key).toEqual('68957df606e586990a6286239987aaf4c902971ae642d50609d35ff36fb0728a')
   })
 
   it('signs data correctly', async () => {

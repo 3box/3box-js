@@ -2,7 +2,6 @@ const testUtils = require('./testUtils')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const jsdom = require('jsdom')
-const IPFS = require('ipfs')
 const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 
@@ -31,7 +30,7 @@ jest.mock('../3id', () => {
       muportFingerprint: managementKey === '0x12345' ? 'b932fe7ab' : 'ab8c73d8f',
       getDidDocument: () => { return { managementKey } },
       getKeyringBySpaceName: () => {
-        return { getDBKey: () => ec.keyFromPrivate('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46') }
+        return { getDBKey: () => 'f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46' }
       }
     }
   }
@@ -146,7 +145,7 @@ describe('3Box', () => {
   let ipfs, pubsub, boxOpts, ipfsBox, box
   jest.setTimeout(30000)
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     if (!ipfs) ipfs = await testUtils.initIPFS(0)
     const ipfsMultiAddr = (await ipfs.id()).addresses[0]
     if (!pubsub) pubsub = new Pubsub(ipfs, (await ipfs.id()).id)
@@ -159,9 +158,7 @@ describe('3Box', () => {
     }
 
     if (!ipfsBox) {
-      //ipfsBox = new IPFS(IPFS_OPTIONS)
       ipfsBox = await testUtils.initIPFS(1)
-      //await new Promise((resolve, reject) => { ipfsBox.on('ready', () => resolve() )})
     }
 
     boxOpts = {
@@ -173,7 +170,9 @@ describe('3Box', () => {
       iframeStore: false,
       pinningNode: ipfsMultiAddr
     }
+  })
 
+  beforeEach(async () => {
     mockedUtils.openBoxConsent.mockClear()
     mockedUtils.fetchJson.mockClear()
     mockedUtils.getLinkConsent.mockClear()
@@ -182,10 +181,11 @@ describe('3Box', () => {
   })
 
   afterAll(async () => {
-  await pubsub.disconnect()
-  //await ipfs.stop()
-})
-
+    await pubsub.disconnect()
+    await box.close()
+    await testUtils.stopIPFS(ipfs, 0)
+    await testUtils.stopIPFS(ipfsBox, 1)
+  })
 
   it('should openBox correctly', async () => {
     const publishPromise = new Promise((resolve, reject) => {
@@ -255,6 +255,7 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     await publishPromise
     pubsub.unsubscribe('3box-pinning')
+    await orbitdb.stop()
   })
 
   it('should open spaces correctly', async () => {
@@ -425,6 +426,7 @@ describe('3Box', () => {
   })
 
   it('should get profile (when API is used)', async () => {
+    delete boxOpts.useCacheService
     const profile = await Box.getProfile('0x12345', boxOpts)
     expect(profile).toEqual({
       name: 'zfer',

@@ -14,13 +14,13 @@ const MSG4 = 'message4'
 
 const THREEID1_MOCK = {
   _mainKeyring: {
-    getDBKey: () => ec.keyFromPrivate('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46')
+    getDBKey: () => 'f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46'
   },
   getDid: () => 'did:3:mydid1'
 }
 const THREEID2_MOCK = {
   _mainKeyring: {
-    getDBKey: () => ec.keyFromPrivate('f977777aaaaaaabbbbbbb9821fa523f2acd17c0ba80c724f219367e76d8f2c46')
+    getDBKey: () => 'f977777aaaaaaabbbbbbb9821fa523f2acd17c0ba80c724f219367e76d8f2c46'
   },
   getDid: () => 'did:3:mydid2'
 }
@@ -147,5 +147,15 @@ describe('Thread', () => {
       expect(posts1[1].message).toEqual(MSG2)
       expect(posts1[1].postId).toEqual(posts2[1].postId)
     })
+
+    afterAll(async () => {
+      await orbitdb2.stop()
+      await utils.stopIPFS(ipfs2, 5)
+    })
+  })
+
+  afterAll(async () => {
+    await orbitdb.stop()
+    await utils.stopIPFS(ipfs, 4)
   })
 })

@@ -8,7 +8,7 @@ const STORE_NAME = '09ab7cd93f9e.public'
 
 const THREEID_MOCK = {
   getKeyringBySpaceName: () => {
-    return { getDBKey: () => ec.keyFromPrivate('f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46') }
+    return { getDBKey: () => 'f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46' }
   }
 }
 
@@ -86,7 +86,7 @@ describe('KeyValueStore', () => {
     expect(await keyValueStore2.get('key2')).toBeUndefined()
     expect(await keyValueStore2.get('key3')).toBeUndefined()
     await orbitdb2.stop()
-    // await ipfs2.stop()
+    await utils.stopIPFS(ipfs2, 3)
   })
 
   describe('metdata', () => {
@@ -155,8 +155,11 @@ describe('KeyValueStore', () => {
     })
   })
 
-  // afterAll(async () => {
-  //   await orbitdb.stop()
-  //   await ipfs.stop()
-  // })
+  it('should including ALL entries, including DEL ops', async () => {
+  })
+
+  afterAll(async () => {
+    await orbitdb.stop()
+    await utils.stopIPFS(ipfs, 2)
+  })
 })
