@@ -82,7 +82,8 @@ class Box {
     this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
     globalOrbitDB = this._orbitdb
 
-    const key = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
+    const dbKey = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
+    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
       key,
       write: [key.getPublic('hex')]
@@ -423,7 +424,13 @@ class Box {
         consent_signature: consent.sig,
         linked_did: did
       }
-      await this.public.set('ethereum_proof', linkData)
+      await this.public.set('ethereum_proof', linkData, { noLink: true })
+    }
+
+    // Ensure we self-published our did
+    if (!(await this.public.get('proof_did'))) {
+      // we can just sign an empty JWT as a proof that we own this DID
+      await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
     }
 
     // Send consentSignature to 3box-address-server to link profile with ethereum address
@@ -431,12 +438,6 @@ class Box {
       await utils.fetchJson(this._serverUrl + '/link', linkData)
     } catch (err) {
       console.error(err)
-    }
-
-    // Ensure we self-published our did
-    if (!(await this.public.get('proof_did'))) {
-      // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', await this._3id.signJWT())
     }
   }
 

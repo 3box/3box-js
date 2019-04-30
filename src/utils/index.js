@@ -113,6 +113,12 @@ module.exports = {
     }
   },
 
+  throwIfUndefined: (arg, name) => {
+    if (arg === undefined || arg === null) {
+      throw new Error(`${name} is a required argument`)
+    }
+  },
+
   sha256Multihash: str => {
     const digest = Buffer.from(sha256.digest(str))
     return Multihash.encode(digest, 'sha2-256').toString('hex')

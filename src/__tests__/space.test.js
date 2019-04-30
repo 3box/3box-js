@@ -113,6 +113,11 @@ describe('Space', () => {
         k3: 'v3'
       })
     })
+
+    it('should throw if key not given', async () => {
+      expect(space.public.set()).rejects.toEqual(new Error('key is a required argument'))
+      expect(space.public.remove()).rejects.toEqual(new Error('key is a required argument'))
+    })
   })
 
   describe('private store reducer', () => {
@@ -141,6 +146,11 @@ describe('Space', () => {
         k1: 'sv1',
         k3: 'sv3'
       })
+    })
+
+    it('should throw if key not given', async () => {
+      expect(space.private.set()).rejects.toEqual(new Error('key is a required argument'))
+      expect(space.private.remove()).rejects.toEqual(new Error('key is a required argument'))
     })
   })
 

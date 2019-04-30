@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.7.2 - 2019-04-30
+* Fix: Don't allow setting values wihtout a 'key'
+* Fix: Ensure that linkProfile only happens once
+* Fix: Import keys in correct format
+
 ## v1.7.1 - 2019-04-25
 * Fix: Throw error on openSpace if user denies consent
 * Fix: Return correct timestamp format in metadata

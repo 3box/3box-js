@@ -1,4 +1,5 @@
 const IPFS = require('ipfs')
+const fs = require('fs')
 
 const CONF_1 = {
   EXPERIMENTAL: {
@@ -116,5 +117,11 @@ module.exports = {
       ipfs.on('error', reject)
       ipfs.on('ready', () => resolve(ipfs))
     })
+  },
+  stopIPFS: async (ipfs, useAltConf) => {
+    // seems to be an issue with the api file not being present when trying to close ipfs
+    const apiFilePath = CONFS[useAltConf].repo + 'api'
+    fs.closeSync(fs.openSync(apiFilePath, 'w'))
+    await ipfs.stop()
   }
 }
