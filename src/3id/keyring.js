@@ -60,7 +60,12 @@ class Keyring {
   }
 
   getDBKey () {
-    return this.signingKey.privateKey.slice(2)
+    return ec.keyFromPrivate(this.signingKey.privateKey.slice(2))
+  }
+
+  async getIdentity () {
+    const key = this.getDBKey()
+    return await Identities.createIdentity({ type: `3ID`, pubKey: key.getPublic('hex')})
   }
 
   getDBSalt () {

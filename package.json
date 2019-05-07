@@ -60,6 +60,9 @@
     "node-fetch": "^2.6.0",
     "orbit-db": "^0.21.0",
     "orbit-db-cache-postmsg-proxy": "^0.1.1",
+    "orbit-db-identity-provider": "^0.1.0",
+    "orbit-db-io": "git://github.com/3box/orbit-db-io.git#feat/backwards-compatibility",
+    "orbit-db-pubsub": "^0.5.5",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0"
