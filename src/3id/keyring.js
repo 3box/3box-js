@@ -3,6 +3,12 @@ const nacl = require('tweetnacl')
 nacl.util = require('tweetnacl-util')
 const SimpleSigner = require('did-jwt').SimpleSigner
 const { sha256 } = require('../utils/index')
+const EC = require('elliptic').ec
+const ec = new EC('secp256k1')
+const IdentityProvider = require('./orbitProvider')
+const Identities = require('orbit-db-identity-provider')
+
+Identities.addIdentityProvider(IdentityProvider)
 
 const BASE_PATH = "m/7696500'/0'/0'"
 const MM_PATH = "m/44'/60'/0'/0"
@@ -58,7 +64,12 @@ class Keyring {
   }
 
   getDBKey () {
-    return this.signingKey.privateKey.slice(2)
+    return ec.keyFromPrivate(this.signingKey.privateKey.slice(2))
+  }
+
+  async getIdentity () {
+    const key = this.getDBKey()
+    return await Identities.createIdentity({ type: `3ID`, pubKey: key.getPublic('hex')})
   }
 
   getDBSalt () {

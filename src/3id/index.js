@@ -57,7 +57,7 @@ class ThreeId {
   async _initMuport (muportIpfs) {
     let keys = this._mainKeyring.getPublicKeys()
     const doc = createMuportDocument(keys.signingKey, this.managementAddress, keys.asymEncryptionKey)
-    let docHash = (await this._ipfs.files.add(Buffer.from(JSON.stringify(doc))))[0].hash
+    let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
     this._muportDID = 'did:muport:' + docHash
     this.muportFingerprint = utils.sha256Multihash(this._muportDID)
     const publishToInfura = async () => {

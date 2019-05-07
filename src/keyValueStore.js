@@ -141,11 +141,15 @@ class KeyValueStore {
   }
 
   async _load (odbAddress) {
-    const dbKey = this._3id.getKeyringBySpaceName(this._name).getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
+    const keyring = this._3id.getKeyringBySpaceName(this._name)
+    const identity = await keyring.getIdentity()
+    const key = keyring.getDBKey()
     this._db = await this._orbitdb.keyvalue(odbAddress || this._name, {
-      key,
-      write: [key.getPublic('hex')]
+      identity,
+      accessController: {
+        write: [key.getPublic('hex')],
+        legacy: true
+      }
     })
     await this._db.load()
     return this._db.address.toString()
@@ -162,7 +166,7 @@ class KeyValueStore {
 
   async all () {
     this._requireLoad()
-    const entries = await this._db.all()
+    const entries = await this._db.all
     let allSimple = {}
     Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
     return allSimple

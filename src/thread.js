@@ -83,11 +83,13 @@ class Thread {
 
   async _load (odbAddress) {
     // TODO - threads should use the space keyring once pairwise DIDs are implemented
-    const dbKey = this._3id._mainKeyring.getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
+    const identity = await this._3id._mainKeyring.getIdentity()
     this._db = await this._orbitdb.log(odbAddress || this._name, {
-      key,
-      write: ['*']
+      identity,
+      accessController: {
+        write: ['*'],
+        legacy: true
+      }
     })
     await this._db.load()
     this._address = this._db.address.toString()

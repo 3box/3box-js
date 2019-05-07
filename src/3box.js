@@ -78,18 +78,20 @@ class Box {
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
+    const keyring = this._3id.getKeyringBySpaceName(rootStoreName)
+    const identity = await keyring.getIdentity()
+    const key = keyring.getDBKey()
     // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
+    this._orbitdb = new OrbitDB(this._ipfs, identity, opts.orbitPath) // , { cache })
     globalOrbitDB = this._orbitdb
-
-    const dbKey = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
-      key,
-      write: [key.getPublic('hex')]
+      identity,
+      accessController: {
+        write: [key.getPublic('hex')],
+        legacy: true
+      }
     })
     const rootStoreAddress = this._rootStore.address.toString()
-
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
 
     const onNewPeer = async (topic, peer) => {
