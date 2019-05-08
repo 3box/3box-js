@@ -14,7 +14,7 @@ class ProfileStore extends KeyValueStore {
     return super.set(key, value)
   }
 
-  async setMultiple(keys, values) {
+  async setMultiple (keys, values) {
     throwIfNotEqualLenArrays(keys, values)
     this._linkProfile()
     return super.setMultiple(keys, values)

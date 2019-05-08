@@ -88,6 +88,19 @@ await box.private.set('email', 'oed@email.service')
 await box.private.remove('email')
 ```
 
+##### Set multiple fields at once:
+```js
+const fields = ['name', 'website', 'employer']
+const values = ['Jon Schwartz', 'openworklabs.com', 'Open Work Labs']
+
+await box.public.setMultiple(fields, values)
+
+const privateFields = ['age', 'coinBalance']
+const privateValues = ['xxx', 'yyy']
+
+await box.private.setMultiple(privateFields, privateValues)
+```
+
 <!-- commenting this out for now, not really needed when we're not using the iframe
 #### IPFS Configs
 
@@ -143,7 +156,7 @@ For the fully detailed spec, view the [documentation](https://github.com/3box/3b
 **WARNING: this is an experimental feature, the API will likely change in the future!**
 
 #### Viewing a Thread
-You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. 
+You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object.
 ```js
 const posts = await Box.getThread(spaceName, threadName)
 console.log(posts)
@@ -518,6 +531,7 @@ Check if the given address is logged in
     * [.get(key)](#KeyValueStore+get) ⇒ <code>String</code>
     * [.getMetadata(key)](#KeyValueStore+getMetadata) ⇒ <code>Metadata</code>
     * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
+    * [.setMultiple(keys, values)](#KeyValueStore+setMultiple) ⇒ <code>Boolean</code>
     * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
 
 <a name="new_KeyValueStore_new"></a>
@@ -576,6 +590,19 @@ Set a value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 | value | <code>String</code> | the value |
+
+<a name="KeyValueStore+setMultiple"></a>
+
+#### keyValueStore.setMultiple(keys, values) ⇒ <code>Boolean</code>
+Set multiple values for multiple keys
+
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Boolean</code> - true if successful, throw error if not  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| keys | <code>Array.&lt;String&gt;</code> | the keys |
+| values | <code>Array.&lt;String&gt;</code> | the values |
 
 <a name="KeyValueStore+remove"></a>
 

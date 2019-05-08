@@ -178,7 +178,7 @@ const privateStoreReducer = (store, keyring) => {
     setMultiple: async (keys, values) => {
       throwIfNotEqualLenArrays(keys, values)
       const dbKeys = keys.map(dbKey)
-      const encryptedEntries = values.map((value, index) => encryptEntry({ key: keys[index], value}))
+      const encryptedEntries = values.map((value, index) => encryptEntry({ key: keys[index], value }))
       return store.setMultiple(dbKeys, encryptedEntries)
     },
     remove: async key => store.remove(dbKey(key)),
