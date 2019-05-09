@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.7.2",
+  "version": "1.8.0",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -34,14 +34,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uport-project/3box-js.git"
+    "url": "git+https://github.com/3box/3box-js.git"
   },
   "author": "3box <team@3box.io>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/uport-project/3box-js/issues"
+    "url": "https://github.com/3box/3box-js/issues"
   },
-  "homepage": "https://github.com/uport-project/3box-js#readme",
+  "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
     "@babel/runtime": "^7.1.2",
     "did-jwt": "^0.1.1",

@@ -88,6 +88,17 @@ describe('PrivateStore', () => {
     expect(privateStore._decryptEntry(retreived)).toEqual('12345')
   })
 
+  it('should set multiple values correctly', async () => {
+    await privateStore._load()
+    await privateStore.setMultiple(['key4', 'key5'], ['yoyo', 'ma'])
+    let dbkey = privateStore._genDbKey('key4')
+    let retreived = privateStore._db.get(dbkey)
+    expect(privateStore._decryptEntry(retreived)).toEqual('yoyo')
+    dbkey = privateStore._genDbKey('key5')
+    retreived = privateStore._db.get(dbkey)
+    expect(privateStore._decryptEntry(retreived)).toEqual('ma')
+  })
+
   it('should get values correctly', async () => {
     let value = await privateStore.get('key1')
     expect(value).toEqual('value1')
@@ -97,6 +108,12 @@ describe('PrivateStore', () => {
 
     value = await privateStore.get('key3')
     expect(value).toEqual('12345')
+
+    value = await privateStore.get('key4')
+    expect(value).toEqual('yoyo')
+
+    value = await privateStore.get('key5')
+    expect(value).toEqual('ma')
   })
 
   it('should remove values correctly', async () => {

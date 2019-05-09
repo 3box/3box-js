@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.8.0 - 2019-05-09
+* Feature: Add `setMultiple` method, enables multiple fields to be set at once.
+
+Special thanks to @Schwartz10 for contributing this feature!
+
 ## v1.7.2 - 2019-04-30
 * Fix: Don't allow setting values wihtout a 'key'
 * Fix: Ensure that linkProfile only happens once

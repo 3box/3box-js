@@ -1,6 +1,6 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
-const { sha256Multihash, throwIfUndefined } = require('./utils')
+const { sha256Multihash, throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 
 const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
@@ -122,6 +122,11 @@ const publicStoreReducer = (store) => {
       throwIfUndefined(key, 'key')
       store.set(PREFIX + key, value)
     },
+    setMultiple: async (keys, values) => {
+      throwIfNotEqualLenArrays(keys, values)
+      const prefixedKeys = keys.map(key => PREFIX + key)
+      return store.setMultiple(prefixedKeys, values)
+    },
     remove: async key => {
       throwIfUndefined(key, 'key')
       store.remove(PREFIX + key)
@@ -170,6 +175,12 @@ const privateStoreReducer = (store, keyring) => {
     },
     getMetadata: async key => store.getMetadata(dbKey(key)),
     set: async (key, value) => store.set(dbKey(key), encryptEntry({ key, value })),
+    setMultiple: async (keys, values) => {
+      throwIfNotEqualLenArrays(keys, values)
+      const dbKeys = keys.map(dbKey)
+      const encryptedEntries = values.map((value, index) => encryptEntry({ key: keys[index], value }))
+      return store.setMultiple(dbKeys, encryptedEntries)
+    },
     remove: async key => store.remove(dbKey(key)),
     get log () {
       return store.log.reduce((newLog, entry) => {

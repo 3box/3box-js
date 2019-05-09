@@ -34,6 +34,7 @@ describe('KeyValueStore', () => {
 
   it('should throw if not synced', async () => {
     expect(keyValueStore.set('key', 'value')).rejects.toThrow(/_load must/)
+    expect(keyValueStore.setMultiple(['keys'], ['values'])).rejects.toThrow(/_load must/)
     expect(keyValueStore.get('key')).rejects.toThrow(/_load must/)
     expect(keyValueStore.remove('key')).rejects.toThrow(/_load must/)
   })
@@ -56,6 +57,13 @@ describe('KeyValueStore', () => {
     await keyValueStore.set('key3', '12345')
     expect(await keyValueStore.get('key3')).toEqual('12345')
     expect(ensureConnected).toHaveBeenCalledTimes(3)
+  })
+
+  it('should set and get multiple values correctly', async () => {
+    await keyValueStore.setMultiple(['key4', 'key5'], ['yoyo', 'ma'])
+    expect(await keyValueStore.get('key4')).toEqual('yoyo')
+    expect(await keyValueStore.get('key5')).toEqual('ma')
+    expect(ensureConnected).toHaveBeenCalledTimes(1)
   })
 
   it('should remove values correctly', async () => {
