@@ -1,11 +1,13 @@
 const { HDNode } = require('ethers').utils
 const didJWT = require('did-jwt')
+const DidDocument = require('ipfs-did-document')
 const IpfsMini = require('ipfs-mini')
 const localstorage = require('store')
 const utils = require('../utils/index')
 const Keyring = require('./keyring')
 const config = require('../config.js')
 
+const DID_METHOD_NAME = '3'
 const STORAGE_KEY = 'serialized3id_'
 const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_port, protocol: config.muport_ipfs_protocol}
 
@@ -14,20 +16,28 @@ class ThreeId {
     this._ethereum = ethereum
     this._ipfs = ipfs
     this._keyrings = {}
-    this._init3id(serializeState, opts)
+    this._initKeys(serializeState, opts)
     localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
   }
 
   async signJWT (payload) {
     const settings = {
       signer: this._mainKeyring.getJWTSigner(),
-      issuer: this.getDid()
+      issuer: this.DID
     }
     return didJWT.createJWT(payload, settings)
   }
 
-  getDid () {
+  get DID () {
+    return this._rootDID
+  }
+
+  get muportDID () {
     return this._muportDID
+  }
+
+  getSubDID (space) {
+    return this._subDIDs[space]
   }
 
   serializeState () {
@@ -42,7 +52,7 @@ class ThreeId {
     return JSON.stringify(stateObj)
   }
 
-  _init3id (serializeState) {
+  _initKeys (serializeState) {
     const state = JSON.parse(serializeState)
     // TODO remove toLowerCase() in future, should be sanitized elsewhere
     //      this forces existing state to correct state so that address <->
@@ -52,6 +62,47 @@ class ThreeId {
     Object.keys(state.spaceSeeds).map(name => {
       this._keyrings[name] = new Keyring(state.spaceSeeds[name])
     })
+  }
+
+  async _initDID (muportIpfs) {
+    const muportPromise = this._initMuport(muportIpfs)
+    const { did, cid } = await this._init3ID()
+    this._rootDID = did
+    const spaces = Object.keys(this._keyrings)
+    const subDIDs = await Promise.all(
+      spaces.map(space => {
+        return this._init3ID(space, cid)
+      })
+    )
+    this._subDIDs = {}
+    spaces.map((space, i) => {
+      this._subDIDs[space] = subDIDs[i].did
+    })
+    await muportPromise
+  }
+
+  async _init3ID (spaceName, rootCid) {
+    const doc = new DidDocument(this._ipfs, DID_METHOD_NAME)
+    if (!spaceName) {
+      const pubkeys = this._mainKeyring.getPublicKeys()
+      doc.addPublicKey('signingKey', 'Secp256k1VerificationKey2018', 'publicKeyHex', pubkeys.signingKey)
+      doc.addPublicKey('encryptionKey', 'Curve25519EncryptionPublicKey', 'publicKeyBase64', pubkeys.asymEncryptionKey)
+      doc.addPublicKey('managementKey', 'Secp256k1VerificationKey2018', 'ethereumAddress', this.managementAddress)
+      doc.addAuthentication('Secp256k1SignatureAuthentication2018', 'signingKey')
+    } else {
+      const pubkeys = this._keyrings[spaceName].getPublicKeys()
+      doc.addPublicKey('subSigningKey', 'Secp256k1VerificationKey2018', 'publicKeyHex', pubkeys.signingKey)
+      doc.addPublicKey('subEncryptionKey', 'Curve25519EncryptionPublicKey', 'publicKeyBase64', pubkeys.asymEncryptionKey)
+      doc.addAuthentication('Secp256k1SignatureAuthentication2018', 'subSigningKey')
+      doc.addCustomProperty('space', spaceName)
+      doc.addCustomProperty('root', rootCid)
+      //doc.addCustomProperty('proof', theProof)
+    }
+    const cid = await doc.commit({ noTimestamp: true })
+    return {
+      did: doc.DID,
+      cid
+    }
   }
 
   async _initMuport (muportIpfs) {
@@ -84,6 +135,7 @@ class ThreeId {
       const entropy = '0x' + utils.sha256(sig.slice(2))
       const seed = HDNode.mnemonicToSeed(HDNode.entropyToMnemonic(entropy))
       this._keyrings[name] = new Keyring(seed)
+      this._subDIDs[name] = (await this._init3ID(name, this._rootDID)).did
       localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
       return true
     } else {
@@ -117,7 +169,7 @@ class ThreeId {
       })
     }
     const _3id = new ThreeId(serialized3id, ethereum, ipfs, opts)
-    await _3id._initMuport(opts.muportIpfs || MUPORT_IPFS)
+    await _3id._initDID(opts.muportIpfs || MUPORT_IPFS)
     return _3id
   }
 }
