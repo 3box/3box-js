@@ -97,7 +97,12 @@ class Box {
 
     const onNewPeer = async (topic, peer) => {
       if (peer === this.pinningNode.split('/').pop()) {
-        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress, did: this._3id.getDid() })
+        this._pubsub.publish(PINNING_ROOM, {
+          type: 'PIN_DB',
+          odbAddress: rootStoreAddress,
+          did: this._3id.DID,
+          muport: this._3id.muportDID
+        })
       }
     }
 
@@ -441,7 +446,7 @@ class Box {
 
     if (!linkData) {
       const address = this._3id.managementAddress
-      const did = this._3id.getDid()
+      const did = this._3id.muportDID
 
       const consent = await utils.getLinkConsent(address, did, this._web3provider)
 
