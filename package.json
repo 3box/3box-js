@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -52,7 +52,7 @@
     "ipfs-mini": "^1.1.5",
     "ipfs-postmsg-proxy": "^3.1.1",
     "js-sha256": "^0.9.0",
-    "muport-did-resolver": "^0.3.0-alpha.2",
+    "muport-did-resolver": "0.3.0-alpha.2",
     "node-fetch": "^2.3.0",
     "orbit-db": "git://github.com/orbitdb/orbit-db.git#dddb271",
     "orbit-db-cache-postmsg-proxy": "^0.1.1",
