@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.8.1 - 2019-05-16
+* Fix: Resolved issue with `getVerifiedAccounts` returning an empty objec
+
 ## v1.8.0 - 2019-05-09
 * Feature: Add `setMultiple` method, enables multiple fields to be set at once.
 
