@@ -29,6 +29,28 @@ class Thread {
   }
 
   /**
+   * Post a message to the thread
+   *
+   * @param     {String}    id                      Moderator Id
+   * @return    {String}                            The postId of the new post
+   */
+  async addMod (id) {
+    this._requireLoad()
+    return this._db.access.grant('mod', id)
+  }
+
+  /**
+   * Delete post
+   *
+   * @param     {String}    id                      Moderator Id
+   * @return    {String}                            The postId of the new post
+   */
+  async deletePost (hash) {
+    this._requireLoad()
+    return this._db.remove(hash)
+  }
+
+  /**
    * Returns an array of posts, based on the options.
    * If hash not found when passing gt, gte, lt, or lte,
    * the iterator will return all items (respecting limit and reverse).
@@ -75,20 +97,26 @@ class Thread {
       }
     })
     this._db.events.on('write', (dbname, entry) => {
-      let post = entry.payload.value
-      post.postId = entry.hash
-      newPostFn(post)
+      if (entry.payload.op === 'ADD') {
+        let post = entry.payload.value
+        post.postId = entry.hash
+        newPostFn(post)
+      }
     })
   }
 
   async _load (odbAddress) {
     // TODO - threads should use the space keyring once pairwise DIDs are implemented
     const identity = await this._3id._mainKeyring.getIdentity()
-    this._db = await this._orbitdb.log(odbAddress || this._name, {
+    this._db = await this._orbitdb.feed(odbAddress || this._name, {
       identity,
+      // accessController: {
+      //   write: ['*'],
+      //   legacy: true
+      // }
       accessController: {
-        write: ['*'],
-        legacy: true
+        type: 'thread-access',
+        address: odbAddress
       }
     })
     await this._db.load()

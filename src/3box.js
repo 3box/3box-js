@@ -15,6 +15,13 @@ const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
 
+let AccessControllers = require('orbit-db-access-controllers')
+const ThreadAccessController = require('./access/thread-open-mod-access')
+const ModeratorAccessController = require('./access/moderator-access')
+AccessControllers.addAccessController({ AccessController: ThreadAccessController })
+AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
+
+
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
@@ -82,7 +89,10 @@ class Box {
     const identity = await keyring.getIdentity()
     const key = keyring.getDBKey()
     // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    this._orbitdb = new OrbitDB(this._ipfs, identity, opts.orbitPath) // , { cache })
+    // this._orbitdb = new OrbitDB(this._ipfs, identity, opts.orbitPath) // , { cache })
+    this._orbitdb = new OrbitDB(this._ipfs, identity, {
+      AccessControllers: AccessControllers
+    })
     globalOrbitDB = this._orbitdb
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
       identity,

@@ -103,11 +103,32 @@ bopen.addEventListener('click', event => {
         })
       })
 
+      addThreadMod.addEventListener('click', () => {
+        const name = threadMod.value
+        posts.style.display = 'block'
+        window.currentThread.addMod(name).then(res => {
+          console.log(res)
+        })
+      })
+
       const updateThreadData = () => {
         threadData.innerHTML = ''
+        window.deletePost = (el) => {
+          console.log('delete ' + el.id)
+          window.currentThread.deletePost(el.id)
+        }
         window.currentThread.getPosts().then(posts => {
           posts.map(post => {
-            threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
+            threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
+            threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
+            // post.postId.addEventListener('click', () => {
+              // console.log('delete me')
+              // const name = threadMod.value
+              // posts.style.display = 'block'
+              // window.currentThread.addMod(name).then(res => {
+              //   console.log(res)
+              // })
+            // })
           })
         })
       }
