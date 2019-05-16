@@ -17,7 +17,8 @@ jest.mock('../3id', () => {
   })
   const instance = (did, managementKey) => {
     return {
-      getDid: () => did,
+      DID: did.replace('muport', '3'),
+      muportDID: did,
       managementAddress: managementKey,
       signJWT: (data) => {
         if (data && data.rootStoreAddress) {

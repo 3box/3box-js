@@ -1,6 +1,8 @@
 const ThreeId = require('../index')
 const testUtils = require('../../__tests__/testUtils')
 const localstorage = require('store')
+const resolve = require('did-resolver').default
+const registerResolver = require('3id-resolver')
 
 jest.mock('../../utils/index', () => {
   const sha256 = require('js-sha256').sha256
@@ -38,6 +40,7 @@ describe('3id', () => {
 
   beforeAll(async () => {
     ipfs = await testUtils.initIPFS(0)
+    registerResolver(ipfs)
   })
 
   afterAll(async () => {
@@ -54,9 +57,10 @@ describe('3id', () => {
       const opts = { consentCallback: jest.fn() }
       threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
-      expect(threeId.DID).toEqual('did:3:zdpuAwkzw4HD1XcCUJfd9AgM3sqWbQRXkbWpviaPJnHzKFM3x')
+      expect(threeId.DID).toEqual('did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41')
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
+      expect(await resolve(threeId.DID)).toMatchSnapshot()
     })
 
     it('should create the same identity given the same address', async () => {
@@ -100,13 +104,17 @@ describe('3id', () => {
       expect(requiredConsent).toEqual(true)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(1)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_1)
-      expect(threeId.getSubDID(SPACE_1)).toEqual('did:3:zdpuAtCkBeGoTsnZEhPLuNEuDjufP37QPuK6jyzZ4ZCWUvtCm')
+      let subDid = threeId.getSubDID(SPACE_1)
+      expect(subDid).toEqual('did:3:zdpuApwYjfMKPCR7XFtRjxfkTZnizPDdCxoQTq9xjgxn9M2kD')
+      expect(await resolve(subDid)).toMatchSnapshot()
 
       requiredConsent = await threeId.initKeyringByName(SPACE_2)
       expect(requiredConsent).toEqual(true)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(2)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_2)
-      expect(threeId.getSubDID(SPACE_2)).toEqual('did:3:zdpuAzpxkrSYRvzeXtYgL6sMixYi5QizuULjcLwzccyr1eoir')
+      subDid = threeId.getSubDID(SPACE_2)
+      expect(subDid).toEqual('did:3:zdpuB1n1ocxdnSBjNabeUiLFBJMLPzjfoZCMj2FRUhot4j28w')
+      expect(await resolve(subDid)).toMatchSnapshot()
 
       requiredConsent = await threeId.initKeyringByName(SPACE_2)
       expect(requiredConsent).toEqual(false)
