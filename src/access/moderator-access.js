@@ -5,18 +5,19 @@ const type = 'moderator-access'
 
 class ModeratorAccessController {
   constructor (ipfs, options) {
+    // Allowed to add other mods or members
     this._write = []
   }
 
   static get type () { return type }
 
   async canAppend (entry, identityProvider) {
-    const mod = entry.identity.id
-    const modAddId = entry.payload.value
+    const entryID = entry.identity.id
+    const isMod = this._write.includes(entryID)
 
-    // Can write to moderator list store if in prior entry id was given permission (added to list)
-    if (this._write.length === 0 || this._write.includes(mod) ) {
-      this._write.push(modAddId)
+    if (this._write.length === 0 || isMod ) {
+      const capability = entry.payload.value.capability
+      if (capability === 'mod') this._write.push(modAddId)
       return true
     }
 

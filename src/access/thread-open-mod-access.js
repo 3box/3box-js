@@ -7,6 +7,7 @@ const entryIPFS = require('ipfs-log/src/entry')
 
 const type = 'thread-access'
 
+// TODO need extend access controller interface?
 class ThreadAccessController {
   constructor (orbitdb, ipfs, options) {
     // super()
@@ -14,6 +15,7 @@ class ThreadAccessController {
     this._db = null
     this._options = options || {}
     this._ipfs = ipfs
+    this._members = options.members
   }
 
   // Returns the type of the access controller
@@ -27,10 +29,14 @@ class ThreadAccessController {
   async canAppend (entry, identityProvider) {
     const op = entry.payload.op
     const mods = this.capabilities['mod']
+    const member = this.capabilities['member']
 
-    // Anyone can add a message
     if (op === 'ADD') {
-      return true
+      // Anyone can add entry if open thread
+      if (!this._members) { return true }
+      // Not open thread, any member or mod can add to thread
+      if (members.includes(entry.identity.id) { return true }
+      if (mods.includes(entry.identity.id) { return true }
     }
 
     if (op === 'DEL') {
@@ -38,37 +44,36 @@ class ThreadAccessController {
       const delEntry = await entryIPFS.fromMultihash(this._ipfs, hash)
 
       // An id can delete their own entries
-      if (delEntry.identity.id === entry.identity.id) {
-        return true
-      }
+      if (delEntry.identity.id === entry.identity.id) { return true }
 
       // Mods can't delete other mods entries
-      if (mods.includes(delEntry.identity.id)) {
-        return false
-      }
+      if (mods.includes(delEntry.identity.id)) { return false }
 
       // Mods can delete any other entries
-      if (mods.includes(entry.identity.id)) {
-        return true
-      }
+      if (mods.includes(entry.identity.id)) { return true }
     }
-
 
     return false
   }
 
   get capabilities () {
+    // TODO dont do this for every entry, save result, update on db change
     if (this._db) {
-      let capabilities = {}
-      const mods = Object.entries(this._db.index).map(entry => entry[1].payload.value)
-      capabilities['mod'] = mods
-      return capabilities
+      let mod = []
+      let member = []
+      Object.entries(this._db.index).forEach(entry => {
+        const capability = entry[1].payload.value.capability
+        const id = entry[1].payload.value.id
+        if (capability === 'mod') mod.push(id)
+        if (capability === 'member') member.push(id)
+      })
+      return {mod, member}
     }
     return {}
   }
 
   get (capability) {
-    return this.capabilities[capability] || new Set([])
+    return this.capabilities[capability] || []
   }
 
   async close () {
@@ -78,6 +83,8 @@ class ThreadAccessController {
   async load (address) {
     if (this._db) { await this._db.close() }
     // Force '<address>/_access' naming for the database
+    // TODO should memeber and non member threads create different acess controllers
+    // or how to deal with threads with same name with member and non member (different names?)
     this._db = await this._orbitdb.feed(ensureAddress(address), {
       // Use moderator access controller
       accessController: {
@@ -103,9 +110,10 @@ class ThreadAccessController {
     }
   }
 
-  async grant (capability, key) {
-    // may use capability after for member vs mod
-    await this._db.add(key)
+  async grant (capability, id) {
+    // TODO limit capabilities
+    // TODO  sanitize key
+    await this._db.add({capability, id})
   }
 
   /* Private methods */
