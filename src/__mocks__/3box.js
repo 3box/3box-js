@@ -3,7 +3,7 @@ class Box {
     this._publicStore = {}
     this._privateStore = {}
     this._3id = {
-      getDid: () => muportDID
+      muportDID: muportDID
     }
     this.public = {
       set: (k, v) => this._publicStore[k] = v,

@@ -16,13 +16,13 @@ const THREEID1_MOCK = {
   _mainKeyring: {
     getDBKey: () => 'f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46'
   },
-  getDid: () => 'did:3:mydid1'
+  muportDID: 'did:3:mydid1'
 }
 const THREEID2_MOCK = {
   _mainKeyring: {
     getDBKey: () => 'f977777aaaaaaabbbbbbb9821fa523f2acd17c0ba80c724f219367e76d8f2c46'
   },
-  getDid: () => 'did:3:mydid2'
+  muportDID: 'did:3:mydid2'
 }
 
 const ensureConnected = jest.fn()
@@ -66,7 +66,7 @@ describe('Thread', () => {
   it('adding posts works as expected', async () => {
     await thread.post(MSG1)
     let posts = await thread.getPosts()
-    expect(posts[0].author).toEqual(THREEID1_MOCK.getDid())
+    expect(posts[0].author).toEqual(THREEID1_MOCK.muportDID)
     expect(posts[0].message).toEqual(MSG1)
     expect(subscribeMock).toHaveBeenCalledTimes(1)
     expect(ensureConnected).toHaveBeenCalledTimes(1)
@@ -119,13 +119,13 @@ describe('Thread', () => {
       })
       await threadUser1.post(MSG1)
       let posts1 = await threadUser1.getPosts()
-      expect(posts1[0].author).toEqual(THREEID1_MOCK.getDid())
+      expect(posts1[0].author).toEqual(THREEID1_MOCK.muportDID)
       expect(posts1[0].message).toEqual(MSG1)
       await postPromise
       threadUser2.onNewPost(() => {})
       await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
       let posts2 = await threadUser2.getPosts()
-      expect(posts2[0].author).toEqual(THREEID1_MOCK.getDid())
+      expect(posts2[0].author).toEqual(THREEID1_MOCK.muportDID)
       expect(posts2[0].message).toEqual(MSG1)
       expect(posts2[0].postId).toEqual(posts1[0].postId)
 
@@ -138,12 +138,12 @@ describe('Thread', () => {
       })
       await threadUser2.post(MSG2)
       posts2 = await threadUser2.getPosts()
-      expect(posts2[1].author).toEqual(THREEID2_MOCK.getDid())
+      expect(posts2[1].author).toEqual(THREEID2_MOCK.muportDID)
       expect(posts2[1].message).toEqual(MSG2)
       await postPromise
       await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
       posts1 = await threadUser1.getPosts()
-      expect(posts1[1].author).toEqual(THREEID2_MOCK.getDid())
+      expect(posts1[1].author).toEqual(THREEID2_MOCK.muportDID)
       expect(posts1[1].message).toEqual(MSG2)
       expect(posts1[1].postId).toEqual(posts2[1].postId)
     })

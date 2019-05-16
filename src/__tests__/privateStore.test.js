@@ -20,7 +20,6 @@ describe('PrivateStore', () => {
           }
         },
         symDecrypt: (ciphertext, nonce) => ciphertext.split('!')[1],
-        getDid: () => 'did:muport:Qmsdfwerg',
         getDBSalt: () => 'f97f0d1ced93052700d740e23666ad9ff8b32366e3ce28696d3c9684f448142e'
       }
     }
@@ -52,7 +51,6 @@ describe('PrivateStore', () => {
             expect(cleartext.length % 24).toEqual(0)
           },
           symDecrypt: () => paddedVal,
-          getDid: () => 'did:muport:Qmsdfwerg',
           getDBSalt: () => 'f97f0d1ced93052700d740e23666ad9ff8b32366e3ce28696d3c9684f448142e'
         }
       }

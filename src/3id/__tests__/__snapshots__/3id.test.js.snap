@@ -1,0 +1,131 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`3id getIdFromEthAddress should create a new identity on first call 1`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#signingKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41",
+  "publicKey": Array [
+    Object {
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#signingKey",
+      "publicKeyHex": "02e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e588",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#encryptionKey",
+      "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x12345",
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+  ],
+}
+`;
+
+exports[`3id keyring logic should init space keyrings correctly 1`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#signingKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+    Object {
+      "publicKey": "did:3:zdpuApwYjfMKPCR7XFtRjxfkTZnizPDdCxoQTq9xjgxn9M2kD#subSigningKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:zdpuApwYjfMKPCR7XFtRjxfkTZnizPDdCxoQTq9xjgxn9M2kD",
+  "proof": Object {
+    "alg": "ES256K",
+    "signature": "F7y5XjmI3EbTS4sIFFL1BV4KGUF14gU-NxFjJPpcP6zrb6qoWhRNTBlTOKgGUTVRAoL65F8lAdiXYwElz4zEoQ",
+  },
+  "publicKey": Array [
+    Object {
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#signingKey",
+      "publicKeyHex": "02e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e588",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#encryptionKey",
+      "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x12345",
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:zdpuApwYjfMKPCR7XFtRjxfkTZnizPDdCxoQTq9xjgxn9M2kD#subSigningKey",
+      "publicKeyHex": "03a514c9de733883c7e264353988188dd815677af6d219068b540077a8eeaf5aad",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:zdpuApwYjfMKPCR7XFtRjxfkTZnizPDdCxoQTq9xjgxn9M2kD#subEncryptionKey",
+      "publicKeyBase64": "zaPBNwm0qXFe9lUAqldGuhNdle6jbRtyUISoO+S3CBY=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+  ],
+  "root": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41",
+  "space": "space1",
+}
+`;
+
+exports[`3id keyring logic should init space keyrings correctly 2`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#signingKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+    Object {
+      "publicKey": "did:3:zdpuB1n1ocxdnSBjNabeUiLFBJMLPzjfoZCMj2FRUhot4j28w#subSigningKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:zdpuB1n1ocxdnSBjNabeUiLFBJMLPzjfoZCMj2FRUhot4j28w",
+  "proof": Object {
+    "alg": "ES256K",
+    "signature": "23ka7tIT9afyJpC9ZuwBXMjGNNXnKQZ_hIAq-VvkiTLJVmxPl8FEW3BAnRy2-ckyjRHdAx79Ak6EpwUqEWwB3Q",
+  },
+  "publicKey": Array [
+    Object {
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#signingKey",
+      "publicKeyHex": "02e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e588",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#encryptionKey",
+      "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x12345",
+      "id": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:zdpuB1n1ocxdnSBjNabeUiLFBJMLPzjfoZCMj2FRUhot4j28w#subSigningKey",
+      "publicKeyHex": "03a514c9de733883c7e264353988188dd815677af6d219068b540077a8eeaf5aad",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:zdpuB1n1ocxdnSBjNabeUiLFBJMLPzjfoZCMj2FRUhot4j28w#subEncryptionKey",
+      "publicKeyBase64": "zaPBNwm0qXFe9lUAqldGuhNdle6jbRtyUISoO+S3CBY=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+  ],
+  "root": "did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41",
+  "space": "space2",
+}
+`;

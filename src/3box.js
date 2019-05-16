@@ -97,8 +97,7 @@ class Box {
         this._pubsub.publish(PINNING_ROOM, {
           type: 'PIN_DB',
           odbAddress: rootStoreAddress,
-          did: this._3id.DID,
-          muport: this._3id.muportDID
+          did: this._3id.muportDID
         })
       }
     }

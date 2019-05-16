@@ -22,7 +22,7 @@ class Thread {
     this._subscribe()
     this._ensureConnected(this._address, true)
     return this._db.add({
-      author: this._3id.getDid(),
+      author: this._3id.muportDID,
       message,
       timeStamp: new Date().getTime()
     })
