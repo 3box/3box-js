@@ -6,7 +6,11 @@ const Pubsub = require('orbit-db-pubsub')
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
 const AccessControllers = require('orbit-db-access-controllers')
 const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
+const ThreadAccessController = require('./access/thread-open-mod-access')
+const ModeratorAccessController = require('./access/moderator-access')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+AccessControllers.addAccessController({ AccessController: ThreadAccessController })
+AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 
 const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
@@ -21,6 +25,7 @@ const API = require('./api')
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum'
 }
+
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
@@ -88,6 +93,10 @@ class Box {
     const identity = await keyring.getIdentity()
     const key = keyring.getDBKey()
     // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
+    // // TODO:
+    // this._orbitdb = new OrbitDB(this._ipfs, identity, {
+    //   AccessControllers: AccessControllers
+    // })
     this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
       directory: opts.orbitPath,
       identity: await this._3id.getOdbId()

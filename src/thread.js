@@ -2,13 +2,14 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (orbitdb, name, threeId, subscribe, ensureConnected) {
+  constructor (orbitdb, name, threeId, membersOnly, subscribe, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
     this._3id = threeId
     this._subscribe = subscribe
     this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
+    this._membersOnly = membersOnly
   }
 
   /**
@@ -26,6 +27,60 @@ class Thread {
       message,
       timeStamp: new Date().getTime()
     })
+  }
+
+  /**
+   * Add a moderator to this thread
+   *
+   * @param     {String}    id                      Moderator Id
+   */
+  async addMod (id) {
+    this._requireLoad()
+    return this._db.access.grant('mod', id)
+  }
+
+
+  /**
+   * List moderators
+   *
+   * @return    {Array<String>}      Array of moderator DIDs
+   */
+  async listMods () {
+    this._requireLoad()
+    return this._db.access.capabilities['mod']
+  }
+
+  /**
+   * Add a member to this thread
+   *
+   * @param     {String}    id                      Member Id
+   */
+  async addMember (id) {
+    // TOOD throw is not a member only thread
+    this._requireLoad()
+    return this._db.access.grant('member', id)
+  }
+
+  /**
+   * List members
+   *
+   * @return    {Array<String>}      Array of member DIDs
+   */
+  async listMembers () {
+    // TODO maybe throw is not a member only thread, or * to indicate all (like orbit)
+    this._requireLoad()
+    return this._db.access.capabilities['member']
+  }
+
+
+  /**
+   * Delete post
+   *
+   * @param     {String}    id                      Moderator Id
+   */
+  async deletePost (hash) {
+    this._requireLoad()
+    return this._db.remove(hash)
   }
 
   /**
@@ -75,20 +130,23 @@ class Thread {
       }
     })
     this._db.events.on('write', (dbname, entry) => {
-      let post = entry.payload.value
-      post.postId = entry.hash
-      newPostFn(post)
+      if (entry.payload.op === 'ADD') {
+        let post = entry.payload.value
+        post.postId = entry.hash
+        newPostFn(post)
+      }
     })
   }
 
   async _load (odbAddress) {
     // TODO - threads should use the space keyring once pairwise DIDs are implemented
     const identity = await this._3id._mainKeyring.getIdentity()
-    this._db = await this._orbitdb.log(odbAddress || this._name, {
+    this._db = await this._orbitdb.feed(odbAddress || this._name, {
       identity,
       accessController: {
-        write: ['*'],
-        legacy: true
+        type: 'thread-access',
+        address: this._name,
+        members: this.membersOnly
       }
     })
     await this._db.load()
