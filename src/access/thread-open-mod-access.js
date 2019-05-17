@@ -35,8 +35,8 @@ class ThreadAccessController {
       // Anyone can add entry if open thread
       if (!this._members) { return true }
       // Not open thread, any member or mod can add to thread
-      if (members.includes(entry.identity.id) { return true }
-      if (mods.includes(entry.identity.id) { return true }
+      if (members.includes(entry.identity.id)) { return true }
+      if (mods.includes(entry.identity.id)) { return true }
     }
 
     if (op === 'DEL') {
@@ -84,7 +84,8 @@ class ThreadAccessController {
     if (this._db) { await this._db.close() }
     // Force '<address>/_access' naming for the database
     // TODO should memeber and non member threads create different acess controllers
-    // or how to deal with threads with same name with member and non member (different names?)
+    // or how to deal with threads with same name with member and non member (different names?
+    //  address of this access controler probably should just change, then different thread name
     this._db = await this._orbitdb.feed(ensureAddress(address), {
       // Use moderator access controller
       accessController: {

@@ -2,13 +2,14 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (orbitdb, name, threeId, subscribe, ensureConnected) {
+  constructor (orbitdb, name, threeId, membersOnly, subscribe, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
     this._3id = threeId
     this._subscribe = subscribe
     this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
+    this._membersOnly = membersOnly
   }
 
   /**
@@ -29,10 +30,9 @@ class Thread {
   }
 
   /**
-   * Post a message to the thread
+   * Add a moderator to this thread
    *
    * @param     {String}    id                      Moderator Id
-   * @return    {String}                            The postId of the new post
    */
   async addMod (id) {
     this._requireLoad()
@@ -40,10 +40,53 @@ class Thread {
   }
 
   /**
+   * List moderators
+   *
+   * @return    {Array<String>}      Array of moderator DIDs
+   */
+  async listMods () {
+    this._requireLoad()
+    return this._db.access.capabilities['mod']
+  }
+
+
+  /**
+   * List moderators
+   *
+   * @return    {Array<String>}      Array of moderator DIDs
+   */
+  async listMods () {
+    this._requireLoad()
+    return this._db.access.capabilities['mod']
+  }
+
+  /**
+   * Add a member to this thread
+   *
+   * @param     {String}    id                      Member Id
+   */
+  async addMember (id) {
+    // TOOD throw is not a member only thread
+    this._requireLoad()
+    return this._db.access.grant('member', id)
+  }
+
+  /**
+   * List members
+   *
+   * @return    {Array<String>}      Array of member DIDs
+   */
+  async listMembers () {
+    // TODO maybe throw is not a member only thread, or * to indicate all (like orbit)
+    this._requireLoad()
+    return this._db.access.capabilities['member']
+  }
+
+
+  /**
    * Delete post
    *
    * @param     {String}    id                      Moderator Id
-   * @return    {String}                            The postId of the new post
    */
   async deletePost (hash) {
     this._requireLoad()
@@ -110,13 +153,10 @@ class Thread {
     const identity = await this._3id._mainKeyring.getIdentity()
     this._db = await this._orbitdb.feed(odbAddress || this._name, {
       identity,
-      // accessController: {
-      //   write: ['*'],
-      //   legacy: true
-      // }
       accessController: {
         type: 'thread-access',
-        address: odbAddress
+        address: odbAddress,
+        members: this.membersOnly
       }
     })
     await this._db.load()
