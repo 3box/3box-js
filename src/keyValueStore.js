@@ -15,14 +15,29 @@ class KeyValueStore {
   }
 
   /**
-   * Get the value of the given key
+   * Get the value and optionally metadata of the given key
    *
-   * @param     {String}    key                     the key
-   * @return    {String}                            the value associated with the key, undefined if there's no such key
+   * @param     {String}    key                             the key
+   * @param     {Object}    opts                            optional parameters
+   * @param     {Boolean}   opts.metadata                   return both value and metadata
+   * @return    {String|{value: String, timestamp: Number}} the value associated with the key, undefined if there's no such key
    */
-  async get (key) {
+  async get (key, opts = {}) {
     const x = await this._get(key)
-    return x ? x.value : x
+
+    if (!x) {
+      return x
+    }
+
+    if (opts.metadata) {
+      const metadata = this._extractMetadata(x)
+      return {
+        ...metadata,
+        value: x.value
+      }
+    }
+
+    return x.value
   }
 
   /**
@@ -38,10 +53,7 @@ class KeyValueStore {
       return x
     }
 
-    // ms -> seconds, see issue #396 for details
-    const timestamp = Math.floor(x.timeStamp / 1000)
-
-    return { timestamp }
+    return this._extractMetadata(x)
   }
 
   /**
@@ -96,6 +108,19 @@ class KeyValueStore {
     this._ensureConnected()
     await this._db.del(key)
     return true
+  }
+
+  /**
+   * Extract metadata from store object
+   * @private
+   * @param x {Object} data from store
+   * @return {Metadata} store metadata
+   */
+  _extractMetadata (x) {
+    // ms -> seconds, see issue #396 for details
+    const timestamp = Math.floor(x.timeStamp / 1000)
+
+    return { timestamp }
   }
 
   /**
@@ -170,11 +195,30 @@ class KeyValueStore {
     await this._db.close()
   }
 
-  async all () {
+  /**
+   * Get all values and optionally metadata
+   *
+   * @param     {Object}    opts                                    optional parameters
+   * @param     {Boolean}   opts.metadata                           return both values and metadata
+   * @return    {Array<String|{value: String, timestamp: Number}>}  the values
+   */
+  async all (opts = {}) {
     this._requireLoad()
     const entries = this._db.all
     let allSimple = {}
-    Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
+    Object.keys(entries).map(key => {
+      const entry = entries[key]
+
+      if (opts.metadata) {
+        allSimple[key] = {
+          ...this._extractMetadata(entry),
+          value: entry.value
+        }
+      } else {
+        allSimple[key] = entry.value
+      }
+    })
+
     return allSimple
   }
 

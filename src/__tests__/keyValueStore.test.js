@@ -105,6 +105,30 @@ describe('KeyValueStore', () => {
     expect(ensureConnected).toHaveBeenCalledTimes(1)
   })
 
+  it('should set and get with metadata correctly', async () => {
+    await keyValueStore.set('key6', 'meta')
+    const { value, timestamp } = await keyValueStore.get('key6', { metadata: true })
+    expect(value).toBe('meta')
+    expect(timestamp).toBeGreaterThan(0)
+  })
+
+  it('should return null for non existing keys with metadata', async () => {
+    expect(await keyValueStore.get('nonkey', { metadata: true })).toBeUndefined()
+  })
+
+  it('should get all with metadata', async () => {
+    await keyValueStore.setMultiple(['key7', 'key8'], ['hello', 'world'])
+
+    const entries = await keyValueStore.all({ metadata: true })
+    let entry = entries['key7']
+    expect(entry.value).toBe('hello')
+    expect(entry.timestamp).toBeGreaterThan(0)
+
+    entry = entries['key8']
+    expect(entry.value).toBe('world')
+    expect(entry.timestamp).toBeGreaterThan(0)
+  })
+
   it('should remove values correctly', async () => {
     await keyValueStore.remove('key3')
     expect(await keyValueStore.get('key3')).toBeUndefined()
