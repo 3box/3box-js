@@ -7,6 +7,7 @@ class ModeratorAccessController {
   constructor (ipfs, options) {
     // Allowed to add other mods or members
     this._write = []
+    this._rootMod =  options.rootMod || "*"
   }
 
   static get type () { return type }
@@ -25,16 +26,17 @@ class ModeratorAccessController {
   }
 
   async load (address) {
-    
+
   }
 
 
   async save () {
+    // self reference store it is used on, doesn't need to be unique
     return { address: 'moderator-access' }
   }
 
   static async create (orbitdb, options = {}) {
-    return new ModeratorAccessController()
+    return new ModeratorAccessController(options)
   }
 }
 

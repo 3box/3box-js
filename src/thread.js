@@ -39,16 +39,6 @@ class Thread {
     return this._db.access.grant('mod', id)
   }
 
-  /**
-   * List moderators
-   *
-   * @return    {Array<String>}      Array of moderator DIDs
-   */
-  async listMods () {
-    this._requireLoad()
-    return this._db.access.capabilities['mod']
-  }
-
 
   /**
    * List moderators
@@ -155,7 +145,7 @@ class Thread {
       identity,
       accessController: {
         type: 'thread-access',
-        address: odbAddress,
+        address: this._name,
         members: this.membersOnly
       }
     })

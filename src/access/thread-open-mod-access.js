@@ -16,6 +16,7 @@ class ThreadAccessController {
     this._options = options || {}
     this._ipfs = ipfs
     this._members = options.members
+    this._rootMod = options.rootMod
   }
 
   // Returns the type of the access controller
@@ -82,17 +83,19 @@ class ThreadAccessController {
 
   async load (address) {
     if (this._db) { await this._db.close() }
-    // Force '<address>/_access' naming for the database
-    // TODO should memeber and non member threads create different acess controllers
-    // or how to deal with threads with same name with member and non member (different names?
-    //  address of this access controler probably should just change, then different thread name
-    this._db = await this._orbitdb.feed(ensureAddress(address), {
-      // Use moderator access controller
+    // could also prefix with /access or type of access controller,
+    if (this._rootMod) address += '/mod_' + this._rootMod
+    if (this._members) address += '/members'
+
+    this._db = await this._orbitdb.feed(address, {
       accessController: {
         type: 'moderator-access',
+        rootMod: this._rootMod || '*'
       },
       sync: true
     })
+
+    console.log(this._db.address.toString())
 
     //TODO Move somehwere else. but try to add id opening, in case they are first to open this thread
     await this._db.add(this._db.identity.id)
