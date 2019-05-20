@@ -93,7 +93,10 @@ describe('Space', () => {
       await space.public.set('k3', 'v3')
       expect(await space.public.get('k1')).toEqual('v1')
       expect(await space.public.get('k2')).toEqual('v2')
-      expect(await space.public.get('k3')).toEqual('v3')
+      const entry = await space.public.get('k3', { metadata: true })
+      expect(entry.value).toEqual('v3')
+      expect(entry.timestamp).toBeGreaterThan(0)
+
       await space.public.remove('k2')
       expect(await space.public.get('k2')).toBeUndefined()
     })
@@ -120,11 +123,20 @@ describe('Space', () => {
     })
 
     it('all should return all values from public store', async () => {
-      expect(await space.public.all()).toEqual({
+      const expected = {
         k1: 'v1',
         k3: 'v3',
         k4: 'v4',
         k5: 'v5',
+      }
+
+      expect(await space.public.all()).toEqual(expected)
+
+      const result = await space.public.all({ metadata: true })
+
+      Object.entries(expected).map(([k,v]) => {
+        expect(result[k].value).toEqual(v)
+        expect(result[k].timestamp).toBeGreaterThan(0)
       })
     })
 
@@ -141,7 +153,10 @@ describe('Space', () => {
       await space.private.set('k3', 'sv3')
       expect(await space.private.get('k1')).toEqual('sv1')
       expect(await space.private.get('k2')).toEqual('sv2')
-      expect(await space.private.get('k3')).toEqual('sv3')
+      const entry = await space.private.get('k3', { metadata: true })
+      expect(entry.value).toEqual('sv3')
+      expect(entry.timestamp).toBeGreaterThan(0)
+
       await space.private.remove('k2')
       expect(await space.private.get('k2')).toEqual(null)
     })
@@ -168,11 +183,19 @@ describe('Space', () => {
     })
 
     it('all should return all values from private store', async () => {
-      expect(await space.private.all()).toEqual({
+      const expected = {
         k1: 'sv1',
         k3: 'sv3',
         k4: 'sv4',
         k5: 'sv5'
+      }
+
+      expect(await space.private.all()).toEqual(expected)
+
+      const result = await space.private.all({ metadata: true })
+      Object.entries(expected).map(([k,v]) => {
+        expect(result[k].value).toEqual(v)
+        expect(result[k].timestamp).toBeGreaterThan(0)
       })
     })
 

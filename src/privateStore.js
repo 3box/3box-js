@@ -10,9 +10,20 @@ class PrivateStore extends KeyValueStore {
     this._salt = this.keyring.getDBSalt()
   }
 
-  async get (key) {
-    const encryptedEntry = await super.get(this._genDbKey(key))
-    return encryptedEntry ? this._decryptEntry(encryptedEntry) : null
+  async get (key, opts = {}) {
+    const entry = await super.get(this._genDbKey(key), opts)
+    if (!entry) {
+      return null
+    }
+
+    if (opts.metadata) {
+      return {
+        ...entry,
+        value: this._decryptEntry(entry.value)
+      }
+    }
+
+    return this._decryptEntry(entry)
   }
 
   async getMetadata (key) {
