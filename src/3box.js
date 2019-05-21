@@ -15,6 +15,9 @@ const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
 
+const ACCOUNT_TYPES = {
+  ethereum: 'ethereum'
+}
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
@@ -368,6 +371,7 @@ class Box {
       try {
         opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
+        if (!this.isAccountLinked()) this.linkAccount()
       } catch (e) {
         delete this.spaces[name]
         if (e.message.includes('User denied message signature.')) {
@@ -408,6 +412,28 @@ class Box {
       }
     }
     return true
+  }
+
+  /**
+   * Creates a proof that links an external account to the 3Box account of the user.
+   *
+   * @param     {String}        type        The type of link (default 'ethereum')
+   */
+  async linkAccount (type = ACCOUNT_TYPES.ethereum) {
+    if (type === ACCOUNT_TYPES.ethereum) {
+      await this._linkProfile()
+    }
+  }
+
+  /**
+   * Checks if there is a proof that links an external account to the 3Box account of the user.
+   *
+   * @param     {String}        type        The type of link (default ethereum)
+   */
+  async isAccountLinked (type = ACCOUNT_TYPES.ethereum) {
+    if (type === ACCOUNT_TYPES.ethereum) {
+      return Boolean(await this.public.get('ethereum_proof'))
+    }
   }
 
   async _linkProfile () {
