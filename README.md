@@ -240,6 +240,8 @@ idUtils.verifyClaim(claim)
         * [.spaces](#Box+spaces)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
         * [.onSyncDone(syncDone)](#Box+onSyncDone)
+        * [.linkAccount(type)](#Box+linkAccount)
+        * [.isAccountLinked(type)](#Box+isAccountLinked)
         * [.logout()](#Box+logout)
     * _static_
         * [.idUtils](#Box.idUtils)
@@ -326,6 +328,28 @@ Sets the callback function that will be called once when the db is fully synced.
 | Param | Type | Description |
 | --- | --- | --- |
 | syncDone | <code>function</code> | The function that will be called |
+
+<a name="Box+linkAccount"></a>
+
+#### box.linkAccount(type)
+Creates a proof that links an external account to the 3Box account of the user.
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| type | <code>String</code> | The type of link (default 'ethereum') |
+
+<a name="Box+isAccountLinked"></a>
+
+#### box.isAccountLinked(type)
+Checks if there is a proof that links an external account to the 3Box account of the user.
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| type | <code>String</code> | The type of link (default ethereum) |
 
 <a name="Box+logout"></a>
 
