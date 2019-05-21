@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.8.2 - 2019-05-21
+* Fix: Link profile when opening space and haven't used public store
+* Feat: Add the ability to manually check and add account linking
+
 ## v1.8.1 - 2019-05-16
 * Fix: Resolved issue with `getVerifiedAccounts` returning an empty objec
 

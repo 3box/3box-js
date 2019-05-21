@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
-    "test": "rm -rf ./tmp ; jest --detectOpenHandles --coverage --runInBand --testURL=\"http://localhost\"",
+    "test": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
     "build:es5": "rm -rf ./lib; ./node_modules/.bin/babel src --out-dir lib --ignore=src/__tests__/,src/__mocks__/",
     "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",
     "build:dist:dev": "./node_modules/.bin/webpack --config webpack.dev.config.js --mode=development",
@@ -74,7 +74,7 @@
     "ganache-cli": "^6.1.0",
     "ipfsd-ctl": "^0.40.1",
     "jest": "^23.6.0",
-    "jsdoc-to-markdown": "^4.0.1",
+    "jsdoc-to-markdown": "^5.0.0",
     "standard": "^12.0.1",
     "webpack": "^4.20.2",
     "webpack-cli": "^3.1.2"
