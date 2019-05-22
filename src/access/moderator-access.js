@@ -2,23 +2,41 @@
 const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
 const type = '3box-moderator-access'
 
+const moderator = 'moderator'
+const member = 'member'
+
 class ModeratorAccessController {
   constructor (options) {
-    // Allowed to add other mods or members
-    this._write = []
+    this._capabilityType = {}
+    this._capabilityType[moderator] = moderator
+    this._write = []     // Allowed to add other mods or members
     this._rootMod =  options.rootMod || "*"
     this._write.push(this._rootMod)
+    this._members = options.members
+    if (this._members) this._capabilityType[member] = member
   }
 
   static get type () { return type }
 
+  isMod(id) {
+    this._write.includes(id)
+  }
+
+  isValidCapability (capability) {
+    Object.entries(this._capabilityType).map(e => e[1]).includes(capability)
+  }
+
   async canAppend (entry, identityProvider) {
     const entryID = entry.identity.id
-    const isMod = this._write.includes(entryID)
+    const capability = entry.payload.value.capability
+    const isMod = this.isMod(entryID)
+    const noMods = this._write.includes('*')
+    const validCapability = isValidCapability(capability)
 
-    if (this._write.includes('*') || isMod ) {
-      const capability = entry.payload.value.capability
-      if (capability === 'mod') this._write.push(modAddId)
+    // TODO need to still validate sigs with identity provider, extend from other, or implement here
+
+    if ((noMods || isMod) && validCapability) {
+      if (capability === this._capabilityType.moderator) this._write.push(modAddId)
       return true
     }
 
@@ -32,7 +50,9 @@ class ModeratorAccessController {
   }
 
   async save () {
-    return { address: `${type}/${this._rootMod}` }
+    let address = `${type}/${this._rootMod}`
+    address += this._members ? '/members' : ''
+    return { address }
   }
 
   static async create (orbitdb, options = {}) {
