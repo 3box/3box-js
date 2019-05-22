@@ -1,6 +1,6 @@
 // 'use strict'
 const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
-const type = 'moderator-access'
+const type = '3box-moderator-access'
 
 class ModeratorAccessController {
   constructor (options) {
@@ -25,11 +25,14 @@ class ModeratorAccessController {
     return false
   }
 
-  async load (address) { }
+  async load (address) {
+    const roodMod = address.split('/').pop()
+    if (rootMod === this._rootMod) return
+    throw new Error('ModeratorAccessController: load error, rootMod does not match')
+  }
 
   async save () {
-    // self reference store it is used on, doesn't need to be unique
-    return { address: 'moderator-access' }
+    return { address: `${type}/${this._rootMod}` }
   }
 
   static async create (orbitdb, options = {}) {
