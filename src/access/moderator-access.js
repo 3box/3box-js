@@ -1,13 +1,13 @@
 // 'use strict'
-const { io } = require('orbit-db-access-controllers/src/utils')
 const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
 const type = 'moderator-access'
 
 class ModeratorAccessController {
-  constructor (ipfs, options) {
+  constructor (options) {
     // Allowed to add other mods or members
     this._write = []
     this._rootMod =  options.rootMod || "*"
+    this._write.push(this._rootMod)
   }
 
   static get type () { return type }
@@ -16,7 +16,7 @@ class ModeratorAccessController {
     const entryID = entry.identity.id
     const isMod = this._write.includes(entryID)
 
-    if (this._write.length === 0 || isMod ) {
+    if (this._write.includes('*') || isMod ) {
       const capability = entry.payload.value.capability
       if (capability === 'mod') this._write.push(modAddId)
       return true
@@ -25,10 +25,7 @@ class ModeratorAccessController {
     return false
   }
 
-  async load (address) {
-
-  }
-
+  async load (address) { }
 
   async save () {
     // self reference store it is used on, doesn't need to be unique
