@@ -1,6 +1,6 @@
 // 'use strict'
 const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
-const type = '3box-moderator-access'
+const type = 'moderator-access'
 
 const moderator = 'moderator'
 const member = 'member'
@@ -44,13 +44,16 @@ class ModeratorAccessController {
   }
 
   async load (address) {
-    const roodMod = address.split('/').pop()
-    if (rootMod === this._rootMod) return
-    throw new Error('ModeratorAccessController: load error, rootMod does not match')
+    const addList = address.split('/')
+    const suffix = addList.pop()
+    this._members = suffix === 'members'
+    const mod = suffix.includes('mod') ? suffix : addList.pop()
+    this._rootMod = mod.split('_')[1]
   }
 
   async save () {
-    let address = `${type}/${this._rootMod}`
+    // TODO if entire obj saved in manfest, can just pass our own fields
+    let address = `${type}/mod_${this._rootMod}`
     address += this._members ? '/members' : ''
     return { address }
   }

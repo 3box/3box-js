@@ -1,6 +1,5 @@
 'use strict'
 
-const pMapSeries = require('p-map-series')
 const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
 const ensureAddress = require('orbit-db-access-controllers/src/utils/ensure-ac-address')
 const entryIPFS = require('ipfs-log/src/entry')
@@ -17,6 +16,7 @@ class ThreadAccessController {
     this._ipfs = ipfs
     this._members = options.members
     this._rootMod = options.rootMod
+    this._threadName = options.threadName
   }
 
   // Returns the type of the access controller
@@ -31,6 +31,8 @@ class ThreadAccessController {
     const op = entry.payload.op
     const mods = this.capabilities['mod']
     const member = this.capabilities['member']
+
+    // TODO still need to verify sig with identity provider
 
     if (op === 'ADD') {
       // Anyone can add entry if open thread
@@ -83,27 +85,22 @@ class ThreadAccessController {
 
   async load (address) {
     if (this._db) { await this._db.close() }
-    // could also prefix with /access or type of access controller,
-    if (this._rootMod) address += '/mod_' + this._rootMod
-    if (this._members) address += '/members'
 
-    this._db = await this._orbitdb.feed(address, {
+    this._db = await this._orbitdb.feed(ensureAddress(address), {
       accessController: {
         type: 'moderator-access',
-        rootMod: this._rootMod || '*'
+        rootMod: this._rootMod || '*',
+        members: this._members
       },
       sync: true
     })
 
     console.log(this._db.address.toString())
 
-    //TODO Move somehwere else. but try to add id opening, in case they are first to open this thread
-    await this._db.add(this._db.identity.id)
-
     this._db.events.on('ready', this._onUpdate.bind(this))
     this._db.events.on('write', this._onUpdate.bind(this))
     this._db.events.on('replicated', this._onUpdate.bind(this))
-
+    // TODO Update as possible
     await this._db.load()
   }
 
@@ -115,8 +112,8 @@ class ThreadAccessController {
   }
 
   async grant (capability, id) {
-    // TODO limit capabilities
     // TODO  sanitize key
+    // handle error if can't grant?
     await this._db.add({capability, id})
   }
 
@@ -129,8 +126,10 @@ class ThreadAccessController {
   /* Factory */
   static async create (orbitdb, options = {}) {
     const ac = new ThreadAccessController(orbitdb, orbitdb._ipfs, options)
+    console.log(options)
     // Thread address here
-    await ac.load(options.address || 'thread-access-controller')
+    // console.log(options.address)
+    await ac.load(options.threadName)
     return ac
   }
 }
