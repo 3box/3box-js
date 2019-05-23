@@ -2,7 +2,7 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (orbitdb, name, threeId, membersOnly, subscribe, ensureConnected) {
+  constructor (orbitdb, name, threeId, membersOnly, rootMod, subscribe, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
     this._3id = threeId
@@ -10,6 +10,7 @@ class Thread {
     this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
     this._membersOnly = membersOnly
+    this._rootMod = rootMod || this._3id.getDid()
   }
 
   /**
@@ -145,8 +146,9 @@ class Thread {
       identity,
       accessController: {
         type: 'thread-access',
-        address: this._name,
-        members: this.membersOnly
+        threadName: this._name,
+        members: this.membersOnly,
+        rootMod: this.rootMod
       }
     })
     await this._db.load()

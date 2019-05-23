@@ -28,18 +28,19 @@ class ThreadAccessController {
   }
 
   async canAppend (entry, identityProvider) {
+    const trueIfValidSig = () => identityProvider.verifyIdentity(entry.identity)
+
     const op = entry.payload.op
     const mods = this.capabilities['mod']
-    const member = this.capabilities['member']
-
-    // TODO still need to verify sig with identity provider
+    const members = this.capabilities['member']
+    const isMod = members.includes(entry.identity.id)
+    const isMember = members.includes(entry.identity.id)
 
     if (op === 'ADD') {
       // Anyone can add entry if open thread
-      if (!this._members) { return true }
+      if (!this._members) return trueIfValidSig()
       // Not open thread, any member or mod can add to thread
-      if (members.includes(entry.identity.id)) { return true }
-      if (mods.includes(entry.identity.id)) { return true }
+      if (isMember || isMod) return trueIfValidSig()
     }
 
     if (op === 'DEL') {
@@ -47,13 +48,13 @@ class ThreadAccessController {
       const delEntry = await entryIPFS.fromMultihash(this._ipfs, hash)
 
       // An id can delete their own entries
-      if (delEntry.identity.id === entry.identity.id) { return true }
+      if (delEntry.identity.id === entry.identity.id) return trueIfValidSig()
 
       // Mods can't delete other mods entries
-      if (mods.includes(delEntry.identity.id)) { return false }
+      if (mods.includes(delEntry.identity.id)) return false
 
       // Mods can delete any other entries
-      if (mods.includes(entry.identity.id)) { return true }
+      if (isMod) return trueIfValidSig()
     }
 
     return false
