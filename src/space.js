@@ -56,7 +56,8 @@ class Space {
    *
    * @param     {String}    name                    The name of the thread
    * @param     {Object}    opts                    Optional parameters
-   * @param     {Object}    opts.membersOnly        join a members only thread, which only members can post in
+   * @param     {Boolean}   opts.membersOnly        join a members only thread, which only members can post in
+   * @param     {String}    opts.rootMod            the rootMod, known as first moderator of a thread, by default user is moderator
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    *
    * @return    {Thread}                            An instance of the thread class for the joined thread
@@ -65,7 +66,7 @@ class Space {
     console.warn('WARNING: Threads are still experimental, we recommend not relying on this feature for produciton yet.')
     if (this._activeThreads[name]) return this._activeThreads[name]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.membersOnly, subscribeFn, this._ensureConnected)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.membersOnly, opts.rootMod, subscribeFn, this._ensureConnected)
     await thread._load()
     this._activeThreads[name] = thread
     return thread

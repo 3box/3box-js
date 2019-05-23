@@ -32,10 +32,9 @@ class ModeratorAccessController {
     const isMod = this.isMod(entryID)
     const noMods = this._write.includes('*')
     const validCapability = isValidCapability(capability)
+    const validSig = () => identityProvider.verifyIdentity(entry.identity)
 
-    // TODO need to still validate sigs with identity provider, extend from other, or implement here
-
-    if ((noMods || isMod) && validCapability) {
+    if ((noMods || isMod) && validCapability && validSig()) {
       if (capability === this._capabilityType.moderator) this._write.push(modAddId)
       return true
     }
