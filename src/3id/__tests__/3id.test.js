@@ -57,7 +57,7 @@ describe('3id', () => {
       const opts = { consentCallback: jest.fn() }
       threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
-      expect(threeId.DID).toEqual('did:3:zdpuAxuVPag9YV4uczGyTQ18XBfJFSkqZACpPsPbyr8gSbb41')
+      expect(threeId.DID).toMatchSnapshot()
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
       expect(await resolve(threeId.DID)).toMatchSnapshot()
@@ -105,7 +105,7 @@ describe('3id', () => {
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(1)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_1)
       let subDid = threeId.getSubDID(SPACE_1)
-      expect(subDid).toEqual('did:3:zdpuApwYjfMKPCR7XFtRjxfkTZnizPDdCxoQTq9xjgxn9M2kD')
+      expect(subDid).toMatchSnapshot()
       expect(await resolve(subDid)).toMatchSnapshot()
 
       requiredConsent = await threeId.initKeyringByName(SPACE_2)
@@ -113,7 +113,7 @@ describe('3id', () => {
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(2)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_2)
       subDid = threeId.getSubDID(SPACE_2)
-      expect(subDid).toEqual('did:3:zdpuB1n1ocxdnSBjNabeUiLFBJMLPzjfoZCMj2FRUhot4j28w')
+      expect(subDid).toMatchSnapshot()
       expect(await resolve(subDid)).toMatchSnapshot()
 
       requiredConsent = await threeId.initKeyringByName(SPACE_2)

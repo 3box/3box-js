@@ -7,6 +7,9 @@ class KeyValueStore {
   constructor (orbitdb, name, ensureConnected, threeId) {
     this._orbitdb = orbitdb
     this._name = name
+    if (this._name.startsWith('3box.space.')) {
+      this._space = this._name.split('.')[2]
+    }
     this._ensureConnected = ensureConnected
     this._3id = threeId
   }
@@ -141,12 +144,19 @@ class KeyValueStore {
   }
 
   async _load (odbAddress) {
-    const dbKey = this._3id.getKeyringBySpaceName(this._name).getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
-    this._db = await this._orbitdb.keyvalue(odbAddress || this._name, {
-      key,
-      write: [key.getPublic('hex')]
-    })
+    const key = this._3id.getKeyringBySpaceName(this._name).getPublicKeys(true).signingKey
+    const opts = {
+      format: 'dag-pb',
+      accessController: {
+        write: [key],
+        type: 'legacy-ipfs-3box',
+        skipManifest: true
+      }
+    }
+    if (this._space) {
+      opts.identity = await this._3id.getOdbId(this._space)
+    }
+    this._db = await this._orbitdb.keyvalue(odbAddress || this._name, opts)
     await this._db.load()
     return this._db.address.toString()
   }
@@ -162,7 +172,7 @@ class KeyValueStore {
 
   async all () {
     this._requireLoad()
-    const entries = await this._db.all()
+    const entries = this._db.all
     let allSimple = {}
     Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
     return allSimple

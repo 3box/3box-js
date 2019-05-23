@@ -65,10 +65,10 @@ class Keyring {
     return sha256(this.signingKey.derivePath('0').privateKey.slice(2))
   }
 
-  getPublicKeys () {
+  getPublicKeys (uncompressed) {
     return {
-      signingKey: this.signingKey.publicKey.slice(2),
-      ethereumKey: this.ethereumKey.publicKey.slice(2),
+      signingKey: (uncompressed ? this.signingKey.keyPair.publicKey : this.signingKey.publicKey).slice(2),
+      ethereumKey: (uncompressed ? this.ethereumKey.keyPair.publicKey : this.ethereumKey.publicKey).slice(2),
       asymEncryptionKey: nacl.util.encodeBase64(this.asymEncryptionKey.publicKey)
     }
   }

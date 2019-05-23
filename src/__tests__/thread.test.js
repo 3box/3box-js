@@ -28,7 +28,7 @@ const THREEID2_MOCK = {
 const ensureConnected = jest.fn()
 const subscribeMock = jest.fn()
 
-describe('Thread', () => {
+describe.skip('Thread', () => {
   let ipfs
   let orbitdb
   let thread

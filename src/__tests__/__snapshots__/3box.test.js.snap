@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`3Box should handle a second address/account correctly 1`] = `"/orbitdb/QmUhJvnFShu3mEiKNbHFs2hk13eWtY9K8RGiLdtacqBgD6/ab8c73d8f.root"`;
+
+exports[`3Box should handle a second address/account correctly 2`] = `"/orbitdb/QmUhJvnFShu3mEiKNbHFs2hk13eWtY9K8RGiLdtacqBgD6/ab8c73d8f.root"`;
+
+exports[`3Box should handle error and not link profile on first call to _linkProfile 1`] = `"did:3:asdfasdf"`;
+
+exports[`3Box should openBox correctly 1`] = `"/orbitdb/QmSyGQBefvwYG9Zb9Pro1ckvboWnTmHT2teVrfMerzoSKZ/b932fe7ab.root"`;
+
+exports[`3Box should openBox correctly 2`] = `"/orbitdb/QmSyGQBefvwYG9Zb9Pro1ckvboWnTmHT2teVrfMerzoSKZ/b932fe7ab.root"`;
+
+exports[`3Box should sync db updates to/from remote pinning server 1`] = `"/orbitdb/QmSyGQBefvwYG9Zb9Pro1ckvboWnTmHT2teVrfMerzoSKZ/b932fe7ab.root"`;
