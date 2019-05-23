@@ -13,9 +13,9 @@ jobs:
             - dependencies-cache-{{ checksum "package.json" }}
 
       - run:
-          name: install-serverless-and dependencies
+          name: install dependencies
           command: |
-            sudo npm i -g  codecov node-gyp
+            sudo npm i -g codecov node-gyp
             npm i
 
       - run:
