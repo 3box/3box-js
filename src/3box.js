@@ -4,6 +4,9 @@ const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
+const AccessControllers = require('orbit-db-access-controllers')
+const LegacyIPFS3BoxAccessController = require('./access/legacyIpfs3Box')
+AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 
 const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
@@ -82,14 +85,20 @@ class Box {
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
     // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
+    this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
+      directory: opts.orbitPath,
+      identity: await this._3id.getOdbId()
+    }) // , { cache })
     globalOrbitDB = this._orbitdb
 
-    const dbKey = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
+    const key = this._3id.getKeyringBySpaceName(rootStoreName).getPublicKeys(true).signingKey
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
-      key,
-      write: [key.getPublic('hex')]
+      format: 'dag-pb',
+      accessController: {
+        write: [key],
+        type: 'legacy-ipfs-3box',
+        skipManifest: true
+      }
     })
     const rootStoreAddress = this._rootStore.address.toString()
 

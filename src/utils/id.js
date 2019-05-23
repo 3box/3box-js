@@ -5,6 +5,7 @@
  * @memberof Box
  */
 const didJWT = require('did-jwt')
+const base64url = require('base64url')
 const DID_MUPORT_PREFIX = 'did:muport:'
 
 module.exports = {
@@ -45,5 +46,7 @@ module.exports = {
    * @param  {string}             opts.audience   The DID of the JWT's audience
    * @return {Object}                             The validated claim
    */
-  verifyClaim: didJWT.verifyJWT
+  verifyClaim: didJWT.verifyJWT,
+
+  encodeSection: data => base64url.encode(JSON.stringify(data))
 }
