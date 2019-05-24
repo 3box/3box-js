@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.8.3 - 2019-05-24
+* Fix: functions in the api module now work without an opts object being passed
+
 ## v1.8.2 - 2019-05-21
 * Fix: Link profile when opening space and haven't used public store
 * Feat: Add the ability to manually check and add account linking
