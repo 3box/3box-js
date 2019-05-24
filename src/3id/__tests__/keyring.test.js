@@ -10,18 +10,6 @@ describe('Keyring', () => {
   let keyring2
   let keyring3
   const seed = HDNode.mnemonicToSeed('clay rubber drama brush salute cream nerve wear stuff sentence trade conduct')
-  const publicKeys1 = {
-    signingKey: '028aaa695fa16f2a2279e1de718d80e00f4f4ddf30fe8674bbdb9e1f11778c2f77',
-    ethereumKey: '027422e4f0321f010fd6b763bac41db22dcbf3717c7a9762bd7d2b9ce302152060',
-    asymEncryptionKey: 'wW1wkjQ7kaZiBvk4bhukQ15Idx6d31XKFpq/jeup5nc='
-  }
-  const signedData = {
-    r: 'b1f9c552e21b40fe95c5d3074a4ef3948a092a77fc814781bf8ae3a263499e0a',
-    s: 'a57bdeb64a1490c3e8877d2d6e0c0450a87b765d8bf6f541b65bbf3aac1926f2',
-    recoveryParam: 1
-  }
-  //const keyring2 = new Keyring()
-  //const keyring3 = new Keyring()
 
   it('throws error if no seed', async () => {
     expect(() => new Keyring()).toThrow()
@@ -36,7 +24,8 @@ describe('Keyring', () => {
   it('derives correct keys from seed', async () => {
     keyring1 = new Keyring(seed)
 
-    expect(keyring1.getPublicKeys()).toEqual(publicKeys1)
+    expect(keyring1.getPublicKeys()).toMatchSnapshot()
+    expect(keyring1.getPublicKeys(true)).toMatchSnapshot()
     expect(keyring1.serialize()).toEqual(seed)
   })
 
@@ -46,7 +35,7 @@ describe('Keyring', () => {
   })
 
   it('signs data correctly', async () => {
-    expect((await keyring1.getJWTSigner()('asdf'))).toEqual(signedData)
+    expect((await keyring1.getJWTSigner()('asdf'))).toMatchSnapshot()
   })
 
   it('encrypts and decrypts correctly', () => {

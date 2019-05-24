@@ -3,6 +3,8 @@ const nacl = require('tweetnacl')
 nacl.util = require('tweetnacl-util')
 const SimpleSigner = require('did-jwt').SimpleSigner
 const { sha256 } = require('../utils/index')
+const EC = require('elliptic').ec
+const ec = new EC('secp256k1')
 
 const BASE_PATH = "m/7696500'/0'/0'"
 const MM_PATH = "m/44'/60'/0'/0"
@@ -66,9 +68,15 @@ class Keyring {
   }
 
   getPublicKeys (uncompressed) {
+    let signingKey = this.signingKey.publicKey.slice(2)
+    let ethereumKey = this.ethereumKey.publicKey.slice(2)
+    if (uncompressed) {
+      signingKey = ec.keyFromPublic(Buffer.from(signingKey, 'hex')).getPublic(false, 'hex')
+      ethereumKey = ec.keyFromPublic(Buffer.from(ethereumKey, 'hex')).getPublic(false, 'hex')
+    }
     return {
-      signingKey: (uncompressed ? this.signingKey.keyPair.publicKey : this.signingKey.publicKey).slice(2),
-      ethereumKey: (uncompressed ? this.ethereumKey.keyPair.publicKey : this.ethereumKey.publicKey).slice(2),
+      signingKey,
+      ethereumKey,
       asymEncryptionKey: nacl.util.encodeBase64(this.asymEncryptionKey.publicKey)
     }
   }
