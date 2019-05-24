@@ -61,7 +61,7 @@ class Space {
    * @return    {Thread}                            An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
-    console.warn('WARNING: Threads are still experimental, we recommend not relying on this feature for produciton yet.')
+    console.warn('WARNING: Threads are still experimental, we recommend not relying on this feature for production yet.')
     if (this._activeThreads[name]) return this._activeThreads[name]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
     const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, subscribeFn, this._ensureConnected)
@@ -116,7 +116,7 @@ module.exports = Space
 const publicStoreReducer = (store) => {
   const PREFIX = 'pub_'
   return {
-    get: async key => store.get(PREFIX + key),
+    get: async (key, opts = {}) => store.get(PREFIX + key, opts),
     getMetadata: async key => store.getMetadata(PREFIX + key),
     set: async (key, value) => {
       throwIfUndefined(key, 'key')
@@ -140,8 +140,8 @@ const publicStoreReducer = (store) => {
         return newLog
       }, [])
     },
-    all: async () => {
-      const entries = await store.all()
+    all: async (opts) => {
+      const entries = await store.all(opts)
       return Object.keys(entries).reduce((newAll, key) => {
         if (key.startsWith(PREFIX)) {
           newAll[key.slice(4)] = entries[key]
@@ -169,9 +169,21 @@ const privateStoreReducer = (store, keyring) => {
     return JSON.parse(unpad(keyring.symDecrypt(ciphertext, nonce)))
   }
   return {
-    get: async key => {
-      const entry = await store.get(dbKey(key))
-      return entry ? decryptEntry(entry).value : null
+    get: async (key, opts = {}) => {
+      const entry = await store.get(dbKey(key), opts)
+
+      if (!entry) {
+        return null
+      }
+
+      if (opts.metadata) {
+        return {
+          ...entry,
+          value: decryptEntry(entry.value).value
+        }
+      }
+
+      return decryptEntry(entry).value
     },
     getMetadata: async key => store.getMetadata(dbKey(key)),
     set: async (key, value) => store.set(dbKey(key), encryptEntry({ key, value })),
@@ -193,12 +205,22 @@ const privateStoreReducer = (store, keyring) => {
         return newLog
       }, [])
     },
-    all: async () => {
-      const entries = await store.all()
+    all: async (opts = {}) => {
+      const entries = await store.all(opts)
       return Object.keys(entries).reduce((newAll, key) => {
         if (key.startsWith(PREFIX)) {
-          const decEntry = decryptEntry(entries[key])
-          newAll[decEntry.key] = decEntry.value
+          const entry = entries[key]
+
+          if (opts.metadata) {
+            const decEntry = decryptEntry(entry.value)
+            newAll[decEntry.key] = {
+              ...entry,
+              value: decEntry.value
+            }
+          } else {
+            const decEntry = decryptEntry(entry)
+            newAll[decEntry.key] = decEntry.value
+          }
         }
         return newAll
       }, {})

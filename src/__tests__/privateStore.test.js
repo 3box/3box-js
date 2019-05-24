@@ -114,6 +114,20 @@ describe('PrivateStore', () => {
     expect(value).toEqual('ma')
   })
 
+  it('should get value with metadata correctly', async () => {
+    await privateStore.set('key6', 'meta')
+    const response = await privateStore.get('key6', { metadata: true })
+
+    expect(response.value).toEqual('meta')
+    expect(response.timestamp).toBeGreaterThan(0)
+  })
+
+  it('should get null when key does not exist', async () => {
+    const response = await privateStore.get('nonexisting', { metadata: true })
+
+    expect(response).toBeNull()
+  })
+
   it('should remove values correctly', async () => {
     await privateStore.remove('key3')
     expect(await privateStore.get('key3')).toBeNull()
