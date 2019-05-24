@@ -5,12 +5,13 @@ class Thread {
   constructor (orbitdb, name, threeId, membersOnly, rootMod, subscribe, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
+    this._spaceName = name.split('.')[2]
     this._3id = threeId
     this._subscribe = subscribe
     this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
     this._membersOnly = membersOnly
-    this._rootMod = rootMod || this._3id.getDid()
+    this._rootMod = rootMod
   }
 
   /**
@@ -140,15 +141,14 @@ class Thread {
   }
 
   async _load (odbAddress) {
-    // TODO - threads should use the space keyring once pairwise DIDs are implemented
-    const identity = await this._3id._mainKeyring.getIdentity()
+    const identity = await this._3id.getOdbId(this._spaceName)
     this._db = await this._orbitdb.feed(odbAddress || this._name, {
       identity,
       accessController: {
         type: 'thread-access',
         threadName: this._name,
-        members: this.membersOnly,
-        rootMod: this.rootMod
+        members: this._membersOnly,
+        rootMod: this._rootMod
       }
     })
     await this._db.load()

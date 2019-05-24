@@ -28,7 +28,7 @@ class ThreadAccessController {
   }
 
   async canAppend (entry, identityProvider) {
-    const trueIfValidSig = () => identityProvider.verifyIdentity(entry.identity)
+    const trueIfValidSig = async () => await identityProvider.verifyIdentity(entry.identity)
 
     const op = entry.payload.op
     const mods = this.capabilities['mod']
@@ -38,9 +38,9 @@ class ThreadAccessController {
 
     if (op === 'ADD') {
       // Anyone can add entry if open thread
-      if (!this._members) return trueIfValidSig()
+      if (!this._members) return await trueIfValidSig()
       // Not open thread, any member or mod can add to thread
-      if (isMember || isMod) return trueIfValidSig()
+      if (isMember || isMod) return await trueIfValidSig()
     }
 
     if (op === 'DEL') {
@@ -48,13 +48,13 @@ class ThreadAccessController {
       const delEntry = await entryIPFS.fromMultihash(this._ipfs, hash)
 
       // An id can delete their own entries
-      if (delEntry.identity.id === entry.identity.id) return trueIfValidSig()
+      if (delEntry.identity.id === entry.identity.id) return await trueIfValidSig()
 
       // Mods can't delete other mods entries
       if (mods.includes(delEntry.identity.id)) return false
 
       // Mods can delete any other entries
-      if (isMod) return trueIfValidSig()
+      if (isMod) return await trueIfValidSig()
     }
 
     return false
@@ -96,8 +96,6 @@ class ThreadAccessController {
       sync: true
     })
 
-    console.log(this._db.address.toString())
-
     this._db.events.on('ready', this._onUpdate.bind(this))
     this._db.events.on('write', this._onUpdate.bind(this))
     this._db.events.on('replicated', this._onUpdate.bind(this))
@@ -127,9 +125,6 @@ class ThreadAccessController {
   /* Factory */
   static async create (orbitdb, options = {}) {
     const ac = new ThreadAccessController(orbitdb, orbitdb._ipfs, options)
-    console.log(options)
-    // Thread address here
-    // console.log(options.address)
     await ac.load(options.threadName)
     return ac
   }

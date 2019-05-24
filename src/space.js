@@ -67,6 +67,7 @@ class Space {
     console.warn('WARNING: Threads are still experimental, we recommend not relying on this feature for production yet.')
     if (this._activeThreads[name]) return this._activeThreads[name]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
+    if (!opts.rootMod) opts.rootMod = this._3id.getSubDID(this._name)
     const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.membersOnly, opts.rootMod, subscribeFn, this._ensureConnected)
     await thread._load()
     this._activeThreads[name] = thread

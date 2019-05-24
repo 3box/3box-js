@@ -88,15 +88,7 @@ class Box {
 
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs.swarm.connect(this.pinningNode, () => {})
-
-    const keyring = this._3id.getKeyringBySpaceName(rootStoreName)
-    const identity = await keyring.getIdentity()
-    const key = keyring.getDBKey()
-    // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    // // TODO:
-    // this._orbitdb = new OrbitDB(this._ipfs, identity, {
-    //   AccessControllers: AccessControllers
-    // })
+    
     this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
       directory: opts.orbitPath,
       identity: await this._3id.getOdbId()
