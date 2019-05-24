@@ -7,7 +7,7 @@ const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 const { registerMethod } = require('did-resolver')
 const AccessControllers = require('orbit-db-access-controllers')
-const LegacyIPFS3BoxAccessController = require('../access/legacyIpfs3Box')
+const LegacyIPFS3BoxAccessController = require('../access/legacyIpfs3box')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 
 registerMethod('3', async () => {

@@ -5,7 +5,7 @@ const Pubsub = require('orbit-db-pubsub')
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
 const AccessControllers = require('orbit-db-access-controllers')
-const LegacyIPFS3BoxAccessController = require('./access/legacyIpfs3Box')
+const LegacyIPFS3BoxAccessController = require('./access/legacyIpfs3box')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 
 const ThreeId = require('./3id')
