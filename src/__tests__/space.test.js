@@ -13,7 +13,10 @@ const threeIdMock = {
       symEncrypt: data => { return { ciphertext: 'wow, such encrypted/' + data, nonce: 123 } },
       symDecrypt: data => data.split('/')[1]
     }
-  })
+  }),
+  signJWT: (payload, { space }) => {
+    return `a fake jwt for ${space}`
+  }
 }
 let rootstoreMockData = []
 const rootstoreMock = {
@@ -114,30 +117,16 @@ describe('Space', () => {
     })
 
     it('log should only return public values', async () => {
-      const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'v1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'v3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'v4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'v5' } ]
       const log1 = space.public.log
-      expect(log1).toEqual(refLog)
+      expect(log1).toMatchSnapshot()
       space._store.set('key', 'value')
       const log2 = space.public.log
       expect(log2).toEqual(log1)
     })
 
     it('all should return all values from public store', async () => {
-      const expected = {
-        k1: 'v1',
-        k3: 'v3',
-        k4: 'v4',
-        k5: 'v5',
-      }
-
-      expect(await space.public.all()).toEqual(expected)
-
-      const result = await space.public.all({ metadata: true })
-
-      Object.entries(expected).map(([k,v]) => {
-        expect(result[k].value).toEqual(v)
-        expect(result[k].timestamp).toBeGreaterThan(0)
-      })
+      expect(await space.public.all()).toMatchSnapshot()
+      expect(await space.public.all({ metadata: true })).toMatchSnapshot()
     })
 
     it('should throw if key not given', async () => {
