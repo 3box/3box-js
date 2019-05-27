@@ -5,7 +5,6 @@
  * @memberof Box
  */
 const didJWT = require('did-jwt')
-const base64url = require('base64url')
 const DID_MUPORT_PREFIX = 'did:muport:'
 
 module.exports = {
@@ -47,6 +46,4 @@ module.exports = {
    * @return {Object}                             The validated claim
    */
   verifyClaim: didJWT.verifyJWT,
-
-  encodeSection: data => base64url.encode(JSON.stringify(data))
 }

@@ -7,7 +7,7 @@ const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 const { registerMethod } = require('did-resolver')
 const AccessControllers = require('orbit-db-access-controllers')
-const LegacyIPFS3BoxAccessController = require('../access/legacyIpfs3box')
+const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 
 registerMethod('3', async () => {
@@ -31,7 +31,7 @@ jest.mock('../3id', () => {
   const did2 = 'did:muport:Qmsdsdf87g329'
   const didJWT = require('did-jwt')
   const Identities = require('orbit-db-identity-provider')
-  const OdbIdentityProvider = require('../3id/odbIdentityProvider')
+  const { OdbIdentityProvider } = require('3box-orbitdb-plugins')
   Identities.addIdentityProvider(OdbIdentityProvider)
   const serialized = 'such serialized state'
   let loggedIn = true
