@@ -179,6 +179,8 @@ class Box {
    *
    * @param     {String}    address                 An ethereum address
    * @param     {Object}    opts                    Optional parameters
+   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
+   * @param     {String}    opts.metadata           flag to retrieve metadata
    * @param     {String}    opts.addressServer      URL of the Address Server
    * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
@@ -221,8 +223,9 @@ class Box {
    * @param     {String}    address                 An ethereum address
    * @param     {String}    name                    A space name
    * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
    * @param     {String}    opts.metadata           flag to retrieve metadata
+   * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Object}                            a json object with the public space data
    */
   static async getSpace (address, name, opts = {}) {

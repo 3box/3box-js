@@ -27,7 +27,8 @@ async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
   }
 }
 
-async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metadata } = {}) {
+async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metadata, blocklist } = {}) {
+  if (blocklist && blocklist(address)) throw new Error(`user with ${address} is blocked`)
   let url = `${serverUrl}/space`
 
   try {
@@ -65,7 +66,8 @@ async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
   })
 }
 
-async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata } = {}) {
+async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata, blocklist } = {}) {
+  if (blocklist && blocklist(address)) throw new Error(`user with ${address} is blocked`)
   let url = `${serverUrl}/profile`
 
   try {
