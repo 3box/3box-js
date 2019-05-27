@@ -48,6 +48,7 @@ class Space {
       this._syncSpacePromise = syncSpace()
       this.public = publicStoreReducer(this._store)
       this.private = privateStoreReducer(this._store, this._3id.getKeyringBySpaceName(nameToSpaceName(this._name)))
+      this._ensureDIDPublished()
     }
   }
 
@@ -108,6 +109,15 @@ class Space {
       }
       return threads
     }, [])
+  }
+
+  async _ensureDIDPublished () {
+    // Ensure we self-published our did
+    if (!(await this.public.get('proof_did'))) {
+      await this._syncSpacePromise
+      // we can just sign an empty JWT as a proof that we own this DID
+      await this.public.set('proof_did', await this._3id.signJWT({}, { space: this._name }), { noLink: true })
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 import { throwIfNotEqualLenArrays } from '../utils'
 
-const generateTimestamp = () => Math.floor(new Date().getTime() / 1000)
+const generateTimestamp = () => 1558954408 // don't really need a real timestamp here.
 
 class KeyValueStore {
   constructor (orbitdb, name, ensureConnected, threeId) {
