@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.8.5 - 2019-05-30
+* Fix: Return promise in public set/remove methods of spaces
+
 ## v1.8.4 - 2019-05-30
 * Fix: Actually link profile when opening space and haven't used public store (fix bug from v1.8.2)
 
