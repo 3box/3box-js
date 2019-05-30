@@ -120,7 +120,7 @@ const publicStoreReducer = (store) => {
     getMetadata: async key => store.getMetadata(PREFIX + key),
     set: async (key, value) => {
       throwIfUndefined(key, 'key')
-      store.set(PREFIX + key, value)
+      return store.set(PREFIX + key, value)
     },
     setMultiple: async (keys, values) => {
       throwIfNotEqualLenArrays(keys, values)
@@ -129,7 +129,7 @@ const publicStoreReducer = (store) => {
     },
     remove: async key => {
       throwIfUndefined(key, 'key')
-      store.remove(PREFIX + key)
+      return store.remove(PREFIX + key)
     },
     get log () {
       return store.log.reduce((newLog, entry) => {
