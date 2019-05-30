@@ -1,5 +1,4 @@
 // 'use strict'
-const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
 const type = 'moderator-access'
 
 const moderator = 'moderator'

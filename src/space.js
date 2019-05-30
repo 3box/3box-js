@@ -64,7 +64,6 @@ class Space {
    * @return    {Thread}                            An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
-    console.warn('WARNING: Threads are still experimental, we recommend not relying on this feature for production yet.')
     if (this._activeThreads[name]) return this._activeThreads[name]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
     if (!opts.rootMod) opts.rootMod = this._3id.getSubDID(this._name)

@@ -2,14 +2,15 @@
 
 const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
 const ensureAddress = require('orbit-db-access-controllers/src/utils/ensure-ac-address')
+const EventEmitter = require('events').EventEmitter
 const entryIPFS = require('ipfs-log/src/entry')
 
 const type = 'thread-access'
 
 // TODO need extend access controller interface?
-class ThreadAccessController {
+class ThreadAccessController extends EventEmitter{
   constructor (orbitdb, ipfs, options) {
-    // super()
+    super()
     this._orbitdb = orbitdb
     this._db = null
     this._options = options || {}
@@ -99,7 +100,7 @@ class ThreadAccessController {
     this._db.events.on('ready', this._onUpdate.bind(this))
     this._db.events.on('write', this._onUpdate.bind(this))
     this._db.events.on('replicated', this._onUpdate.bind(this))
-    // TODO Update as possible
+
     await this._db.load()
   }
 
@@ -118,8 +119,7 @@ class ThreadAccessController {
 
   /* Private methods */
   _onUpdate () {
-    // this.emit('updated')
-    // TODO add back
+    this.emit('updated')
   }
 
   /* Factory */
