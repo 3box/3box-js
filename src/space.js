@@ -1,6 +1,7 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
 const { sha256Multihash, throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
+const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
 const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
@@ -111,7 +112,11 @@ class Space {
     const allEntries = await this.public.all()
     return Object.keys(allEntries).reduce((threads, key) => {
       if (key.startsWith('thread')) {
-        threads.push(allEntries[key])
+        // ignores experimental threads (v1)
+        const address = key.split('thread-')[1]
+        if (OrbitDBAddress.isValid(address)) {
+          threads.push(allEntries[key])
+        }
       }
       return threads
     }, [])

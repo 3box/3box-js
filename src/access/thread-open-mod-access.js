@@ -9,15 +9,16 @@ const type = 'thread-access'
 
 // TODO need extend access controller interface?
 class ThreadAccessController extends EventEmitter{
-  constructor (orbitdb, ipfs, options) {
+  constructor (orbitdb, ipfs, identity, rootMod, options) {
     super()
     this._orbitdb = orbitdb
     this._db = null
     this._options = options || {}
     this._ipfs = ipfs
-    this._members = options.members
-    this._rootMod = options.rootMod
+    this._members = !!options.members
+    this._rootMod = rootMod
     this._threadName = options.threadName
+    this._identity = identity
   }
 
   // Returns the type of the access controller
@@ -89,9 +90,10 @@ class ThreadAccessController extends EventEmitter{
     if (this._db) { await this._db.close() }
 
     this._db = await this._orbitdb.feed(ensureAddress(address), {
+      identity: this._identity,
       accessController: {
         type: 'moderator-access',
-        rootMod: this._rootMod || '*',
+        rootMod: this._rootMod,
         members: this._members
       },
       sync: true
@@ -117,14 +119,14 @@ class ThreadAccessController extends EventEmitter{
     await this._db.add({capability, id})
   }
 
-  /* Private methods */
   _onUpdate () {
     this.emit('updated')
   }
 
   /* Factory */
   static async create (orbitdb, options = {}) {
-    const ac = new ThreadAccessController(orbitdb, orbitdb._ipfs, options)
+    if (!options.rootMod) throw new Error('Thread AC: rootMod required')
+    const ac = new ThreadAccessController(orbitdb, orbitdb._ipfs, options.identity, options.rootMod, options)
     await ac.load(options.threadName)
     return ac
   }

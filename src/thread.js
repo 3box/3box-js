@@ -38,7 +38,7 @@ class Thread {
    */
   async addMod (id) {
     this._requireLoad()
-    return this._db.access.grant('mod', id)
+    return this._db.access.grant('moderator', id)
   }
 
 
@@ -148,7 +148,8 @@ class Thread {
         type: 'thread-access',
         threadName: this._name,
         members: this._membersOnly,
-        rootMod: this._rootMod
+        rootMod: this._rootMod,
+        identity
       }
     })
     await this._db.load()

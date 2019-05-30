@@ -5,36 +5,35 @@ const moderator = 'moderator'
 const member = 'member'
 
 class ModeratorAccessController {
-  constructor (options) {
+  constructor (rootMod, options) {
     this._capabilityType = {}
     this._capabilityType[moderator] = moderator
     this._write = []     // Allowed to add other mods or members
-    this._rootMod =  options.rootMod || "*"
+    this._rootMod = rootMod
     this._write.push(this._rootMod)
-    this._members = options.members
+    this._members = !!options.members
     if (this._members) this._capabilityType[member] = member
   }
 
   static get type () { return type }
 
   isMod(id) {
-    this._write.includes(id)
+    return this._write.includes(id)
   }
 
   isValidCapability (capability) {
-    Object.entries(this._capabilityType).map(e => e[1]).includes(capability)
+    return Object.entries(this._capabilityType).map(e => e[1]).includes(capability)
   }
 
   async canAppend (entry, identityProvider) {
     const entryID = entry.identity.id
     const capability = entry.payload.value.capability
+    const idAdd = entry.payload.value.id
     const isMod = this.isMod(entryID)
-    const noMods = this._write.includes('*')
-    const validCapability = isValidCapability(capability)
-    const validSig = () => identityProvider.verifyIdentity(entry.identity)
-
-    if ((noMods || isMod) && validCapability && validSig()) {
-      if (capability === this._capabilityType.moderator) this._write.push(modAddId)
+    const validCapability = this.isValidCapability(capability)
+    const validSig = async () => identityProvider.verifyIdentity(entry.identity)
+    if (isMod && validCapability && (await validSig())) {
+      if (capability === this._capabilityType.moderator) this._write.push(idAdd)
       return true
     }
 
@@ -57,7 +56,8 @@ class ModeratorAccessController {
   }
 
   static async create (orbitdb, options = {}) {
-    return new ModeratorAccessController(options)
+    if (!options.rootMod) throw new Error('Moderator AC: rootMod required')
+    return new ModeratorAccessController(options.rootMod, options)
   }
 }
 
