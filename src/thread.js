@@ -24,10 +24,10 @@ class Thread {
     this._requireLoad()
     this._subscribe(this._address, {rootMod: this._rootMod, members: this._membersOnly, name: this._name})
     this._ensureConnected(this._address, true)
+    const timestamp = Math.floor(new Date().getTime() / 1000) //seconds
     return this._db.add({
-      author: this._3id.muportDID,
       message,
-      timeStamp: new Date().getTime()
+      timestamp
     })
   }
 
@@ -104,9 +104,9 @@ class Thread {
     this._requireLoad()
     if (!opts.limit) opts.limit = -1
     return this._db.iterator(opts).collect().map(entry => {
-      let post = entry.payload.value
-      post.postId = entry.hash
-      return post
+      const post = entry.payload.value
+      const metaData = { postId: entry.hash, author: entry.identity.id }
+      return Object.assign(post, metaData)
     })
   }
 
