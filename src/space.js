@@ -65,7 +65,7 @@ class Space {
    */
   async joinThread (name, opts = {}) {
     if (this._activeThreads[name]) return this._activeThreads[name]
-    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
+    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
     if (!opts.rootMod) opts.rootMod = this._3id.getSubDID(this._name)
     const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.membersOnly, opts.rootMod, subscribeFn, this._ensureConnected)
     await thread._load()
@@ -76,23 +76,27 @@ class Space {
   /**
    * Subscribe to the given thread, if not already subscribed
    *
-   * @param     {String}    name                    The name of the thread
+   * @param     {String}    address           The address of the thread
+   * @param     {Object}    config            configuration and thread meta data
+   * @param     {String}    opts.name         Name of thread
+   * @param     {String}    opts.rootMod      DID of the root moderator
+   * @param     {String}    opts.members      Boolean string, true if a members only thread
    */
-  async subscribeThread (name) {
-    const threadKey = `thread-${name}`
+  async subscribeThread (address, config = {}) {
+    const threadKey = `thread-${address}`
     await this._syncSpacePromise
     if (!(await this.public.get(threadKey))) {
-      await this.public.set(threadKey, { name })
+      await this.public.set(threadKey, Object.assign({}, config, { address }))
     }
   }
 
   /**
    * Unsubscribe from the given thread, if subscribed
    *
-   * @param     {String}    name                    The name of the thread
+   * @param     {String}    address     The address of the thread
    */
-  async unsubscribeThread (name) {
-    const threadKey = `thread-${name}`
+  async unsubscribeThread (address) {
+    const threadKey = `thread-${address}`
     if (await this.public.get(threadKey)) {
       await this.public.remove(threadKey)
     }
@@ -101,13 +105,13 @@ class Space {
   /**
    * Get a list of all the threads subscribed to in this space
    *
-   * @return    {Array<String>}                     A list of thread names
+   * @return    {Array<Objects>}    A list of thread objects as { address, rootMod, members, name}
    */
   async subscribedThreads () {
     const allEntries = await this.public.all()
     return Object.keys(allEntries).reduce((threads, key) => {
       if (key.startsWith('thread')) {
-        threads.push(allEntries[key].name)
+        threads.push(allEntries[key])
       }
       return threads
     }, [])

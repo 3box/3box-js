@@ -22,7 +22,7 @@ class Thread {
    */
   async post (message) {
     this._requireLoad()
-    this._subscribe()
+    this._subscribe(this._address, {rootMod: this._rootMod, members: this._membersOnly, name: this._name})
     this._ensureConnected(this._address, true)
     return this._db.add({
       author: this._3id.muportDID,
