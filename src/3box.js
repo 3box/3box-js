@@ -247,7 +247,6 @@ class Box {
     }
 
     // opts = Object.assign({ iframeStore: true }, opts)
-    console.log(opts.addressServer)
     const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
     let usingGlobalIPFS = false
     let usingGlobalOrbitDB = false
@@ -371,7 +370,7 @@ class Box {
       try {
         opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
-        if (!this.isAccountLinked()) this.linkAccount()
+        if (!await this.isAccountLinked()) this.linkAccount()
       } catch (e) {
         delete this.spaces[name]
         if (e.message.includes('User denied message signature.')) {
