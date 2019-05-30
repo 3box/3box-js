@@ -129,7 +129,7 @@ jest.mock('../utils/index', () => {
           addressMap[did] = hash
           return { status: 'success', data: { hash } }
         case 'link': // make a link
-          if (linkNum < 2) {
+          if (linkNum < 3) {
             linkNum += 1
             return Promise.reject('{ status: "error", message: "an error" }')
           } else {
@@ -300,6 +300,7 @@ describe('3Box', () => {
   })
 
   it('should open spaces correctly', async () => {
+    global.console.error = jest.fn()
     let space1 = await box.openSpace('name1', {})
     expect(space1._name).toEqual('name1')
     expect(space1.open).toHaveBeenCalledWith(expect.any(Object))
@@ -340,6 +341,7 @@ describe('3Box', () => {
     // first two calls in our mock will throw an error
     box.public.get = jest.fn()
     global.console.error = jest.fn()
+    box.public.set.mockClear()
     await box._linkProfile()
 
     expect(box.public.set).toHaveBeenCalledTimes(2) // ethereum & proof
