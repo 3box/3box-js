@@ -1,3 +1,6 @@
+const MODERATOR = 'MODERATOR'
+const MEMBER = 'MEMBER'
+
 class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
@@ -31,25 +34,28 @@ class Thread {
     })
   }
 
+  get address () {
+    return this._db ? this._address : null
+  }
+
   /**
    * Add a moderator to this thread
    *
    * @param     {String}    id                      Moderator Id
    */
-  async addMod (id) {
+  async addModerator (id) {
     this._requireLoad()
-    return this._db.access.grant('moderator', id)
+    return this._db.access.grant(MODERATOR, id)
   }
-
 
   /**
    * List moderators
    *
    * @return    {Array<String>}      Array of moderator DIDs
    */
-  async listMods () {
+  async listModerators () {
     this._requireLoad()
-    return this._db.access.capabilities['mod']
+    return this._db.access.capabilities['moderators']
   }
 
   /**
@@ -58,9 +64,9 @@ class Thread {
    * @param     {String}    id                      Member Id
    */
   async addMember (id) {
-    // TOOD throw is not a member only thread
+    this._throwIfNotMembers()
     this._requireLoad()
-    return this._db.access.grant('member', id)
+    return this._db.access.grant(MEMBER, id)
   }
 
   /**
@@ -69,11 +75,14 @@ class Thread {
    * @return    {Array<String>}      Array of member DIDs
    */
   async listMembers () {
-    // TODO maybe throw is not a member only thread, or * to indicate all (like orbit)
+    this._throwIfNotMembers()
     this._requireLoad()
-    return this._db.access.capabilities['member']
+    return this._db.access.capabilities['members']
   }
 
+  _throwIfNotMembers() {
+    if (!this._membersOnly) throw new Error('Thread: Not a members only thread, function not available')
+  }
 
   /**
    * Delete post

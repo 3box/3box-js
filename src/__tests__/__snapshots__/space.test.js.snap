@@ -1,5 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Space Threads does not subscribe or return invalid thread address (ignore experimental) 1`] = `"subscribeThread: must subscribe to valid thread/orbitdb address"`;
+
 exports[`Space public store reducer all should return all values from public store 1`] = `
 Object {
   "k1": "v1",

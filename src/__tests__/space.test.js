@@ -16,7 +16,8 @@ const threeIdMock = {
   }),
   signJWT: (payload, { space }) => {
     return `a fake jwt for ${space}`
-  }
+  },
+  getSubDID: (space) => `subdid-${space}`
 }
 let rootstoreMockData = []
 const rootstoreMock = {
@@ -199,15 +200,25 @@ describe('Space', () => {
       Thread.mockClear()
     })
 
+    const threadAddress = '/orbitdb/zdpuAmUTuZVp5QNw75E9KVaQwfPSM611FCPR2RmMGF6jxWzxW/3box.thread.a.z'
+    const threadAddress2 = '/orbitdb/zdpuAu3nxzphjPVgP3sw4HufdG3uvZTerUgS6rQQtk29UAhbd/3box.thread.a.a'
+
+    it('does not subscribe or return invalid thread address (ignore experimental)', async () => {
+      await expect(space.subscribeThread('t1')).rejects.toThrowErrorMatchingSnapshot()
+      // experimental threads
+      await space.public.set('thread-t1')
+      expect(await space.subscribedThreads()).toEqual([])
+    })
+
     it('subscribes to thread correctly', async () => {
-      await space.subscribeThread('t1')
-      expect(await space.public.get('thread-t1')).toEqual({ name: 't1' })
-      expect(await space.subscribedThreads()).toEqual(['t1'])
+      await space.subscribeThread(threadAddress)
+      expect(await space.public.get(`thread-${threadAddress}`)).toEqual({ address: threadAddress })
+      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
 
     it('unsubscribes from thread correctly', async () => {
-      await space.unsubscribeThread('t1')
-      expect(await space.public.get('thread-t1')).toEqual()
+      await space.unsubscribeThread(threadAddress)
+      expect(await space.public.get(`thread-${threadAddress}`)).toEqual()
       expect(await space.subscribedThreads()).toEqual([])
     })
 
@@ -219,8 +230,8 @@ describe('Space', () => {
       expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][3]()
-      expect(await space.subscribedThreads()).toEqual(['t2'])
+      await Thread.mock.calls[0][5](threadAddress)
+      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
 
     it('joins thread correctly, no auto subscription', async () => {
@@ -231,8 +242,8 @@ describe('Space', () => {
       expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][3]()
-      expect(await space.subscribedThreads()).toEqual(['t2'])
+      await Thread.mock.calls[0][5](threadAddress2)
+      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
   })
 })

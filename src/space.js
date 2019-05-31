@@ -84,6 +84,7 @@ class Space {
    * @param     {String}    opts.members      Boolean string, true if a members only thread
    */
   async subscribeThread (address, config = {}) {
+    if (!OrbitDBAddress.isValid(address)) throw new Error('subscribeThread: must subscribe to valid thread/orbitdb address')
     const threadKey = `thread-${address}`
     await this._syncSpacePromise
     if (!(await this.public.get(threadKey))) {

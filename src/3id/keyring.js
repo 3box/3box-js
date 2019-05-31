@@ -59,10 +59,6 @@ class Keyring {
     return SimpleSigner(this.signingKey.privateKey.slice(2))
   }
 
-  getDBKey () {
-    return ec.keyFromPrivate(this.signingKey.privateKey.slice(2))
-  }
-
   getDBSalt () {
     return sha256(this.signingKey.derivePath('0').privateKey.slice(2))
   }

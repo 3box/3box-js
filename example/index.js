@@ -106,7 +106,7 @@ bopen.addEventListener('click', event => {
       addThreadMod.addEventListener('click', () => {
         const name = threadMod.value
         posts.style.display = 'block'
-        window.currentThread.addMod(name).then(res => {
+        window.currentThread.addModerator(name).then(res => {
           console.log(res)
         })
       })

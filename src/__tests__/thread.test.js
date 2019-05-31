@@ -1,8 +1,79 @@
 const utils = require('./testUtils')
 const Thread = require('../thread')
 const OrbitDB = require('orbit-db')
+const { OdbIdentityProvider, LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
+const Identities = require('orbit-db-identity-provider')
+Identities.addIdentityProvider(OdbIdentityProvider)
+const didJWT = require('did-jwt')
 const EC = require('elliptic').ec
 const ec = new EC('secp256k1')
+const AccessControllers = require('orbit-db-access-controllers')
+const ThreadAccessController = require('./../access/thread-open-mod-access')
+const ModeratorAccessController = require('./../access/moderator-access')
+AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+AccessControllers.addAccessController({ AccessController: ThreadAccessController })
+AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
+const { registerMethod } = require('did-resolver')
+
+
+const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
+const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
+
+
+const didResolver = async (did) => {
+  return {
+    '@context': 'https://w3id.org/did/v1',
+    'id': did,
+    'publicKey': [{
+      'id': `${did}#signingKey`,
+      'type': 'Secp256k1VerificationKey2018',
+      'publicKeyHex': '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781'
+    }],
+    'authentication': [{
+      'type': 'Secp256k1SignatureAuthentication2018',
+      'publicKey': `${did}#signingKey`
+    }]
+  }
+}
+
+registerMethod('3', didResolver)
+
+
+const threeIDMock = (did) => {
+  const signJWT = payload => {
+    return didJWT.createJWT(payload, {
+      signer: didJWT.SimpleSigner('95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be'),
+      issuer: did
+    })
+  }
+
+  const getKeyringBySpaceName = () => {
+    return {
+      getPublicKeys: () => {
+        return { signingKey: '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781' }
+      }
+    }
+  }
+
+  const getSubDID = () => did
+
+  const getOdbId = () => {
+    return Identities.createIdentity({
+      type: '3ID',
+      threeId: {signJWT, getKeyringBySpaceName, DID: did, getSubDID},
+      identityKeysPath: `./tmp/${did}`
+    })
+  }
+
+  return {
+    DID: did,
+    signJWT,
+    getKeyringBySpaceName,
+    getOdbId,
+    getSubDID
+  }
+}
+
 
 const THREAD1_NAME = '3box.thread.somespace.name1'
 const THREAD2_NAME = '3box.thread.somespace.name2'
@@ -12,23 +83,13 @@ const MSG2 = 'message2'
 const MSG3 = 'message3'
 const MSG4 = 'message4'
 
-const THREEID1_MOCK = {
-  _mainKeyring: {
-    getDBKey: () => 'f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46'
-  },
-  muportDID: 'did:3:mydid1'
-}
-const THREEID2_MOCK = {
-  _mainKeyring: {
-    getDBKey: () => 'f977777aaaaaaabbbbbbb9821fa523f2acd17c0ba80c724f219367e76d8f2c46'
-  },
-  muportDID: 'did:3:mydid2'
-}
+const THREEID1_MOCK = threeIDMock(DID1)
+const THREEID2_MOCK = threeIDMock(DID2)
 
 const ensureConnected = jest.fn()
 const subscribeMock = jest.fn()
 
-describe.skip('Thread', () => {
+describe('Thread', () => {
   let ipfs
   let orbitdb
   let thread
@@ -37,7 +98,9 @@ describe.skip('Thread', () => {
 
   beforeAll(async () => {
     ipfs = await utils.initIPFS(4)
-    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb4')
+    orbitdb = await OrbitDB.createInstance(ipfs, {
+      directory:'./tmp/orbitdb4'
+    })
   })
 
   beforeEach(() => {
@@ -46,7 +109,8 @@ describe.skip('Thread', () => {
   })
 
   it('creates thread correctly', async () => {
-    thread = new Thread(orbitdb, THREAD1_NAME, THREEID1_MOCK, subscribeMock, ensureConnected)
+    console.log(threeIDMock(DID2))
+    thread = new Thread(orbitdb, THREAD1_NAME, THREEID1_MOCK, false, DID1, subscribeMock, ensureConnected)
   })
 
   it('should throw if not loaded', async () => {
@@ -66,7 +130,7 @@ describe.skip('Thread', () => {
   it('adding posts works as expected', async () => {
     await thread.post(MSG1)
     let posts = await thread.getPosts()
-    expect(posts[0].author).toEqual(THREEID1_MOCK.muportDID)
+    expect(posts[0].author).toEqual(THREEID1_MOCK.DID)
     expect(posts[0].message).toEqual(MSG1)
     expect(subscribeMock).toHaveBeenCalledTimes(1)
     expect(ensureConnected).toHaveBeenCalledTimes(1)
@@ -97,13 +161,15 @@ describe.skip('Thread', () => {
     let orbitdb2
     beforeAll(async () => {
       ipfs2 = await utils.initIPFS(5)
-      orbitdb2 = new OrbitDB(ipfs2, './tmp/orbitdb5')
+      orbitdb2 = await OrbitDB.createInstance(ipfs2, {
+        directory:'./tmp/orbitdb5'
+      })
     })
 
     it('syncs thread between users', async () => {
-      threadUser1 = new Thread(orbitdb, THREAD2_NAME, THREEID1_MOCK, subscribeMock, ensureConnected)
+      threadUser1 = new Thread(orbitdb, THREAD2_NAME, THREEID1_MOCK,false, DID1, subscribeMock, ensureConnected)
       await threadUser1._load()
-      threadUser2 = new Thread(orbitdb2, THREAD2_NAME, THREEID2_MOCK, subscribeMock, ensureConnected)
+      threadUser2 = new Thread(orbitdb2, THREAD2_NAME, THREEID1_MOCK, false, DID1,subscribeMock, ensureConnected)
       await threadUser2._load()
       // user1 posts and user2 receives
       // done needed to not catch the write event
@@ -119,13 +185,13 @@ describe.skip('Thread', () => {
       })
       await threadUser1.post(MSG1)
       let posts1 = await threadUser1.getPosts()
-      expect(posts1[0].author).toEqual(THREEID1_MOCK.muportDID)
+      expect(posts1[0].author).toEqual(THREEID1_MOCK.DID)
       expect(posts1[0].message).toEqual(MSG1)
       await postPromise
       threadUser2.onNewPost(() => {})
       await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
       let posts2 = await threadUser2.getPosts()
-      expect(posts2[0].author).toEqual(THREEID1_MOCK.muportDID)
+      expect(posts2[0].author).toEqual(THREEID1_MOCK.DID)
       expect(posts2[0].message).toEqual(MSG1)
       expect(posts2[0].postId).toEqual(posts1[0].postId)
 
@@ -138,12 +204,12 @@ describe.skip('Thread', () => {
       })
       await threadUser2.post(MSG2)
       posts2 = await threadUser2.getPosts()
-      expect(posts2[1].author).toEqual(THREEID2_MOCK.muportDID)
+      expect(posts2[1].author).toEqual(THREEID2_MOCK.DID)
       expect(posts2[1].message).toEqual(MSG2)
       await postPromise
       await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
       posts1 = await threadUser1.getPosts()
-      expect(posts1[1].author).toEqual(THREEID2_MOCK.muportDID)
+      expect(posts1[1].author).toEqual(THREEID2_MOCK.DID)
       expect(posts1[1].message).toEqual(MSG2)
       expect(posts1[1].postId).toEqual(posts2[1].postId)
     })

@@ -1,18 +1,17 @@
 // 'use strict'
 const type = 'moderator-access'
 
-const moderator = 'moderator'
-const member = 'member'
+const MODERATOR = 'MODERATOR'
+const MEMBER = 'MEMBER'
 
 class ModeratorAccessController {
   constructor (rootMod, options) {
-    this._capabilityType = {}
-    this._capabilityType[moderator] = moderator
+    this._capabilityTypes = [MODERATOR]
     this._write = []     // Allowed to add other mods or members
     this._rootMod = rootMod
     this._write.push(this._rootMod)
-    this._members = !!options.members
-    if (this._members) this._capabilityType[member] = member
+    this._members = Boolean(options.members)
+    if (this._members) this._capabilityTypes.push(MEMBER)
   }
 
   static get type () { return type }
@@ -22,7 +21,11 @@ class ModeratorAccessController {
   }
 
   isValidCapability (capability) {
-    return Object.entries(this._capabilityType).map(e => e[1]).includes(capability)
+    return this._capabilityTypes.includes(capability)
+  }
+
+  get rootModerator () {
+    return this._rootMod
   }
 
   async canAppend (entry, identityProvider) {
@@ -33,7 +36,7 @@ class ModeratorAccessController {
     const validCapability = this.isValidCapability(capability)
     const validSig = async () => identityProvider.verifyIdentity(entry.identity)
     if (isMod && validCapability && (await validSig())) {
-      if (capability === this._capabilityType.moderator) this._write.push(idAdd)
+      if (capability === MODERATOR) this._write.push(idAdd)
       return true
     }
 

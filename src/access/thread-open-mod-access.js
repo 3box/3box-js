@@ -1,13 +1,13 @@
 'use strict'
-
-const AccessController = require('orbit-db-access-controllers/src/access-controller-interface')
 const ensureAddress = require('orbit-db-access-controllers/src/utils/ensure-ac-address')
 const EventEmitter = require('events').EventEmitter
 const entryIPFS = require('ipfs-log/src/entry')
+const ThreeID = require('../3id/index')
 
 const type = 'thread-access'
+const MODERATOR = 'MODERATOR'
+const MEMBER = 'MEMBER'
 
-// TODO need extend access controller interface?
 class ThreadAccessController extends EventEmitter{
   constructor (orbitdb, ipfs, identity, rootMod, options) {
     super()
@@ -15,16 +15,15 @@ class ThreadAccessController extends EventEmitter{
     this._db = null
     this._options = options || {}
     this._ipfs = ipfs
-    this._members = !!options.members
+    this._members = Boolean(options.members)
     this._rootMod = rootMod
     this._threadName = options.threadName
     this._identity = identity
   }
 
-  // Returns the type of the access controller
   static get type () { return type }
 
-  // Returns the address of the OrbitDB used as the AC
+  // return addres of AC (in this case orbitdb address of AC)
   get address () {
     return this._db.address
   }
@@ -33,9 +32,9 @@ class ThreadAccessController extends EventEmitter{
     const trueIfValidSig = async () => await identityProvider.verifyIdentity(entry.identity)
 
     const op = entry.payload.op
-    const mods = this.capabilities['mod']
-    const members = this.capabilities['member']
-    const isMod = members.includes(entry.identity.id)
+    const mods = this.capabilities['moderators']
+    const members = this.capabilities['members']
+    const isMod = mods.includes(entry.identity.id)
     const isMember = members.includes(entry.identity.id)
 
     if (op === 'ADD') {
@@ -63,19 +62,23 @@ class ThreadAccessController extends EventEmitter{
   }
 
   get capabilities () {
-    // TODO dont do this for every entry, save result, update on db change
+    if (!this._capabilities) this._updateCapabilites()
+    return this._capabilities
+  }
+
+  _updateCapabilites () {
+    let moderators = [], members = []
     if (this._db) {
-      let mod = []
-      let member = []
+      moderators.push(this._db.access._rootMod)
       Object.entries(this._db.index).forEach(entry => {
         const capability = entry[1].payload.value.capability
         const id = entry[1].payload.value.id
-        if (capability === 'mod') mod.push(id)
-        if (capability === 'member') member.push(id)
+        if (capability === MODERATOR) moderators.push(id)
+        if (capability === MEMBER) members.push(id)
       })
-      return {mod, member}
     }
-    return {}
+    this._capabilities = {moderators, members}
+    return this._capabilities
   }
 
   get (capability) {
@@ -107,19 +110,23 @@ class ThreadAccessController extends EventEmitter{
   }
 
   async save () {
-    // return the manifest data
     return {
       address: this._db.address.toString()
     }
   }
 
   async grant (capability, id) {
-    // TODO  sanitize key
-    // handle error if can't grant?
+    if (!this._db.access.isValidCapability(capability)) {
+      throw new Error('Invalid capability to grant')
+    }
+    if (!ThreeID.isValid3ID(id)) {
+      throw new Error('Invalid 3ID to grant')
+    }
     await this._db.add({capability, id})
   }
 
   _onUpdate () {
+    this._updateCapabilites()
     this.emit('updated')
   }
 

@@ -29,11 +29,6 @@ describe('Keyring', () => {
     expect(keyring1.serialize()).toEqual(seed)
   })
 
-  it('getDBKey works correctly', async () => {
-    const key = keyring1.getDBKey()
-    expect(key).toEqual('68957df606e586990a6286239987aaf4c902971ae642d50609d35ff36fb0728a')
-  })
-
   it('signs data correctly', async () => {
     expect((await keyring1.getJWTSigner()('asdf'))).toMatchSnapshot()
   })
@@ -53,4 +48,3 @@ describe('Keyring', () => {
     expect(cleartext).toEqual(testMsg)
   })
 })
-
