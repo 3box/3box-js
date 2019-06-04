@@ -88,7 +88,7 @@ class Box {
 
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs.swarm.connect(this.pinningNode, () => {})
-    
+
     this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
       directory: opts.orbitPath,
       identity: await this._3id.getOdbId()

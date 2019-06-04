@@ -63,7 +63,6 @@
     "orbit-db": "^0.21.0",
     "orbit-db-access-controllers": "^0.2.0",
     "orbit-db-cache-postmsg-proxy": "^0.1.1",
-    "orbit-db-io": "^0.0.2",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0"

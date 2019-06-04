@@ -424,6 +424,8 @@ Get the public profile of a given address
 | --- | --- | --- |
 | address | <code>String</code> | An ethereum address |
 | opts | <code>Object</code> | Optional parameters |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
+| opts.metadata | <code>String</code> | flag to retrieve metadata |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.useCacheService | <code>Boolean</code> | Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true. |
@@ -456,8 +458,9 @@ Get the public data in a space of a given address with the given name
 | address | <code>String</code> | An ethereum address |
 | name | <code>String</code> | A space name |
 | opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
 | opts.metadata | <code>String</code> | flag to retrieve metadata |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
 
 <a name="Box.getThread"></a>
 
@@ -552,11 +555,12 @@ Check if the given address is logged in
 * [KeyValueStore](#KeyValueStore)
     * [new KeyValueStore()](#new_KeyValueStore_new)
     * [.log](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
-    * [.get(key)](#KeyValueStore+get) ⇒ <code>String</code>
+    * [.get(key, opts)](#KeyValueStore+get) ⇒ <code>String</code> \| <code>Object</code>
     * [.getMetadata(key)](#KeyValueStore+getMetadata) ⇒ <code>Metadata</code>
     * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
     * [.setMultiple(keys, values)](#KeyValueStore+setMultiple) ⇒ <code>Boolean</code>
     * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
+    * [.all(opts)](#KeyValueStore+all) ⇒ <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code>
 
 <a name="new_KeyValueStore_new"></a>
 
@@ -580,15 +584,17 @@ const log = store.log
 ```
 <a name="KeyValueStore+get"></a>
 
-#### keyValueStore.get(key) ⇒ <code>String</code>
-Get the value of the given key
+#### keyValueStore.get(key, opts) ⇒ <code>String</code> \| <code>Object</code>
+Get the value and optionally metadata of the given key
 
 **Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
-**Returns**: <code>String</code> - the value associated with the key, undefined if there's no such key  
+**Returns**: <code>String</code> \| <code>Object</code> - the value associated with the key, undefined if there's no such key  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
+| opts | <code>Object</code> | optional parameters |
+| opts.metadata | <code>Boolean</code> | return both value and metadata |
 
 <a name="KeyValueStore+getMetadata"></a>
 
@@ -640,6 +646,19 @@ Remove the value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
+<a name="KeyValueStore+all"></a>
+
+#### keyValueStore.all(opts) ⇒ <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code>
+Get all values and optionally metadata
+
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code> - the values  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| opts | <code>Object</code> | optional parameters |
+| opts.metadata | <code>Boolean</code> | return both values and metadata |
+
 <a name="Space"></a>
 
 ### Space
@@ -650,9 +669,9 @@ Remove the value for the given key
     * [.public](#Space+public)
     * [.private](#Space+private)
     * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
-    * [.subscribeThread(name)](#Space+subscribeThread)
-    * [.unsubscribeThread(name)](#Space+unsubscribeThread)
-    * [.subscribedThreads()](#Space+subscribedThreads) ⇒ <code>Array.&lt;String&gt;</code>
+    * [.subscribeThread(address, config)](#Space+subscribeThread)
+    * [.unsubscribeThread(address)](#Space+unsubscribeThread)
+    * [.subscribedThreads()](#Space+subscribedThreads) ⇒ <code>Array.&lt;Objects&gt;</code>
 
 <a name="new_Space_new"></a>
 
@@ -691,37 +710,43 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 | --- | --- | --- |
 | name | <code>String</code> | The name of the thread |
 | opts | <code>Object</code> | Optional parameters |
+| opts.membersOnly | <code>Boolean</code> | join a members only thread, which only members can post in |
+| opts.rootMod | <code>String</code> | the rootMod, known as first moderator of a thread, by default user is moderator |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 
 <a name="Space+subscribeThread"></a>
 
-#### space.subscribeThread(name)
+#### space.subscribeThread(address, config)
 Subscribe to the given thread, if not already subscribed
 
 **Kind**: instance method of [<code>Space</code>](#Space)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The name of the thread |
+| address | <code>String</code> | The address of the thread |
+| config | <code>Object</code> | configuration and thread meta data |
+| opts.name | <code>String</code> | Name of thread |
+| opts.rootMod | <code>String</code> | DID of the root moderator |
+| opts.members | <code>String</code> | Boolean string, true if a members only thread |
 
 <a name="Space+unsubscribeThread"></a>
 
-#### space.unsubscribeThread(name)
+#### space.unsubscribeThread(address)
 Unsubscribe from the given thread, if subscribed
 
 **Kind**: instance method of [<code>Space</code>](#Space)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The name of the thread |
+| address | <code>String</code> | The address of the thread |
 
 <a name="Space+subscribedThreads"></a>
 
-#### space.subscribedThreads() ⇒ <code>Array.&lt;String&gt;</code>
+#### space.subscribedThreads() ⇒ <code>Array.&lt;Objects&gt;</code>
 Get a list of all the threads subscribed to in this space
 
 **Kind**: instance method of [<code>Space</code>](#Space)  
-**Returns**: <code>Array.&lt;String&gt;</code> - A list of thread names  
+**Returns**: <code>Array.&lt;Objects&gt;</code> - A list of thread objects as { address, rootMod, members, name}  
 <a name="Thread"></a>
 
 ### Thread
@@ -730,6 +755,11 @@ Get a list of all the threads subscribed to in this space
 * [Thread](#Thread)
     * [new Thread()](#new_Thread_new)
     * [.post(message)](#Thread+post) ⇒ <code>String</code>
+    * [.addModerator(id)](#Thread+addModerator)
+    * [.listModerators()](#Thread+listModerators) ⇒ <code>Array.&lt;String&gt;</code>
+    * [.addMember(id)](#Thread+addMember)
+    * [.listMembers()](#Thread+listMembers) ⇒ <code>Array.&lt;String&gt;</code>
+    * [.deletePost(id)](#Thread+deletePost)
     * [.getPosts(opts)](#Thread+getPosts) ⇒ <code>Array.&lt;Object&gt;</code>
     * [.onNewPost(newPostFn)](#Thread+onNewPost)
 
@@ -749,6 +779,53 @@ Post a message to the thread
 | Param | Type | Description |
 | --- | --- | --- |
 | message | <code>Object</code> | The message |
+
+<a name="Thread+addModerator"></a>
+
+#### thread.addModerator(id)
+Add a moderator to this thread, throws error is user can not add a moderator
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | Moderator Id |
+
+<a name="Thread+listModerators"></a>
+
+#### thread.listModerators() ⇒ <code>Array.&lt;String&gt;</code>
+List moderators
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+**Returns**: <code>Array.&lt;String&gt;</code> - Array of moderator DIDs  
+<a name="Thread+addMember"></a>
+
+#### thread.addMember(id)
+Add a member to this thread, throws if user can not add member, throw is not member thread
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | Member Id |
+
+<a name="Thread+listMembers"></a>
+
+#### thread.listMembers() ⇒ <code>Array.&lt;String&gt;</code>
+List members, throws if not member thread
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+**Returns**: <code>Array.&lt;String&gt;</code> - Array of member DIDs  
+<a name="Thread+deletePost"></a>
+
+#### thread.deletePost(id)
+Delete post
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | Moderator Id |
 
 <a name="Thread+getPosts"></a>
 

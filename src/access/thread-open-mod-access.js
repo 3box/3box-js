@@ -122,7 +122,12 @@ class ThreadAccessController extends EventEmitter{
     if (!ThreeID.isValid3ID(id)) {
       throw new Error('Invalid 3ID to grant')
     }
-    await this._db.add({capability, id})
+    try {
+      await this._db.add({capability, id})
+    } catch (e) {
+      if (e.toString().includes('not append entry')) throw new Error(`grant: Capability ${capability} can not be granted to ${id}`)
+      throw e
+    }
   }
 
   _onUpdate () {

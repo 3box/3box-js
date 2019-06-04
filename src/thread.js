@@ -13,8 +13,8 @@ class Thread {
     this._subscribe = subscribe
     this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
-    this._membersOnly = membersOnly
-    this._rootMod = rootMod
+    this._membersOnly = Boolean(membersOnly)
+    this._rootMod = rootMod || this._3id.getSubDID(this._spaceName)
   }
 
   /**
@@ -25,9 +25,9 @@ class Thread {
    */
   async post (message) {
     this._requireLoad()
-    this._subscribe(this._address, {rootMod: this._rootMod, members: this._membersOnly, name: this._name})
+    this._subscribe(this._address, { rootMod: this._rootMod, members: this._membersOnly, name: this._name })
     this._ensureConnected(this._address, true)
-    const timestamp = Math.floor(new Date().getTime() / 1000) //seconds
+    const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
     return this._db.add({
       message,
       timestamp
@@ -39,7 +39,7 @@ class Thread {
   }
 
   /**
-   * Add a moderator to this thread
+   * Add a moderator to this thread, throws error is user can not add a moderator
    *
    * @param     {String}    id                      Moderator Id
    */
@@ -59,7 +59,7 @@ class Thread {
   }
 
   /**
-   * Add a member to this thread
+   * Add a member to this thread, throws if user can not add member, throw is not member thread
    *
    * @param     {String}    id                      Member Id
    */
@@ -70,7 +70,7 @@ class Thread {
   }
 
   /**
-   * List members
+   * List members, throws if not member thread
    *
    * @return    {Array<String>}      Array of member DIDs
    */
@@ -80,7 +80,7 @@ class Thread {
     return this._db.access.capabilities['members']
   }
 
-  _throwIfNotMembers() {
+  _throwIfNotMembers () {
     if (!this._membersOnly) throw new Error('Thread: Not a members only thread, function not available')
   }
 
