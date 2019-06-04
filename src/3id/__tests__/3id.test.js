@@ -1,6 +1,7 @@
 const ThreeId = require('../index')
 const testUtils = require('../../__tests__/testUtils')
 const localstorage = require('store')
+const { verifyJWT } = require('did-jwt')
 const resolve = require('did-resolver').default
 const registerResolver = require('3id-resolver')
 
@@ -132,6 +133,24 @@ describe('3id', () => {
       threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_2)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('claim signing', () => {
+    it('should sign jwts correctly with rootDID', async () => {
+      const jwt = await threeId.signJWT({
+        iat: null,
+        data: 'some data'
+      }, { use3ID: true })
+      expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
+    })
+
+    it('should sign jwts correctly with subDID', async () => {
+      const jwt = await threeId.signJWT({
+        iat: null,
+        data: 'some data'
+      }, { space: SPACE_1 })
+      expect(verifyJWT(jwt, { auth: true })).resolves.toMatchSnapshot()
     })
   })
 

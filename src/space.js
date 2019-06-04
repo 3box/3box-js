@@ -1,6 +1,7 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
 const { sha256Multihash, throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
+const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
 const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
@@ -57,15 +58,17 @@ class Space {
    *
    * @param     {String}    name                    The name of the thread
    * @param     {Object}    opts                    Optional parameters
+   * @param     {Boolean}   opts.membersOnly        join a members only thread, which only members can post in
+   * @param     {String}    opts.rootMod            the rootMod, known as first moderator of a thread, by default user is moderator
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    *
    * @return    {Thread}                            An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
-    console.warn('WARNING: Threads are still experimental, we recommend not relying on this feature for production yet.')
     if (this._activeThreads[name]) return this._activeThreads[name]
-    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, subscribeFn, this._ensureConnected)
+    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
+    if (!opts.rootMod) opts.rootMod = this._3id.getSubDID(this._name)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.membersOnly, opts.rootMod, subscribeFn, this._ensureConnected)
     await thread._load()
     this._activeThreads[name] = thread
     return thread
@@ -74,23 +77,28 @@ class Space {
   /**
    * Subscribe to the given thread, if not already subscribed
    *
-   * @param     {String}    name                    The name of the thread
+   * @param     {String}    address           The address of the thread
+   * @param     {Object}    config            configuration and thread meta data
+   * @param     {String}    opts.name         Name of thread
+   * @param     {String}    opts.rootMod      DID of the root moderator
+   * @param     {String}    opts.members      Boolean string, true if a members only thread
    */
-  async subscribeThread (name) {
-    const threadKey = `thread-${name}`
+  async subscribeThread (address, config = {}) {
+    if (!OrbitDBAddress.isValid(address)) throw new Error('subscribeThread: must subscribe to valid thread/orbitdb address')
+    const threadKey = `thread-${address}`
     await this._syncSpacePromise
     if (!(await this.public.get(threadKey))) {
-      await this.public.set(threadKey, { name })
+      await this.public.set(threadKey, Object.assign({}, config, { address }))
     }
   }
 
   /**
    * Unsubscribe from the given thread, if subscribed
    *
-   * @param     {String}    name                    The name of the thread
+   * @param     {String}    address     The address of the thread
    */
-  async unsubscribeThread (name) {
-    const threadKey = `thread-${name}`
+  async unsubscribeThread (address) {
+    const threadKey = `thread-${address}`
     if (await this.public.get(threadKey)) {
       await this.public.remove(threadKey)
     }
@@ -99,13 +107,17 @@ class Space {
   /**
    * Get a list of all the threads subscribed to in this space
    *
-   * @return    {Array<String>}                     A list of thread names
+   * @return    {Array<Objects>}    A list of thread objects as { address, rootMod, members, name}
    */
   async subscribedThreads () {
     const allEntries = await this.public.all()
     return Object.keys(allEntries).reduce((threads, key) => {
       if (key.startsWith('thread')) {
-        threads.push(allEntries[key].name)
+        // ignores experimental threads (v1)
+        const address = key.split('thread-')[1]
+        if (OrbitDBAddress.isValid(address)) {
+          threads.push(allEntries[key])
+        }
       }
       return threads
     }, [])

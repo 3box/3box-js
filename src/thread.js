@@ -1,14 +1,20 @@
+const MODERATOR = 'MODERATOR'
+const MEMBER = 'MEMBER'
+
 class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (orbitdb, name, threeId, subscribe, ensureConnected) {
+  constructor (orbitdb, name, threeId, membersOnly, rootMod, subscribe, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
+    this._spaceName = name.split('.')[2]
     this._3id = threeId
     this._subscribe = subscribe
     this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
+    this._membersOnly = Boolean(membersOnly)
+    this._rootMod = rootMod || this._3id.getSubDID(this._spaceName)
   }
 
   /**
@@ -19,13 +25,73 @@ class Thread {
    */
   async post (message) {
     this._requireLoad()
-    this._subscribe()
+    this._subscribe(this._address, { rootMod: this._rootMod, members: this._membersOnly, name: this._name })
     this._ensureConnected(this._address, true)
+    const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
     return this._db.add({
-      author: this._3id.muportDID,
       message,
-      timeStamp: new Date().getTime()
+      timestamp
     })
+  }
+
+  get address () {
+    return this._db ? this._address : null
+  }
+
+  /**
+   * Add a moderator to this thread, throws error is user can not add a moderator
+   *
+   * @param     {String}    id                      Moderator Id
+   */
+  async addModerator (id) {
+    this._requireLoad()
+    return this._db.access.grant(MODERATOR, id)
+  }
+
+  /**
+   * List moderators
+   *
+   * @return    {Array<String>}      Array of moderator DIDs
+   */
+  async listModerators () {
+    this._requireLoad()
+    return this._db.access.capabilities['moderators']
+  }
+
+  /**
+   * Add a member to this thread, throws if user can not add member, throw is not member thread
+   *
+   * @param     {String}    id                      Member Id
+   */
+  async addMember (id) {
+    this._throwIfNotMembers()
+    this._requireLoad()
+    return this._db.access.grant(MEMBER, id)
+  }
+
+  /**
+   * List members, throws if not member thread
+   *
+   * @return    {Array<String>}      Array of member DIDs
+   */
+  async listMembers () {
+    this._throwIfNotMembers()
+    this._requireLoad()
+    return this._db.access.capabilities['members']
+  }
+
+  _throwIfNotMembers () {
+    if (!this._membersOnly) throw new Error('Thread: Not a members only thread, function not available')
+  }
+
+  /**
+   * Delete post
+   *
+   * @param     {String}    id                      Moderator Id
+   */
+  async deletePost (hash) {
+    this._requireLoad()
+    return this._db.remove(hash)
   }
 
   /**
@@ -47,9 +113,9 @@ class Thread {
     this._requireLoad()
     if (!opts.limit) opts.limit = -1
     return this._db.iterator(opts).collect().map(entry => {
-      let post = entry.payload.value
-      post.postId = entry.hash
-      return post
+      const post = entry.payload.value
+      const metaData = { postId: entry.hash, author: entry.identity.id }
+      return Object.assign(metaData, post)
     })
   }
 
@@ -64,8 +130,7 @@ class Thread {
   async onNewPost (newPostFn) {
     this._requireLoad()
     this._db.events.on('replicate.progress', (address, hash, entry, prog, tot) => {
-      let post = entry.payload.value
-      post.postId = hash
+      let post = Object.assign({ postId: hash }, entry.payload.value)
       if (prog === tot) {
         newPostFn(post)
         this._queuedNewPosts.map(newPostFn)
@@ -75,19 +140,24 @@ class Thread {
       }
     })
     this._db.events.on('write', (dbname, entry) => {
-      let post = entry.payload.value
-      post.postId = entry.hash
-      newPostFn(post)
+      if (entry.payload.op === 'ADD') {
+        let post = Object.assign({ postId: entry.hash }, entry.payload.value)
+        newPostFn(post)
+      }
     })
   }
 
   async _load (odbAddress) {
-    // TODO - threads should use the space keyring once pairwise DIDs are implemented
-    const dbKey = this._3id._mainKeyring.getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
-    this._db = await this._orbitdb.log(odbAddress || this._name, {
-      key,
-      write: ['*']
+    const identity = await this._3id.getOdbId(this._spaceName)
+    this._db = await this._orbitdb.feed(odbAddress || this._name, {
+      identity,
+      accessController: {
+        type: 'thread-access',
+        threadName: this._name,
+        members: this._membersOnly,
+        rootMod: this._rootMod,
+        identity
+      }
     })
     await this._db.load()
     this._address = this._db.address.toString()
