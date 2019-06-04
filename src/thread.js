@@ -115,7 +115,7 @@ class Thread {
     return this._db.iterator(opts).collect().map(entry => {
       const post = entry.payload.value
       const metaData = { postId: entry.hash, author: entry.identity.id }
-      return Object.assign(post, metaData)
+      return Object.assign(metaData, post)
     })
   }
 
@@ -130,8 +130,7 @@ class Thread {
   async onNewPost (newPostFn) {
     this._requireLoad()
     this._db.events.on('replicate.progress', (address, hash, entry, prog, tot) => {
-      let post = entry.payload.value
-      post.postId = hash
+      let post = Object.assign({ postId: hash }, entry.payload.value)
       if (prog === tot) {
         newPostFn(post)
         this._queuedNewPosts.map(newPostFn)
@@ -142,8 +141,7 @@ class Thread {
     })
     this._db.events.on('write', (dbname, entry) => {
       if (entry.payload.op === 'ADD') {
-        let post = entry.payload.value
-        post.postId = entry.hash
+        let post = Object.assign({ postId: entry.hash }, entry.payload.value)
         newPostFn(post)
       }
     })
