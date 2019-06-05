@@ -93,21 +93,35 @@ bopen.addEventListener('click', event => {
 
       joinThread.addEventListener('click', () => {
         const name = threadName.value
+        const rootMod = threadRootMod.value
+        const members = membersOnly.checked
         posts.style.display = 'block'
-        box.spaces[window.currentSpace].joinThread(name).then(thread => {
+        threadModeration.style.display = 'block'
+        if (membersOnly.checked) threadMembers.style.display = 'block'
+        box.spaces[window.currentSpace].joinThread(name, {rootMod, membersOnly: members}).then(thread => {
           window.currentThread = thread
           thread.onNewPost(post => {
             updateThreadData()
           })
+          thread._db.access.on('updated', event => {
+            updateThreadCapabilities()
+          })
           updateThreadData()
+          updateThreadCapabilities()
         })
       })
 
       addThreadMod.addEventListener('click', () => {
-        const name = threadMod.value
-        posts.style.display = 'block'
-        window.currentThread.addModerator(name).then(res => {
-          console.log(res)
+        const id = threadMod.value
+        window.currentThread.addModerator(id).then(res => {
+          updateThreadCapabilities()
+        })
+      })
+
+      addThreadMember.addEventListener('click', () => {
+        const id = threadMember.value
+        window.currentThread.addMember(id).then(res => {
+          updateThreadCapabilities()
         })
       })
 
@@ -123,6 +137,21 @@ bopen.addEventListener('click', event => {
           posts.map(post => {
             threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
             threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
+          })
+        })
+      }
+
+      const updateThreadCapabilities = () => {
+        threadMemberList.innerHTML = ''
+        window.currentThread.listMembers().then(members => {
+          members.map(member => {
+              threadMemberList.innerHTML += member + '<br />'
+          })
+        })
+        threadModeratorList.innerHTML = ''
+        window.currentThread.listModerators().then(moderators => {
+          moderators.map(moderator => {
+              threadModeratorList.innerHTML += moderator  +  '<br />'
           })
         })
       }

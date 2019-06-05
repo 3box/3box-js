@@ -92,6 +92,7 @@ const MSG4 = 'message4'
 
 const THREEID1_MOCK = threeIDMock(DID1)
 const THREEID2_MOCK = threeIDMock(DID2)
+const THREEID3_MOCK = threeIDMock(DID3)
 
 const ensureConnected = jest.fn()
 const subscribeMock = jest.fn()
@@ -177,7 +178,7 @@ describe('Thread', () => {
     expect(await threadMods.listModerators()).toEqual([DID1, DID2])
   })
 
-  it('user without being a moderator can NOT add a moderator', async () => {
+  it('user who is not moderator can NOT add a moderator', async () => {
     const threadMods = new Thread(orbitdb, THREAD3_NAME, THREEID1_MOCK, false, DID2, subscribeMock, ensureConnected)
     await threadMods._load()
     expect(await threadMods.listModerators()).toEqual([DID2])
@@ -207,7 +208,7 @@ describe('Thread', () => {
     expect(await threadMembers.listMembers()).toEqual([DID2])
   })
 
-  it('user without being a moderator can NOT add a Member', async () => {
+  it('user who is not a moderator can NOT add a Member', async () => {
     const threadName = randomThreadName()
     const threadMembers = new Thread(orbitdb, threadName, THREEID1_MOCK, true, DID2, subscribeMock, ensureConnected)
     await threadMembers._load()
@@ -231,7 +232,7 @@ describe('Thread', () => {
     const entryId = posts[0].postId
     const thread2 = new Thread(orbitdb, threadName, THREEID2_MOCK, false, DID2, subscribeMock, ensureConnected)
     await thread2._load()
-    console.log(await thread2.deletePost(entryId))
+    await thread2.deletePost(entryId)
     expect(await thread2.getPosts()).toEqual([])
   })
 
@@ -292,6 +293,30 @@ describe('Thread', () => {
     await expect(posts[0].message).toEqual(MSG1)
   })
 
+  it('a member can NOT add a member', async () => {
+    const threadName = randomThreadName()
+    const thread1 = new Thread(orbitdb, threadName, THREEID1_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread1._load()
+    await thread1.addMember(DID2)
+    expect(await thread1.listMembers()).toEqual([DID2])
+    const thread2 = new Thread(orbitdb, threadName, THREEID2_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread2._load()
+    await expect(thread2.addMember(DID3)).rejects.toThrow(/can not be granted/)
+    expect(await thread2.listMembers()).toEqual([DID2])
+  })
+
+  it('a member can NOT add a moderator', async () => {
+    const threadName = randomThreadName()
+    const thread1 = new Thread(orbitdb, threadName, THREEID1_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread1._load()
+    await thread1.addMember(DID2)
+    expect(await thread1.listMembers()).toEqual([DID2])
+    const thread2 = new Thread(orbitdb, threadName, THREEID2_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread2._load()
+    await expect(thread2.addModerator(DID3)).rejects.toThrow(/can not be granted/)
+    expect(await thread2.listMembers()).toEqual([DID2])
+  })
+
   it('a moderator can post in a members only thread', async () => {
     const threadName = randomThreadName()
     const thread1 = new Thread(orbitdb, threadName, THREEID1_MOCK, true, DID1, subscribeMock, ensureConnected)
@@ -305,10 +330,32 @@ describe('Thread', () => {
     await expect(posts[0].message).toEqual(MSG1)
   })
 
-  it('share AC UPDATES ', async () => {
+  it('a member upgraded to a moderator can add other mods', async () => {
+    const threadName = randomThreadName()
+    const thread1 = new Thread(orbitdb, threadName, THREEID1_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread1._load()
+    await thread1.addMember(DID2)
+    await thread1.addModerator(DID2)
+    const thread2 = new Thread(orbitdb, threadName, THREEID2_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread2._load()
+    await thread2.addModerator(DID3)
+    expect(await thread2.listModerators()).toEqual([DID1, DID2, DID3])
+  })
+
+  it('a member upgraded to a moderator can add other members', async () => {
+    const threadName = randomThreadName()
+    const thread1 = new Thread(orbitdb, threadName, THREEID1_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread1._load()
+    await thread1.addMember(DID2)
+    await thread1.addModerator(DID2)
+    const thread2 = new Thread(orbitdb, threadName, THREEID2_MOCK, true, DID1, subscribeMock, ensureConnected)
+    await thread2._load()
+    await thread2.addMember(DID3)
+    expect(await thread2.listMembers()).toEqual([DID2, DID3])
+  })
+
+  it('a thread can be loaded by its address only', async () => {
     // TODO
-    //  ......
-    // and some other async conditions
   })
 
   describe('multi user interaction', () => {
@@ -369,6 +416,66 @@ describe('Thread', () => {
       expect(posts1[1].author).toEqual(THREEID2_MOCK.DID)
       expect(posts1[1].message).toEqual(MSG2)
       expect(posts1[1].postId).toEqual(posts2[1].postId)
+    })
+
+    it('moderator capabilities are shared/synced between users', async () => {
+      const threadName = randomThreadName()
+      threadUser1 = new Thread(orbitdb, threadName, THREEID1_MOCK,false, DID1, subscribeMock, ensureConnected)
+      await threadUser1._load()
+      threadUser2 = new Thread(orbitdb2, threadName, THREEID2_MOCK, false, DID1,subscribeMock, ensureConnected)
+      await threadUser2._load()
+
+      // user two tries to add a moderator and fails
+      await expect(threadUser2.addModerator(DID3)).rejects.toThrow(/can not be granted/)
+      expect(await threadUser2.listModerators()).toEqual([DID1])
+      expect(await threadUser1.listModerators()).toEqual([DID1])
+
+      // user1 add user2 as modes, wait for AC update
+      let updatePromise = new Promise((resolve, reject) => {
+        threadUser2._db.access.on('updated', event => {
+          resolve()
+        })
+      })
+
+      // user one adds user 2 as mod
+      await threadUser1.addModerator(DID2)
+      await updatePromise
+      expect(await threadUser2.listModerators()).toEqual([DID1, DID2])
+      expect(await threadUser1.listModerators()).toEqual([DID1, DID2])
+
+      // user 2 adds another mod succsesfully now
+      await threadUser2.addModerator(DID3)
+      expect(await threadUser2.listModerators()).toEqual([DID1, DID2, DID3])
+    })
+
+    it('member capabilities are shared/synced between users', async () => {
+      const threadName = randomThreadName()
+      threadUser1 = new Thread(orbitdb, threadName, THREEID1_MOCK, true, DID1, subscribeMock, ensureConnected)
+      await threadUser1._load()
+      threadUser2 = new Thread(orbitdb2, threadName, THREEID2_MOCK, true, DID1, subscribeMock, ensureConnected)
+      await threadUser2._load()
+
+      // user two tries to add a post and fails
+      await expect(threadUser2.post(MSG1)).rejects.toThrow(/not append entry/)
+      expect(await threadUser2.getPosts()).toEqual([])
+
+      //  wait for AC update
+      let updatePromise = new Promise((resolve, reject) => {
+        threadUser2._db.access.on('updated', event => {
+          resolve()
+        })
+      })
+
+      // user one adds user 2 as member
+      await threadUser1.addMember(DID2)
+      await updatePromise
+      expect(await threadUser2.listMembers()).toEqual([DID2])
+      expect(await threadUser1.listMembers()).toEqual([DID2])
+
+      // user 2 adds a post now
+      await threadUser2.post(MSG1)
+      const posts = await threadUser2.getPosts()
+      await expect(posts[0].message).toEqual(MSG1)
     })
 
     afterAll(async () => {
