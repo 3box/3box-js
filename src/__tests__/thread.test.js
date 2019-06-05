@@ -1,18 +1,21 @@
 const utils = require('./testUtils')
 const Thread = require('../thread')
 const OrbitDB = require('orbit-db')
-const { OdbIdentityProvider, LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
+const {
+  OdbIdentityProvider,
+  LegacyIPFS3BoxAccessController,
+  ThreadAccessController,
+  ModeratorAccessController
+} = require('3box-orbitdb-plugins')
 const Identities = require('orbit-db-identity-provider')
 Identities.addIdentityProvider(OdbIdentityProvider)
-const didJWT = require('did-jwt')
-const EC = require('elliptic').ec
-const ec = new EC('secp256k1')
 const AccessControllers = require('orbit-db-access-controllers')
-const ThreadAccessController = require('./../access/thread-open-mod-access')
-const ModeratorAccessController = require('./../access/moderator-access')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
+const didJWT = require('did-jwt')
+const EC = require('elliptic').ec
+const ec = new EC('secp256k1')
 const { registerMethod } = require('did-resolver')
 
 

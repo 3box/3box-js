@@ -5,9 +5,11 @@ const Pubsub = require('orbit-db-pubsub')
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
 const AccessControllers = require('orbit-db-access-controllers')
-const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
-const ThreadAccessController = require('./access/thread-open-mod-access')
-const ModeratorAccessController = require('./access/moderator-access')
+const {
+  LegacyIPFS3BoxAccessController,
+  ThreadAccessController,
+  ModeratorAccessController
+} = require('3box-orbitdb-plugins')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
