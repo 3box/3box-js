@@ -10,7 +10,6 @@ const registerResolver = require('3id-resolver')
 const utils = require('../utils/index')
 const Keyring = require('./keyring')
 const config = require('../config.js')
-const isIPFS = require('is-ipfs')
 
 const DID_METHOD_NAME = '3'
 const STORAGE_KEY = 'serialized3id_'
@@ -173,12 +172,6 @@ class ThreeId {
 
   static isLoggedIn (address) {
     return Boolean(localstorage.get(STORAGE_KEY + address.toLowerCase()))
-  }
-
-  static isValid3ID(did) {
-    const parts = did.split(':')
-    if (!parts[0] === 'did' || !parts[1] === '3') return false
-    return isIPFS.cid(parts[2])
   }
 
   static async getIdFromEthAddress (address, ethereum, ipfs, opts = {}) {
