@@ -108,31 +108,36 @@ bopen.addEventListener('click', event => {
           })
           updateThreadData()
           updateThreadCapabilities()
-        })
+        }).catch(updateThreadError)
       })
 
       addThreadMod.addEventListener('click', () => {
         const id = threadMod.value
         window.currentThread.addModerator(id).then(res => {
           updateThreadCapabilities()
-        })
+        }).catch(updateThreadError)
       })
 
       addThreadMember.addEventListener('click', () => {
         const id = threadMember.value
         window.currentThread.addMember(id).then(res => {
           updateThreadCapabilities()
-        })
+        }).catch(updateThreadError)
       })
 
       window.deletePost = (el) => {
         window.currentThread.deletePost(el.id).then(res => {
           updateThreadData()
-        })
+        }).catch(updateThreadError)
+      }
+
+      const updateThreadError = (e = '') => {
+        threadACError.innerHTML = e
       }
 
       const updateThreadData = () => {
         threadData.innerHTML = ''
+        updateThreadError()
         window.currentThread.getPosts().then(posts => {
           posts.map(post => {
             threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
@@ -143,11 +148,13 @@ bopen.addEventListener('click', event => {
 
       const updateThreadCapabilities = () => {
         threadMemberList.innerHTML = ''
-        window.currentThread.listMembers().then(members => {
-          members.map(member => {
-              threadMemberList.innerHTML += member + '<br />'
+        if (window.currentThread._membersOnly) {
+          window.currentThread.listMembers().then(members => {
+            members.map(member => {
+                threadMemberList.innerHTML += member + '<br />'
+            })
           })
-        })
+        }
         threadModeratorList.innerHTML = ''
         window.currentThread.listModerators().then(moderators => {
           moderators.map(moderator => {
@@ -157,7 +164,7 @@ bopen.addEventListener('click', event => {
       }
 
       postThread.addEventListener('click', () => {
-        window.currentThread.post(postMsg.value)
+        window.currentThread.post(postMsg.value).catch(updateThreadError)
       })
 
       bclose.addEventListener('click', () => {
