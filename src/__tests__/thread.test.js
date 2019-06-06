@@ -355,7 +355,18 @@ describe('Thread', () => {
   })
 
   it('a thread can be loaded by its address only', async () => {
-    // TODO
+    const threadName = randomThreadName()
+    const thread1 = new Thread(orbitdb, threadName, THREEID1_MOCK, false, DID1, subscribeMock, ensureConnected)
+    await thread1._load()
+    const thread1Address = thread1.address
+    await thread1.post(MSG1)
+    const posts = await thread1.getPosts()
+    const entryId = posts[0].postId
+    const thread2 = new Thread(orbitdb, threadName, THREEID2_MOCK, undefined, undefined, subscribeMock, ensureConnected)
+    await thread2._load(thread1Address)
+    const thread2Address = thread2.address
+    expect(thread1Address).toEqual(thread2Address)
+    await expect(posts[0].message).toEqual(MSG1)
   })
 
   describe('multi user interaction', () => {

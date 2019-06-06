@@ -56,10 +56,10 @@ class Space {
   /**
    * Join a thread. Use this to start receiving updates from, and to post in threads
    *
-   * @param     {String}    name                    The name of the thread
+   * @param     {String}    name                    The name or full address of the thread
    * @param     {Object}    opts                    Optional parameters
-   * @param     {Boolean}   opts.membersOnly        join a members only thread, which only members can post in
-   * @param     {String}    opts.rootMod            the rootMod, known as first moderator of a thread, by default user is moderator
+   * @param     {Boolean}   opts.membersOnly        join a members only thread, which only members can post in, ignores if joined by address
+   * @param     {String}    opts.rootMod            the rootMod, known as first moderator of a thread, by default user is moderator, ignored if joined by address
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    *
    * @return    {Thread}                            An instance of the thread class for the joined thread
@@ -69,7 +69,13 @@ class Space {
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
     if (!opts.rootMod) opts.rootMod = this._3id.getSubDID(this._name)
     const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.membersOnly, opts.rootMod, subscribeFn, this._ensureConnected)
-    await thread._load()
+    if (OrbitDBAddress.isValid(name)) {
+      const addressSpace = name.split('.')[2]
+      if (addressSpace !== this._name) throw new Error('joinThread: attempting to open thread from different space, must open within same space')
+      await thread._load(name)
+    } else {
+      await thread._load()
+    }
     this._activeThreads[name] = thread
     return thread
   }
