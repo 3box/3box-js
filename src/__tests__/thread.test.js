@@ -432,9 +432,7 @@ describe('Thread', () => {
 
       // user1 add user2 as modes, wait for AC update
       let updatePromise = new Promise((resolve, reject) => {
-        threadUser2._db.access.on('updated', event => {
-          resolve()
-        })
+        threadUser2.onNewCapabilities(resolve)
       })
 
       // user one adds user 2 as mod
@@ -461,9 +459,7 @@ describe('Thread', () => {
 
       //  wait for AC update
       let updatePromise = new Promise((resolve, reject) => {
-        threadUser2._db.access.on('updated', event => {
-          resolve()
-        })
+        threadUser2.onNewCapabilities(resolve)
       })
 
       // user one adds user 2 as member
