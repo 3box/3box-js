@@ -708,10 +708,10 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The name of the thread |
+| name | <code>String</code> | The name or full address of the thread |
 | opts | <code>Object</code> | Optional parameters |
-| opts.membersOnly | <code>Boolean</code> | join a members only thread, which only members can post in |
-| opts.rootMod | <code>String</code> | the rootMod, known as first moderator of a thread, by default user is moderator |
+| opts.membersOnly | <code>Boolean</code> | join a members only thread, which only members can post in, ignores if joined by address |
+| opts.rootMod | <code>String</code> | the rootMod, known as first moderator of a thread, by default user is moderator, ignored if joined by address |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 
 <a name="Space+subscribeThread"></a>
@@ -762,6 +762,7 @@ Get a list of all the threads subscribed to in this space
     * [.deletePost(id)](#Thread+deletePost)
     * [.getPosts(opts)](#Thread+getPosts) ⇒ <code>Array.&lt;Object&gt;</code>
     * [.onNewPost(newPostFn)](#Thread+onNewPost)
+    * [.onNewCapabilities(updateFn)](#Thread+onNewCapabilities)
 
 <a name="new_Thread_new"></a>
 
@@ -860,6 +861,21 @@ Note that posts here might be out of order.
 | Param | Type | Description |
 | --- | --- | --- |
 | newPostFn | <code>function</code> | The function that will get called |
+
+<a name="Thread+onNewCapabilities"></a>
+
+#### thread.onNewCapabilities(updateFn)
+Register a function to be called for every new
+capability that is added to the thread access controller.
+This inlcudes when a moderator or member is added.
+The function takes one parameter, which is the capabilities obj, or
+you can call listModerator / listMembers again instead.
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| updateFn | <code>function</code> | The function that will get called |
 
 <a name="Verified"></a>
 

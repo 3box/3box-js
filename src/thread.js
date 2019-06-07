@@ -147,6 +147,22 @@ class Thread {
     })
   }
 
+  /**
+   * Register a function to be called for every new
+   * capability that is added to the thread access controller.
+   * This inlcudes when a moderator or member is added.
+   * The function takes one parameter, which is the capabilities obj, or
+   * you can call listModerator / listMembers again instead.
+   *
+   * @param     {Function}  updateFn     The function that will get called
+   */
+
+  async onNewCapabilities (updateFn) {
+    this._db.access.on('updated', event => {
+      updateFn(this._db.access.capabilities)
+    })
+  }
+
   async _load (odbAddress) {
     const identity = await this._3id.getOdbId(this._spaceName)
     this._db = await this._orbitdb.feed(odbAddress || this._name, {
