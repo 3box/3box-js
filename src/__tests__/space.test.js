@@ -234,6 +234,11 @@ describe('Space', () => {
       expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
 
+    it('a thread loaded by address, must be in same space as threadname, otherwise throws', async () => {
+      const threadAddress = "/orbitdb/zdpuAz8c2gjonfuhYCfPJqZJUfYM5Kd7bpHaMyJZSLDMHSNvQ/3box.thread.errorspace.test"
+      await expect(space.joinThread(threadAddress)).rejects.toThrow(/must open within same space/)
+    })
+
     it('joins thread correctly, no auto subscription', async () => {
       const t1 = await space.joinThread('t3', { noAutoSub: true })
       expect(Thread).toHaveBeenCalledTimes(1)
