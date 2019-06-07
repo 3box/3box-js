@@ -8,7 +8,6 @@ Object {
   "k3": "v3",
   "k4": "v4",
   "k5": "v5",
-  "proof_did": "a fake jwt for test2",
 }
 `;
 
@@ -30,21 +29,11 @@ Object {
     "timestamp": 1558954408,
     "value": "v5",
   },
-  "proof_did": Object {
-    "timestamp": 1558954408,
-    "value": "a fake jwt for test2",
-  },
 }
 `;
 
 exports[`Space public store reducer log should only return public values 1`] = `
 Array [
-  Object {
-    "key": "proof_did",
-    "op": "PUT",
-    "timeStamp": 123,
-    "value": "a fake jwt for test2",
-  },
   Object {
     "key": "k1",
     "op": "PUT",

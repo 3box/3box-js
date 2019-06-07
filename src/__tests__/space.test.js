@@ -22,7 +22,8 @@ const threeIdMock = {
 let rootstoreMockData = []
 const rootstoreMock = {
   iterator: () => { return { collect: () => rootstoreMockData } },
-  add: jest.fn()
+  add: jest.fn(),
+  del: jest.fn()
 }
 
 const Space = require('../space')
@@ -59,7 +60,7 @@ describe('Space', () => {
     })
     await space.open(opts)
     expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME1)
-    expect(rootstoreMock.add).toHaveBeenCalledWith({ odbAddress:'/orbitdb/myodbaddr' })
+    expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
     expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME1)
     expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME1 + '.keyvalue')
     await syncDonePromise
@@ -74,7 +75,7 @@ describe('Space', () => {
   })
 
   it('should open correctly and not add to rootStore if entry already present', async () => {
-    rootstoreMockData.push({ payload: { value: { odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } })
+    rootstoreMockData = [{ payload: { value: { type: 'space', odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } }]
     let opts = {
       consentCallback: jest.fn(),
     }
@@ -85,6 +86,24 @@ describe('Space', () => {
     await space.open(opts)
     expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME2)
     expect(rootstoreMock.add).toHaveBeenCalledTimes(0)
+    expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME2)
+    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME2 + '.keyvalue')
+    await syncDonePromise
+  })
+
+  it('should open correctly and add to rootStore if old entry already present', async () => {
+    rootstoreMockData = [{ hash: 'a hash', payload: { value: { odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } }]
+    let opts = {
+      consentCallback: jest.fn(),
+    }
+    const syncDonePromise = new Promise((resolve, reject) => {
+      opts.onSyncDone = resolve
+    })
+    space = new Space(NAME2, threeIdMock, ORBITDB, rootstoreMock, ENSURE_CONNECTED)
+    await space.open(opts)
+    expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME2)
+    expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME2), odbAddress:'/orbitdb/myodbaddr' })
+    expect(rootstoreMock.del).toHaveBeenCalledWith('a hash')
     expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME2)
     expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME2 + '.keyvalue')
     await syncDonePromise

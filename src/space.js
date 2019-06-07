@@ -29,6 +29,13 @@ class Space {
     this.private = null
   }
 
+  /**
+   * @property {String} DID        the did of the user in this space
+   */
+  get DID () {
+    return this._3id.getSubDID(this._name)
+  }
+
   async open (opts = {}) {
     if (!this._store._db) {
       // store is not loaded opened yet
@@ -37,8 +44,12 @@ class Space {
       const spaceAddress = await this._store._load()
 
       const entries = await this._rootStore.iterator({ limit: -1 }).collect()
-      if (!entries.find(entry => entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)) {
-        this._rootStore.add({ odbAddress: spaceAddress })
+      const entry = entries.find(entry => entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)
+      if (!entry) {
+        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
+      } else if (!entry.payload.value.type) {
+        await this._rootStore.del(entry.hash)
+        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
       }
       const hasNumEntries = opts.numEntriesMessages && opts.numEntriesMessages[spaceAddress]
       const numEntries = hasNumEntries ? opts.numEntriesMessages[spaceAddress].numEntries : undefined
@@ -49,7 +60,6 @@ class Space {
       this._syncSpacePromise = syncSpace()
       this.public = publicStoreReducer(this._store)
       this.private = privateStoreReducer(this._store, this._3id.getKeyringBySpaceName(nameToSpaceName(this._name)))
-      this._ensureDIDPublished()
     }
   }
 
@@ -121,15 +131,6 @@ class Space {
       }
       return threads
     }, [])
-  }
-
-  async _ensureDIDPublished () {
-    // Ensure we self-published our did
-    if (!(await this.public.get('proof_did'))) {
-      await this._syncSpacePromise
-      // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', await this._3id.signJWT({}, { space: this._name }), { noLink: true })
-    }
   }
 }
 
