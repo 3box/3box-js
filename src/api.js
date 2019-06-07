@@ -55,10 +55,42 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metada
   }
 }
 
-async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
+async function getThread (space, name, rootMod, membersOnly, opts = {}) {
+  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+  if (rootMod.startsWith('0x')) {
+    const conf = await getConfig(rootMod, opts)
+    if (!conf.spaces[space] || !conf.spaces[space].DID) throw new Error(`Could not find appropriate DID for address ${rootMod}`)
+    rootMod = conf.spaces[space].DID
+  }
   return new Promise(async (resolve, reject) => {
     try {
-      const res = await utils.fetchJson(serverUrl + `/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`)
+      let url = `${serverUrl}/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`
+      url += `&mod=${encodeURIComponent(rootMod)}&members=${encodeURIComponent(membersOnly)}`
+      const res = await utils.fetchJson(url)
+      resolve(res)
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+async function getThreadByAddress (address, opts = {}) {
+  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.fetchJson(`${serverUrl}/thread?address=${encodeURIComponent(address)}`)
+      resolve(res)
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+async function getConfig (address, opts = {}) {
+  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.fetchJson(`${serverUrl}/config?address=${encodeURIComponent(address)}`)
       resolve(res)
     } catch (err) {
       reject(err)
@@ -147,4 +179,4 @@ async function getVerifiedAccounts (profile) {
   return verifs
 }
 
-module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getThread, getRootStoreAddress, getProfiles, getVerifiedAccounts }
+module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getThread, getThreadByAddress, getConfig, getRootStoreAddress, getProfiles, getVerifiedAccounts }

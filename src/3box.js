@@ -242,12 +242,38 @@ class Box {
    *
    * @param     {String}    space                   The name of the space the thread is in
    * @param     {String}    name                    The name of the thread
+   * @param     {String}    rootMod                 The DID (or ethereum address) of the root moderator
+   * @param     {Boolean}   membersOnly             True if only members are allowed to post
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Array<Object>}                     An array of posts
    */
-  static async getThread (space, name, opts = {}) {
-    return API.getThread(space, name, opts.profileServer)
+  static async getThread (space, name, rootMod, membersOnly, opts = {}) {
+    return API.getThread(space, name, rootMod, membersOnly, opts)
+  }
+
+  /**
+   * Get all posts that are made to a thread.
+   *
+   * @param     {String}    address                 The orbitdb-address of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Array<Object>}                     An array of posts
+   */
+  static async getThreadByAddress (address, opts = {}) {
+    return API.getThreadByAddress(address, opts)
+  }
+
+  /**
+   * Get the configuration of a users 3Box
+   *
+   * @param     {String}    address                 The ethereum address
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Array<Object>}                     An array of posts
+   */
+  static async getConfig (address, opts = {}) {
+    return API.getConfig(address, opts)
   }
 
   /**
