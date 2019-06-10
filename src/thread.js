@@ -5,7 +5,7 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (orbitdb, name, threeId, membersOnly, rootMod, subscribe, ensureConnected) {
+  constructor (orbitdb, name, threeId, members, firstModerator, subscribe, ensureConnected) {
     this._orbitdb = orbitdb
     this._name = name
     this._spaceName = name.split('.')[2]
@@ -13,8 +13,8 @@ class Thread {
     this._subscribe = subscribe
     this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
-    this._membersOnly = Boolean(membersOnly)
-    this._rootMod = rootMod || this._3id.getSubDID(this._spaceName)
+    this._members = Boolean(members)
+    this._firstModerator = firstModerator || this._3id.getSubDID(this._spaceName)
   }
 
   /**
@@ -25,7 +25,7 @@ class Thread {
    */
   async post (message) {
     this._requireLoad()
-    this._subscribe(this._address, { rootMod: this._rootMod, members: this._membersOnly, name: this._name })
+    this._subscribe(this._address, { firstModerator: this._firstModerator, members: this._members, name: this._name })
     this._ensureConnected(this._address, true)
     const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
     return this._db.add({
@@ -36,6 +36,14 @@ class Thread {
 
   get address () {
     return this._db ? this._address : null
+  }
+
+  async _getThreadAddress () {
+    await this._initConfigs()
+    const address = (await this.orbitdb._determineAddress(this._name, 'feed', {
+      accessController: this._accessController
+    }, false)).toString()
+    this._address = address
   }
 
   /**
@@ -81,7 +89,7 @@ class Thread {
   }
 
   _throwIfNotMembers () {
-    if (!this._membersOnly) throw new Error('Thread: Not a members only thread, function not available')
+    if (!this._members) throw new Error('Thread: Not a members only thread, function not available')
   }
 
   /**
@@ -152,16 +160,11 @@ class Thread {
   }
 
   async _load (odbAddress) {
-    const identity = await this._3id.getOdbId(this._spaceName)
+    await this._initConfigs()
+    const identity = this._identity
     this._db = await this._orbitdb.feed(odbAddress || this._name, {
       identity,
-      accessController: {
-        type: 'thread-access',
-        threadName: this._name,
-        members: this._membersOnly,
-        rootMod: this._rootMod,
-        identity
-      }
+      accessController: this._accessController
     })
     await this._db.load()
     this._address = this._db.address.toString()
@@ -176,6 +179,18 @@ class Thread {
   async close () {
     this._requireLoad()
     await this._db.close()
+  }
+
+  async _initConfigs() {
+    if (this._identity) return
+    this._identity =  await this._3id.getOdbId(this._spaceName)
+    this._accessController =  {
+          type: 'thread-access',
+          threadName: this._name,
+          members: this._members,
+          firstModerator: this._firstModerator,
+          identity: this._identity
+        }
   }
 }
 

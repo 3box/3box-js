@@ -66,38 +66,55 @@ class Space {
   /**
    * Join a thread. Use this to start receiving updates from, and to post in threads
    *
-   * @param     {String}    name                    The name or full address of the thread
+   * @param     {String}    name                    The name of the thread
    * @param     {Object}    opts                    Optional parameters
-   * @param     {Boolean}   opts.membersOnly        join a members only thread, which only members can post in, ignores if joined by address
-   * @param     {String}    opts.rootMod            the rootMod, known as first moderator of a thread, by default user is moderator, ignored if joined by address
+   * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
+   * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    *
    * @return    {Thread}                            An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
-    if (this._activeThreads[name]) return this._activeThreads[name]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
-    if (!opts.rootMod) opts.rootMod = this._3id.getSubDID(this._name)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.membersOnly, opts.rootMod, subscribeFn, this._ensureConnected)
-    if (OrbitDBAddress.isValid(name)) {
-      const addressSpace = name.split('.')[2]
-      if (addressSpace !== this._name) throw new Error('joinThread: attempting to open thread from different space, must open within same space')
-      await thread._load(name)
-    } else {
-      await thread._load()
-    }
-    this._activeThreads[name] = thread
+    if (!opts.firstModerator ) opts.firstModerator  = this._3id.getSubDID(this._name)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    const address = thread._getThreadAddress()
+    if (this._activeThreads[address]) return this._activeThreads[address]
+    await thread._load()
+    this._activeThreads[address] = thread
+    return thread
+  }
+
+  /**
+   * Join a thread by full thread address. Use this to start receiving updates from, and to post in threads
+   *
+   * @param     {String}    address                 The full address of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
+   *
+   * @return    {Thread}                            An instance of the thread class for the joined thread
+   */
+  async joinThreadByAddress (address, opts = {}) {
+    if (!OrbitDBAddress.isValid(address)) throw new Error('joinThreadByAddress: valid orbitdb address required')
+    const threadSpace = address.split('.')[2]
+    const threadName = address.split('.')[3]
+    if (threadSpace !== this._name) throw new Error('joinThreadByAddress: attempting to open thread from different space, must open within same space')
+    if (this._activeThreads[address]) return this._activeThreads[address]
+    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, threadName), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    await thread._load(address)
+    this._activeThreads[address] = thread
     return thread
   }
 
   /**
    * Subscribe to the given thread, if not already subscribed
    *
-   * @param     {String}    address           The address of the thread
-   * @param     {Object}    config            configuration and thread meta data
-   * @param     {String}    opts.name         Name of thread
-   * @param     {String}    opts.rootMod      DID of the root moderator
-   * @param     {String}    opts.members      Boolean string, true if a members only thread
+   * @param     {String}    address                The address of the thread
+   * @param     {Object}    config                configuration and thread meta data
+   * @param     {String}    opts.name             Name of thread
+   * @param     {String}    opts.firstModerator   DID of the first moderator
+   * @param     {String}    opts.members          Boolean string, true if a members only thread
    */
   async subscribeThread (address, config = {}) {
     if (!OrbitDBAddress.isValid(address)) throw new Error('subscribeThread: must subscribe to valid thread/orbitdb address')
@@ -123,7 +140,7 @@ class Space {
   /**
    * Get a list of all the threads subscribed to in this space
    *
-   * @return    {Array<Objects>}    A list of thread objects as { address, rootMod, members, name}
+   * @return    {Array<Objects>}    A list of thread objects as { address, firstModerator, members, name}
    */
   async subscribedThreads () {
     const allEntries = await this.public.all()

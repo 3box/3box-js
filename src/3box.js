@@ -242,14 +242,14 @@ class Box {
    *
    * @param     {String}    space                   The name of the space the thread is in
    * @param     {String}    name                    The name of the thread
-   * @param     {String}    rootMod                 The DID (or ethereum address) of the root moderator
-   * @param     {Boolean}   membersOnly             True if only members are allowed to post
+   * @param     {String}    firstModerator          The DID (or ethereum address) of the first moderator
+   * @param     {Boolean}   members                 True if only members are allowed to post
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Array<Object>}                     An array of posts
    */
-  static async getThread (space, name, rootMod, membersOnly, opts = {}) {
-    return API.getThread(space, name, rootMod, membersOnly, opts)
+  static async getThread (space, name, firstModerator, members, opts = {}) {
+    return API.getThread(space, name, firstModerator, members, opts)
   }
 
   /**

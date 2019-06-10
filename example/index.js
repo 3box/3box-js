@@ -93,12 +93,12 @@ bopen.addEventListener('click', event => {
 
       joinThread.addEventListener('click', () => {
         const name = threadName.value
-        const rootMod = threadRootMod.value
-        const members = membersOnly.checked
+        const firstModerator = threadfirstModerator.value
+        const members = members.checked
         posts.style.display = 'block'
         threadModeration.style.display = 'block'
-        if (membersOnly.checked) threadMembers.style.display = 'block'
-        box.spaces[window.currentSpace].joinThread(name, {rootMod, membersOnly: members}).then(thread => {
+        if (members.checked) threadMembers.style.display = 'block'
+        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members}).then(thread => {
           window.currentThread = thread
           thread.onUpdate(() => {
             updateThreadData()
@@ -148,7 +148,7 @@ bopen.addEventListener('click', event => {
 
       const updateThreadCapabilities = () => {
         threadMemberList.innerHTML = ''
-        if (window.currentThread._membersOnly) {
+        if (window.currentThread._members) {
           window.currentThread.listMembers().then(members => {
             members.map(member => {
                 threadMemberList.innerHTML += member + '<br />'

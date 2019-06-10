@@ -55,17 +55,17 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metada
   }
 }
 
-async function getThread (space, name, rootMod, membersOnly, opts = {}) {
+async function getThread (space, name, firstModerator, members, opts = {}) {
   const serverUrl = opts.profileServer || PROFILE_SERVER_URL
-  if (rootMod.startsWith('0x')) {
-    const conf = await getConfig(rootMod, opts)
-    if (!conf.spaces[space] || !conf.spaces[space].DID) throw new Error(`Could not find appropriate DID for address ${rootMod}`)
-    rootMod = conf.spaces[space].DID
+  if (firstModerator.startsWith('0x')) {
+    const conf = await getConfig(firstModerator, opts)
+    if (!conf.spaces[space] || !conf.spaces[space].DID) throw new Error(`Could not find appropriate DID for address ${firstModerator}`)
+    firstModerator = conf.spaces[space].DID
   }
   return new Promise(async (resolve, reject) => {
     try {
       let url = `${serverUrl}/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`
-      url += `&mod=${encodeURIComponent(rootMod)}&members=${encodeURIComponent(membersOnly)}`
+      url += `&mod=${encodeURIComponent(firstModerator)}&members=${encodeURIComponent(members)}`
       const res = await utils.fetchJson(url)
       resolve(res)
     } catch (err) {

@@ -251,7 +251,9 @@ idUtils.verifyClaim(claim)
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
         * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
         * [.getSpace(address, name, opts)](#Box.getSpace) ⇒ <code>Object</code>
-        * [.getThread(space, name, opts)](#Box.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
+        * [.getThread(space, name, firstModerator, members, opts)](#Box.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
+        * [.getThreadByAddress(address, opts)](#Box.getThreadByAddress) ⇒ <code>Array.&lt;Object&gt;</code>
+        * [.getConfig(address, opts)](#Box.getConfig) ⇒ <code>Array.&lt;Object&gt;</code>
         * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
@@ -464,7 +466,7 @@ Get the public data in a space of a given address with the given name
 
 <a name="Box.getThread"></a>
 
-#### Box.getThread(space, name, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+#### Box.getThread(space, name, firstModerator, members, opts) ⇒ <code>Array.&lt;Object&gt;</code>
 Get all posts that are made to a thread.
 
 **Kind**: static method of [<code>Box</code>](#Box)  
@@ -474,6 +476,36 @@ Get all posts that are made to a thread.
 | --- | --- | --- |
 | space | <code>String</code> | The name of the space the thread is in |
 | name | <code>String</code> | The name of the thread |
+| firstModerator | <code>String</code> | The DID (or ethereum address) of the first moderator |
+| members | <code>Boolean</code> | True if only members are allowed to post |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.getThreadByAddress"></a>
+
+#### Box.getThreadByAddress(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get all posts that are made to a thread.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The orbitdb-address of the thread |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.getConfig"></a>
+
+#### Box.getConfig(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get the configuration of a users 3Box
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The ethereum address |
 | opts | <code>Object</code> | Optional parameters |
 | opts.profileServer | <code>String</code> | URL of Profile API server |
 
@@ -668,7 +700,9 @@ Get all values and optionally metadata
     * [new Space()](#new_Space_new)
     * [.public](#Space+public)
     * [.private](#Space+private)
+    * [.DID](#Space+DID)
     * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
+    * [.joinThreadByAddress(address, opts)](#Space+joinThreadByAddress) ⇒ [<code>Thread</code>](#Thread)
     * [.subscribeThread(address, config)](#Space+subscribeThread)
     * [.unsubscribeThread(address)](#Space+unsubscribeThread)
     * [.subscribedThreads()](#Space+subscribedThreads) ⇒ <code>Array.&lt;Objects&gt;</code>
@@ -698,6 +732,16 @@ Please use **box.openSpace** to get the instance of this class
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the space |
 
+<a name="Space+DID"></a>
+
+#### space.DID
+**Kind**: instance property of [<code>Space</code>](#Space)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DID | <code>String</code> | the did of the user in this space |
+
 <a name="Space+joinThread"></a>
 
 #### space.joinThread(name, opts) ⇒ [<code>Thread</code>](#Thread)
@@ -708,10 +752,24 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The name or full address of the thread |
+| name | <code>String</code> | The name of the thread |
 | opts | <code>Object</code> | Optional parameters |
-| opts.membersOnly | <code>Boolean</code> | join a members only thread, which only members can post in, ignores if joined by address |
-| opts.rootMod | <code>String</code> | the rootMod, known as first moderator of a thread, by default user is moderator, ignored if joined by address |
+| opts.firstModerator | <code>String</code> | DID of first moderator of a thread, by default, user is first moderator |
+| opts.members | <code>Boolean</code> | join a members only thread, which only members can post in, defaults to open thread |
+| opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
+
+<a name="Space+joinThreadByAddress"></a>
+
+#### space.joinThreadByAddress(address, opts) ⇒ [<code>Thread</code>](#Thread)
+Join a thread by full thread address. Use this to start receiving updates from, and to post in threads
+
+**Kind**: instance method of [<code>Space</code>](#Space)  
+**Returns**: [<code>Thread</code>](#Thread) - An instance of the thread class for the joined thread  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The full address of the thread |
+| opts | <code>Object</code> | Optional parameters |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 
 <a name="Space+subscribeThread"></a>
@@ -726,7 +784,7 @@ Subscribe to the given thread, if not already subscribed
 | address | <code>String</code> | The address of the thread |
 | config | <code>Object</code> | configuration and thread meta data |
 | opts.name | <code>String</code> | Name of thread |
-| opts.rootMod | <code>String</code> | DID of the root moderator |
+| opts.firstModerator | <code>String</code> | DID of the first moderator |
 | opts.members | <code>String</code> | Boolean string, true if a members only thread |
 
 <a name="Space+unsubscribeThread"></a>
@@ -746,7 +804,7 @@ Unsubscribe from the given thread, if subscribed
 Get a list of all the threads subscribed to in this space
 
 **Kind**: instance method of [<code>Space</code>](#Space)  
-**Returns**: <code>Array.&lt;Objects&gt;</code> - A list of thread objects as { address, rootMod, members, name}  
+**Returns**: <code>Array.&lt;Objects&gt;</code> - A list of thread objects as { address, firstModerator, members, name}  
 <a name="Thread"></a>
 
 ### Thread

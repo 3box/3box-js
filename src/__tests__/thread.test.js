@@ -2,82 +2,25 @@ const utils = require('./testUtils')
 const Thread = require('../thread')
 const OrbitDB = require('orbit-db')
 const {
-  OdbIdentityProvider,
+  // OdbIdentityProvider,
   LegacyIPFS3BoxAccessController,
   ThreadAccessController,
   ModeratorAccessController
 } = require('3box-orbitdb-plugins')
-const Identities = require('orbit-db-identity-provider')
-Identities.addIdentityProvider(OdbIdentityProvider)
+// const Identities = require('orbit-db-identity-provider')
+// Identities.addIdentityProvider(OdbIdentityProvider)
 const AccessControllers = require('orbit-db-access-controllers')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
-const didJWT = require('did-jwt')
-const EC = require('elliptic').ec
-const ec = new EC('secp256k1')
 const { registerMethod } = require('did-resolver')
+const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
+registerMethod('3', didResolverMock)
 
 const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
 const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
 const DID3 = 'did:3:zdpuAvKY6Noex9nRMp1pR8dHauT5Rn4yhVuLq9bAdz4pp5oRd'
-
-
-const didResolver = async (did) => {
-  return {
-    '@context': 'https://w3id.org/did/v1',
-    'id': did,
-    'publicKey': [{
-      'id': `${did}#signingKey`,
-      'type': 'Secp256k1VerificationKey2018',
-      'publicKeyHex': '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781'
-    }],
-    'authentication': [{
-      'type': 'Secp256k1SignatureAuthentication2018',
-      'publicKey': `${did}#signingKey`
-    }]
-  }
-}
-
-registerMethod('3', didResolver)
-
-
-const threeIDMock = (did) => {
-  const signJWT = payload => {
-    return didJWT.createJWT(payload, {
-      signer: didJWT.SimpleSigner('95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be'),
-      issuer: did
-    })
-  }
-
-  const getKeyringBySpaceName = () => {
-    return {
-      getPublicKeys: () => {
-        return { signingKey: '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781' }
-      }
-    }
-  }
-
-  const getSubDID = () => did
-
-  const getOdbId = () => {
-    return Identities.createIdentity({
-      type: '3ID',
-      threeId: {signJWT, getKeyringBySpaceName, DID: did, getSubDID},
-      identityKeysPath: `./tmp/${did}`
-    })
-  }
-
-  return {
-    DID: did,
-    signJWT,
-    getKeyringBySpaceName,
-    getOdbId,
-    getSubDID
-  }
-}
-
 
 const THREAD1_NAME = '3box.thread.somespace.name1'
 const THREAD2_NAME = '3box.thread.somespace.name2'
@@ -90,9 +33,9 @@ const MSG2 = 'message2'
 const MSG3 = 'message3'
 const MSG4 = 'message4'
 
-const THREEID1_MOCK = threeIDMock(DID1)
-const THREEID2_MOCK = threeIDMock(DID2)
-const THREEID3_MOCK = threeIDMock(DID3)
+const THREEID1_MOCK = threeIDMockFactory(DID1)
+const THREEID2_MOCK = threeIDMockFactory(DID2)
+const THREEID3_MOCK = threeIDMockFactory(DID3)
 
 const ensureConnected = jest.fn()
 const subscribeMock = jest.fn()
@@ -163,8 +106,8 @@ describe('Thread', () => {
 
   it('defaults to user as root moderator and no members ', async () => {
     const threadDefault = new Thread(orbitdb, THREAD3_NAME, THREEID1_MOCK, undefined, undefined, subscribeMock, ensureConnected)
-    expect(threadDefault._rootMod).toEqual(THREEID1_MOCK.DID)
-    expect(threadDefault._membersOnly).toEqual(false)
+    expect(threadDefault._firstModerator).toEqual(THREEID1_MOCK.DID)
+    expect(threadDefault._members).toEqual(false)
     await threadDefault._load()
     const moderators = await threadDefault.listModerators()
     expect(moderators).toEqual([THREEID1_MOCK.DID])
@@ -234,20 +177,6 @@ describe('Thread', () => {
     await thread2._load()
     await thread2.deletePost(entryId)
     expect(await thread2.getPosts()).toEqual([])
-  })
-
-  it('a moderator can NOT delete other moderator posts', async () => {
-    const threadName = randomThreadName()
-    const thread1 = new Thread(orbitdb, threadName, THREEID1_MOCK, false, DID1, subscribeMock, ensureConnected)
-    await thread1._load()
-    await thread1.post(MSG1)
-    const posts = await thread1.getPosts()
-    await thread1.addModerator(DID2)
-    expect(await thread1.listModerators()).toEqual([DID1, DID2])
-    const entryId = posts[0].postId
-    const thread2 = new Thread(orbitdb, threadName, THREEID2_MOCK, false, DID1, subscribeMock, ensureConnected)
-    await thread2._load()
-    await expect(thread2.deletePost(entryId)).rejects.toThrow(/not append entry/)
   })
 
   it('user without being a moderator can NOT delete others posts', async () => {
