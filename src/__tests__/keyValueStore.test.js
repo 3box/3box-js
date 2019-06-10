@@ -6,45 +6,16 @@ const Identities = require('orbit-db-identity-provider')
 Identities.addIdentityProvider(OdbIdentityProvider)
 const AccessControllers = require('orbit-db-access-controllers')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
-const didJWT = require('did-jwt')
 const { registerMethod } = require('did-resolver')
+const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
 const STORE_NAME = '09ab7cd93f9e.public'
+const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
+const THREEID_MOCK = threeIDMockFactory(DID1)
 
-const THREEID_MOCK = {
-  DID: 'did:3:asdfasdf',
-  getKeyringBySpaceName: () => {
-    return {
-      getPublicKeys: () => {
-        return { signingKey: '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781' }
-      }
-    }
-  },
-  signJWT: payload => {
-    return didJWT.createJWT(payload, {
-      signer: didJWT.SimpleSigner('95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be'),
-      issuer: 'did:3:asdfasdf'
-    })
-  }
-}
-registerMethod('3', async () => {
-  return {
-    '@context': 'https://w3id.org/did/v1',
-    'id': 'did:3:asdfasdf',
-    'publicKey': [{
-      'id': 'did:3:asdfasdf#signingKey',
-      'type': 'Secp256k1VerificationKey2018',
-      'publicKeyHex': '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781'
-    }],
-    'authentication': [{
-      'type': 'Secp256k1SignatureAuthentication2018',
-      'publicKey': 'did:2:asdfasdf#signingKey'
-    }]
-  }
-})
+registerMethod('3', didResolverMock)
 
 const ensureConnected = jest.fn()
-
 
 describe('KeyValueStore', () => {
   let ipfs

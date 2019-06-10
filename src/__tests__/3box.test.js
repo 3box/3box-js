@@ -9,70 +9,38 @@ const { registerMethod } = require('did-resolver')
 const AccessControllers = require('orbit-db-access-controllers')
 const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
-registerMethod('3', async () => {
-  return {
-    '@context': 'https://w3id.org/did/v1',
-    'id': 'did:3:asdfasdf',
-    'publicKey': [{
-      'id': 'did:3:asdfasdf#signingKey',
-      'type': 'Secp256k1VerificationKey2018',
-      'publicKeyHex': '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781'
-    }],
-    'authentication': [{
-      'type': 'Secp256k1SignatureAuthentication2018',
-      'publicKey': 'did:2:asdfasdf#signingKey'
-    }]
-  }
-})
+registerMethod('3', didResolverMock)
+
+const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
+const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
+const DIDMUPORT1 = DID1.replace('3', 'muport')
+const DIDMUPORT2 = DID2.replace('3', 'muport')
 
 jest.mock('../3id', () => {
-  const did1 = 'did:muport:Qmsdfp98yw4t7'
-  const did2 = 'did:muport:Qmsdsdf87g329'
-  const didJWT = require('did-jwt')
-  const Identities = require('orbit-db-identity-provider')
-  const { OdbIdentityProvider } = require('3box-orbitdb-plugins')
-  Identities.addIdentityProvider(OdbIdentityProvider)
-  const serialized = 'such serialized state'
+  const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
+  const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
+  const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
   let loggedIn = true
   const logoutFn = jest.fn(() => {
     loggedIn = false
   })
   const instance = (did, managementKey) => {
-    return {
-      DID: did.replace('muport', '3'),
-      muportDID: did,
+    const instance = threeIDMockFactory(did)
+    const extend = {
+      muportDID: did.replace('3', 'muport'),
       managementAddress: managementKey,
       logout: logoutFn,
       muportFingerprint: managementKey === '0x12345' ? 'b932fe7ab' : 'ab8c73d8f',
       getDidDocument: () => { return { managementKey } },
-      getKeyringBySpaceName: () => {
-        return {
-          getPublicKeys: () => {
-            return { signingKey: '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781' }
-          }
-        }
-      },
-      signJWT: payload => {
-        return didJWT.createJWT(payload, {
-          signer: didJWT.SimpleSigner('95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be'),
-          issuer: 'did:3:asdfasdf'
-        })
-      }
     }
+    return Object.assign(instance, extend)
   }
   return {
     getIdFromEthAddress: jest.fn((address, ethProv, ipfs, { consentCallback }) => {
-      const did = address === '0x12345' ? did1 : did2
-      const inst = instance(did, address)
-      inst.getOdbId = () => {
-        return Identities.createIdentity({
-          type: '3ID',
-          threeId: inst,
-          identityKeysPath: './tmp/odbIdentityKeys'
-        })
-      }
-      return inst
+      const did = address === '0x12345' ? DID1 : DID2
+      return instance(did, address)
     }),
     logoutFn,
     isLoggedIn: jest.fn(() => { return loggedIn })
@@ -355,9 +323,9 @@ describe('3Box', () => {
     expect(global.console.error).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      consent_msg: 'I agree to stuff,did:muport:Qmsdfp98yw4t7',
+      consent_msg: `I agree to stuff,${DIDMUPORT1}`,
       consent_signature: '0xSuchRealSig,0x12345',
-      linked_did: 'did:muport:Qmsdfp98yw4t7'
+      linked_did: DIDMUPORT1
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
   })
@@ -392,9 +360,9 @@ describe('3Box', () => {
     await box._linkProfile()
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      consent_msg: 'I agree to stuff,did:muport:Qmsdfp98yw4t7',
+      consent_msg: `I agree to stuff,${DIDMUPORT1}`,
       consent_signature: '0xSuchRealSig,0x12345',
-      linked_did: 'did:muport:Qmsdfp98yw4t7'
+      linked_did: DIDMUPORT1
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
     expect(box.public.set).toHaveBeenCalledTimes(2) // ethereum && proof
@@ -445,9 +413,9 @@ describe('3Box', () => {
     await box._linkProfile()
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      consent_msg: 'I agree to stuff,did:muport:Qmsdsdf87g329',
-      consent_signature: '0xSuchRealSig,0xabcde',
-      linked_did: 'did:muport:Qmsdsdf87g329'
+      consent_msg: `I agree to stuff,${DIDMUPORT2}`,
+      consent_signature: "0xSuchRealSig,0xabcde",
+      linked_did: DIDMUPORT2
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
     await publishPromise
