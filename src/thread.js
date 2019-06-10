@@ -1,5 +1,13 @@
+const isIPFS = require('is-ipfs')
+
 const MODERATOR = 'MODERATOR'
 const MEMBER = 'MEMBER'
+
+const isValid3ID = did => {
+  const parts = did.split(':')
+  if (!parts[0] === 'did' || !parts[1] === '3') return false
+  return isIPFS.cid(parts[2])
+}
 
 class Thread {
   /**
@@ -40,7 +48,7 @@ class Thread {
 
   async _getThreadAddress () {
     await this._initConfigs()
-    const address = (await this.orbitdb._determineAddress(this._name, 'feed', {
+    const address = (await this._orbitdb._determineAddress(this._name, 'feed', {
       accessController: this._accessController
     }, false)).toString()
     this._address = address
@@ -53,6 +61,7 @@ class Thread {
    */
   async addModerator (id) {
     this._requireLoad()
+    if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
     return this._db.access.grant(MODERATOR, id)
   }
 
@@ -72,6 +81,7 @@ class Thread {
    * @param     {String}    id                      Member Id
    */
   async addMember (id) {
+    if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
     this._throwIfNotMembers()
     this._requireLoad()
     return this._db.access.grant(MEMBER, id)
@@ -193,16 +203,16 @@ class Thread {
     await this._db.close()
   }
 
-  async _initConfigs() {
+  async _initConfigs () {
     if (this._identity) return
-    this._identity =  await this._3id.getOdbId(this._spaceName)
-    this._accessController =  {
-          type: 'thread-access',
-          threadName: this._name,
-          members: this._members,
-          firstModerator: this._firstModerator,
-          identity: this._identity
-        }
+    this._identity = await this._3id.getOdbId(this._spaceName)
+    this._accessController = {
+      type: 'thread-access',
+      threadName: this._name,
+      members: this._members,
+      firstModerator: this._firstModerator,
+      identity: this._identity
+    }
   }
 }
 

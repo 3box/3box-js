@@ -94,11 +94,11 @@ bopen.addEventListener('click', event => {
       joinThread.addEventListener('click', () => {
         const name = threadName.value
         const firstModerator = threadfirstModerator.value
-        const members = members.checked
+        const membersBool = members.checked
         posts.style.display = 'block'
         threadModeration.style.display = 'block'
         if (members.checked) threadMembers.style.display = 'block'
-        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members}).then(thread => {
+        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members: membersBool}).then(thread => {
           window.currentThread = thread
           thread.onNewPost(post => {
             updateThreadData()
