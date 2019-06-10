@@ -45,6 +45,7 @@ bopen.addEventListener('click', event => {
 
       openSpace.addEventListener('click', () => {
         const name = spaceName.value
+        window.currentSpace = name
         const opts = {
           onSyncDone: () => {
             console.log('sync done in space', name)
@@ -52,7 +53,6 @@ bopen.addEventListener('click', event => {
           }
         }
         box.openSpace(name, opts).then(() => {
-          window.currentSpace = name
           spacePub.innerHTML = `Public data in ${name}:`
           spacePriv.innerHTML = `Private data in ${name}:`
           spaceCtrl.style.display = 'block'
@@ -100,10 +100,10 @@ bopen.addEventListener('click', event => {
         if (membersOnly.checked) threadMembers.style.display = 'block'
         box.spaces[window.currentSpace].joinThread(name, {rootMod, membersOnly: members}).then(thread => {
           window.currentThread = thread
-          thread.onNewPost(post => {
+          thread.onUpdate(() => {
             updateThreadData()
           })
-          thread._db.access.on('updated', event => {
+          thread.onNewCapabilities(() => {
             updateThreadCapabilities()
           })
           updateThreadData()

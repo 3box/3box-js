@@ -120,30 +120,18 @@ class Thread {
   }
 
   /**
-   * Register a function to be called for every new
-   * post that is received from the network.
-   * The function takes one parameter, which is the post.
-   * Note that posts here might be out of order.
+   * Register a function to be called after new updates
+   * have been received from the network or locally.
    *
-   * @param     {Function}  newPostFn               The function that will get called
+   * @param     {Function}  updateFn               The function that will get called
    */
-  async onNewPost (newPostFn) {
+  async onUpdate (updateFn) {
     this._requireLoad()
-    this._db.events.on('replicate.progress', (address, hash, entry, prog, tot) => {
-      const post = Object.assign({ postId: hash }, entry.payload.value)
-      if (prog === tot) {
-        newPostFn(post)
-        this._queuedNewPosts.map(newPostFn)
-        this._queuedNewPosts = []
-      } else {
-        this._queuedNewPosts.unshift(post)
-      }
+    this._db.events.on('replicated', (address, hash, entry, prog, tot) => {
+      updateFn()
     })
     this._db.events.on('write', (dbname, entry) => {
-      if (entry.payload.op === 'ADD') {
-        const post = Object.assign({ postId: entry.hash }, entry.payload.value)
-        newPostFn(post)
-      }
+      updateFn()
     })
   }
 
