@@ -1,5 +1,14 @@
 # Release Notes
 
+## v1.9.0 - 2019-06-11
+* feat: add support for moderated and members threads
+* feat: update to latest orbitdb and ipfs
+* feat: add 3ID
+
+Along with support for moderated and members threads, this replaces experimental threads seen in prior releases. Look for API changes to use new version of threads.
+
+Also with the upgrade of OrbitDB, an upgrade of this library is required for everything to continue working as expected. More details here - https://medium.com/3box/3box-js-1-9-soft-fork-upgrade-bcd79bb5f29c
+
 ## v1.8.5 - 2019-05-30
 * Fix: Return promise in public set/remove methods of spaces
 

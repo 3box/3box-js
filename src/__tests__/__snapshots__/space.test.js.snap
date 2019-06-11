@@ -1,0 +1,62 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Space Threads does not subscribe or return invalid thread address (ignore experimental) 1`] = `"subscribeThread: must subscribe to valid thread/orbitdb address"`;
+
+exports[`Space public store reducer all should return all values from public store 1`] = `
+Object {
+  "k1": "v1",
+  "k3": "v3",
+  "k4": "v4",
+  "k5": "v5",
+}
+`;
+
+exports[`Space public store reducer all should return all values from public store 2`] = `
+Object {
+  "k1": Object {
+    "timestamp": 1558954408,
+    "value": "v1",
+  },
+  "k3": Object {
+    "timestamp": 1558954408,
+    "value": "v3",
+  },
+  "k4": Object {
+    "timestamp": 1558954408,
+    "value": "v4",
+  },
+  "k5": Object {
+    "timestamp": 1558954408,
+    "value": "v5",
+  },
+}
+`;
+
+exports[`Space public store reducer log should only return public values 1`] = `
+Array [
+  Object {
+    "key": "k1",
+    "op": "PUT",
+    "timeStamp": 123,
+    "value": "v1",
+  },
+  Object {
+    "key": "k3",
+    "op": "PUT",
+    "timeStamp": 123,
+    "value": "v3",
+  },
+  Object {
+    "key": "k4",
+    "op": "PUT",
+    "timeStamp": 123,
+    "value": "v4",
+  },
+  Object {
+    "key": "k5",
+    "op": "PUT",
+    "timeStamp": 123,
+    "value": "v5",
+  },
+]
+`;

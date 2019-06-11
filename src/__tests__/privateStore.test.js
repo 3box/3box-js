@@ -20,7 +20,6 @@ describe('PrivateStore', () => {
           }
         },
         symDecrypt: (ciphertext, nonce) => ciphertext.split('!')[1],
-        getDid: () => 'did:muport:Qmsdfwerg',
         getDBSalt: () => 'f97f0d1ced93052700d740e23666ad9ff8b32366e3ce28696d3c9684f448142e'
       }
     }
@@ -52,7 +51,6 @@ describe('PrivateStore', () => {
             expect(cleartext.length % 24).toEqual(0)
           },
           symDecrypt: () => paddedVal,
-          getDid: () => 'did:muport:Qmsdfwerg',
           getDBSalt: () => 'f97f0d1ced93052700d740e23666ad9ff8b32366e3ce28696d3c9684f448142e'
         }
       }
@@ -114,6 +112,20 @@ describe('PrivateStore', () => {
 
     value = await privateStore.get('key5')
     expect(value).toEqual('ma')
+  })
+
+  it('should get value with metadata correctly', async () => {
+    await privateStore.set('key6', 'meta')
+    const response = await privateStore.get('key6', { metadata: true })
+
+    expect(response.value).toEqual('meta')
+    expect(response.timestamp).toBeGreaterThan(0)
+  })
+
+  it('should get null when key does not exist', async () => {
+    const response = await privateStore.get('nonexisting', { metadata: true })
+
+    expect(response).toBeNull()
   })
 
   it('should remove values correctly', async () => {

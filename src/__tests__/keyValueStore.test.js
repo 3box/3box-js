@@ -1,19 +1,21 @@
 const utils = require('./testUtils')
 const KeyValueStore = require('../keyValueStore')
 const OrbitDB = require('orbit-db')
-const EC = require('elliptic').ec
-const ec = new EC('secp256k1')
+const { OdbIdentityProvider, LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
+const Identities = require('orbit-db-identity-provider')
+Identities.addIdentityProvider(OdbIdentityProvider)
+const AccessControllers = require('orbit-db-access-controllers')
+AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+const { registerMethod } = require('did-resolver')
+const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
 const STORE_NAME = '09ab7cd93f9e.public'
+const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
+const THREEID_MOCK = threeIDMockFactory(DID1)
 
-const THREEID_MOCK = {
-  getKeyringBySpaceName: () => {
-    return { getDBKey: () => 'f917ac6883f88798a8ce39821fa523f2acd17c0ba80c724f219367e76d8f2c46' }
-  }
-}
+registerMethod('3', didResolverMock)
 
 const ensureConnected = jest.fn()
-
 
 describe('KeyValueStore', () => {
   let ipfs
@@ -24,7 +26,14 @@ describe('KeyValueStore', () => {
 
   beforeAll(async () => {
     ipfs = await utils.initIPFS(2)
-    orbitdb = new OrbitDB(ipfs, './tmp/orbitdb4')
+    orbitdb = await OrbitDB.createInstance(ipfs, {
+      directory:'./tmp/orbitdb4',
+      identity: await Identities.createIdentity({
+        type: '3ID',
+        threeId: THREEID_MOCK,
+        identityKeysPath: './tmp/odbIdentityKeys'
+      })
+    })
     keyValueStore = new KeyValueStore(orbitdb, STORE_NAME, ensureConnected, THREEID_MOCK)
   })
 
@@ -42,7 +51,7 @@ describe('KeyValueStore', () => {
   it('should start with an empty db on load', async () => {
     storeAddr = await keyValueStore._load()
     expect(storeAddr.split('/')[3]).toEqual(STORE_NAME)
-    expect(keyValueStore._db.all()).toEqual({})
+    expect(keyValueStore._db.all).toEqual({})
   })
 
   it('should set and get values correctly', async () => {
@@ -66,6 +75,30 @@ describe('KeyValueStore', () => {
     expect(ensureConnected).toHaveBeenCalledTimes(1)
   })
 
+  it('should set and get with metadata correctly', async () => {
+    await keyValueStore.set('key6', 'meta')
+    const { value, timestamp } = await keyValueStore.get('key6', { metadata: true })
+    expect(value).toBe('meta')
+    expect(timestamp).toBeGreaterThan(0)
+  })
+
+  it('should return null for non existing keys with metadata', async () => {
+    expect(await keyValueStore.get('nonkey', { metadata: true })).toBeUndefined()
+  })
+
+  it('should get all with metadata', async () => {
+    await keyValueStore.setMultiple(['key7', 'key8'], ['hello', 'world'])
+
+    const entries = await keyValueStore.all({ metadata: true })
+    let entry = entries['key7']
+    expect(entry.value).toBe('hello')
+    expect(entry.timestamp).toBeGreaterThan(0)
+
+    entry = entries['key8']
+    expect(entry.value).toBe('world')
+    expect(entry.timestamp).toBeGreaterThan(0)
+  })
+
   it('should remove values correctly', async () => {
     await keyValueStore.remove('key3')
     expect(await keyValueStore.get('key3')).toBeUndefined()
@@ -82,7 +115,9 @@ describe('KeyValueStore', () => {
 
   it('should sync an old profile correctly', async () => {
     let ipfs2 = await utils.initIPFS(3)
-    let orbitdb2 = new OrbitDB(ipfs2, './tmp/orbitdb2')
+    let orbitdb2 = await OrbitDB.createInstance(ipfs2, {
+      directory:'./tmp/orbitdb2',
+    })
     let keyValueStore2 = new KeyValueStore(orbitdb2, STORE_NAME, null, THREEID_MOCK)
     let newAddr = await keyValueStore2._load()
     expect(newAddr).toEqual(storeAddr)

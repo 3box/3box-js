@@ -45,6 +45,7 @@ bopen.addEventListener('click', event => {
 
       openSpace.addEventListener('click', () => {
         const name = spaceName.value
+        window.currentSpace = name
         const opts = {
           onSyncDone: () => {
             console.log('sync done in space', name)
@@ -52,7 +53,6 @@ bopen.addEventListener('click', event => {
           }
         }
         box.openSpace(name, opts).then(() => {
-          window.currentSpace = name
           spacePub.innerHTML = `Public data in ${name}:`
           spacePriv.innerHTML = `Private data in ${name}:`
           spaceCtrl.style.display = 'block'
@@ -93,27 +93,78 @@ bopen.addEventListener('click', event => {
 
       joinThread.addEventListener('click', () => {
         const name = threadName.value
+        const firstModerator = threadfirstModerator.value
+        const membersBool = members.checked
         posts.style.display = 'block'
-        box.spaces[window.currentSpace].joinThread(name).then(thread => {
+        threadModeration.style.display = 'block'
+        if (members.checked) threadMembers.style.display = 'block'
+        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members: membersBool}).then(thread => {
           window.currentThread = thread
-          thread.onNewPost(post => {
-            threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
+          thread.onUpdate(() => {
+            updateThreadData()
+          })
+          thread.onNewCapabilities(() => {
+            updateThreadCapabilities()
           })
           updateThreadData()
-        })
+          updateThreadCapabilities()
+        }).catch(updateThreadError)
       })
+
+      addThreadMod.addEventListener('click', () => {
+        const id = threadMod.value
+        window.currentThread.addModerator(id).then(res => {
+          updateThreadCapabilities()
+        }).catch(updateThreadError)
+      })
+
+      addThreadMember.addEventListener('click', () => {
+        const id = threadMember.value
+        window.currentThread.addMember(id).then(res => {
+          updateThreadCapabilities()
+        }).catch(updateThreadError)
+      })
+
+      window.deletePost = (el) => {
+        window.currentThread.deletePost(el.id).then(res => {
+          updateThreadData()
+        }).catch(updateThreadError)
+      }
+
+      const updateThreadError = (e = '') => {
+        threadACError.innerHTML = e
+      }
 
       const updateThreadData = () => {
         threadData.innerHTML = ''
+        updateThreadError()
         window.currentThread.getPosts().then(posts => {
           posts.map(post => {
-            threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
+            threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
+            threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
+          })
+        })
+      }
+
+      const updateThreadCapabilities = () => {
+        threadMemberList.innerHTML = ''
+        if (window.currentThread._members) {
+          window.currentThread.listMembers().then(members => {
+            members.map(member => {
+                threadMemberList.innerHTML += member + '<br />'
+            })
+          })
+        }
+        threadModeratorList.innerHTML = ''
+        window.currentThread.listModerators().then(moderators => {
+          moderators.map(moderator => {
+              threadModeratorList.innerHTML += moderator  +  '<br />'
           })
         })
       }
 
       postThread.addEventListener('click', () => {
-        window.currentThread.post(postMsg.value)
+        window.currentThread.post(postMsg.value).catch(updateThreadError)
       })
 
       bclose.addEventListener('click', () => {

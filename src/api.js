@@ -27,7 +27,8 @@ async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
   }
 }
 
-async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metadata } = {}) {
+async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metadata, blocklist } = {}) {
+  if (blocklist && blocklist(address)) throw new Error(`user with ${address} is blocked`)
   let url = `${serverUrl}/space`
 
   try {
@@ -54,10 +55,18 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metada
   }
 }
 
-async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
+async function getThread (space, name, firstModerator, members, opts = {}) {
+  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+  if (firstModerator.startsWith('0x')) {
+    const conf = await getConfig(firstModerator, opts)
+    if (!conf.spaces[space] || !conf.spaces[space].DID) throw new Error(`Could not find appropriate DID for address ${firstModerator}`)
+    firstModerator = conf.spaces[space].DID
+  }
   return new Promise(async (resolve, reject) => {
     try {
-      const res = await utils.fetchJson(serverUrl + `/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`)
+      let url = `${serverUrl}/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`
+      url += `&mod=${encodeURIComponent(firstModerator)}&members=${encodeURIComponent(members)}`
+      const res = await utils.fetchJson(url)
       resolve(res)
     } catch (err) {
       reject(err)
@@ -65,7 +74,32 @@ async function getThread (space, name, serverUrl = PROFILE_SERVER_URL) {
   })
 }
 
-async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata } = {}) {
+async function getThreadByAddress (address, opts = {}) {
+  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.fetchJson(`${serverUrl}/thread?address=${encodeURIComponent(address)}`)
+      resolve(res)
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+async function getConfig (address, opts = {}) {
+  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await utils.fetchJson(`${serverUrl}/config?address=${encodeURIComponent(address)}`)
+      resolve(res)
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata, blocklist } = {}) {
+  if (blocklist && blocklist(address)) throw new Error(`user with ${address} is blocked`)
   let url = `${serverUrl}/profile`
 
   try {
@@ -145,4 +179,4 @@ async function getVerifiedAccounts (profile) {
   return verifs
 }
 
-module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getThread, getRootStoreAddress, getProfiles, getVerifiedAccounts }
+module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getThread, getThreadByAddress, getConfig, getRootStoreAddress, getProfiles, getVerifiedAccounts }

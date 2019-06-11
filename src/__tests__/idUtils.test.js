@@ -17,10 +17,4 @@ describe('basic utils tests', () => {
     expect(await isClaim(INVALID_CLAIM_FORMAT)).toEqual(false)
     expect(await isClaim(EXPIRED_CLAIM)).toEqual(true) // invalid claim will throw during verify
   })
-
-  test('verifyClaim', async () => {
-    expect(verifyClaim(CLAIM_1)).resolves.toBeTruthy()
-    expect(verifyClaim(INVALID_CLAIM_FORMAT)).rejects.toBeTruthy()
-    expect(verifyClaim(EXPIRED_CLAIM)).rejects.toBeTruthy()
-  }, 100000)
 })

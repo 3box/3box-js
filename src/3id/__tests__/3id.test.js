@@ -1,5 +1,9 @@
 const ThreeId = require('../index')
+const testUtils = require('../../__tests__/testUtils')
 const localstorage = require('store')
+const { verifyJWT } = require('did-jwt')
+const resolve = require('did-resolver').default
+const registerResolver = require('3id-resolver')
 
 jest.mock('../../utils/index', () => {
   const sha256 = require('js-sha256').sha256
@@ -29,15 +33,20 @@ const SPACE_2 = 'space2'
 const ETHEREUM = 'mockEthProvider'
 
 const mockedUtils = require('../../utils/index')
-const ipfsMock = {
-  files: {
-    add: async () => [{ hash: 'Qmasd08j34t' }]
-  }
-}
+
 
 describe('3id', () => {
 
-  let threeId
+  let threeId, ipfs
+
+  beforeAll(async () => {
+    ipfs = await testUtils.initIPFS(0)
+    registerResolver(ipfs)
+  })
+
+  afterAll(async () => {
+    await testUtils.stopIPFS(ipfs, 0)
+  })
 
   beforeEach(() => {
     mockedUtils.openBoxConsent.mockClear()
@@ -47,24 +56,25 @@ describe('3id', () => {
   describe('getIdFromEthAddress', () => {
     it('should create a new identity on first call', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfsMock, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
-      expect(threeId.getDid()).toEqual('did:muport:Qmasd08j34t')
+      expect(threeId.DID).toMatchSnapshot()
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
+      expect(await resolve(threeId.DID)).toMatchSnapshot()
     })
 
     it('should create the same identity given the same address', async () => {
       // did is mocked, so compares serialized state
-      const threeId1 = await ThreeId.getIdFromEthAddress('0xabcde1', ETHEREUM, ipfsMock)
+      const threeId1 = await ThreeId.getIdFromEthAddress('0xabcde1', ETHEREUM, ipfs)
       clearLocalStorage3id('0xabcde1')
-      const threeId2 = await ThreeId.getIdFromEthAddress('0xABCDE1', ETHEREUM, ipfsMock)
+      const threeId2 = await ThreeId.getIdFromEthAddress('0xABCDE1', ETHEREUM, ipfs)
       expect(threeId1.serializeState()).toEqual(threeId2.serializeState())
     })
 
     it('should create a new identity for other eth addr', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_2, ETHEREUM, ipfsMock, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_2, ETHEREUM, ipfs, opts)
       expect(threeId.serializeState()).toEqual(ADDR_2_STATE)
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
@@ -72,7 +82,7 @@ describe('3id', () => {
 
     it('should get identity from storage on subsequent calls to existing identity', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfsMock, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
       expect(opts.consentCallback).toHaveBeenCalledWith(false)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
@@ -95,11 +105,17 @@ describe('3id', () => {
       expect(requiredConsent).toEqual(true)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(1)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_1)
+      let subDid = threeId.getSubDID(SPACE_1)
+      expect(subDid).toMatchSnapshot()
+      expect(await resolve(subDid)).toMatchSnapshot()
 
       requiredConsent = await threeId.initKeyringByName(SPACE_2)
       expect(requiredConsent).toEqual(true)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(2)
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_2)
+      subDid = threeId.getSubDID(SPACE_2)
+      expect(subDid).toMatchSnapshot()
+      expect(await resolve(subDid)).toMatchSnapshot()
 
       requiredConsent = await threeId.initKeyringByName(SPACE_2)
       expect(requiredConsent).toEqual(false)
@@ -114,9 +130,27 @@ describe('3id', () => {
     })
 
     it('should get identity with spaces automatically initialized', async () => {
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfsMock)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_2)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('claim signing', () => {
+    it('should sign jwts correctly with rootDID', async () => {
+      const jwt = await threeId.signJWT({
+        iat: null,
+        data: 'some data'
+      }, { use3ID: true })
+      expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
+    })
+
+    it('should sign jwts correctly with subDID', async () => {
+      const jwt = await threeId.signJWT({
+        iat: null,
+        data: 'some data'
+      }, { space: SPACE_1 })
+      expect(verifyJWT(jwt, { auth: true })).resolves.toMatchSnapshot()
     })
   })
 

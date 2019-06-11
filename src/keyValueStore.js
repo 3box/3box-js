@@ -7,19 +7,37 @@ class KeyValueStore {
   constructor (orbitdb, name, ensureConnected, threeId) {
     this._orbitdb = orbitdb
     this._name = name
+    if (this._name.startsWith('3box.space.')) {
+      this._space = this._name.split('.')[2]
+    }
     this._ensureConnected = ensureConnected
     this._3id = threeId
   }
 
   /**
-   * Get the value of the given key
+   * Get the value and optionally metadata of the given key
    *
-   * @param     {String}    key                     the key
-   * @return    {String}                            the value associated with the key, undefined if there's no such key
+   * @param     {String}    key                             the key
+   * @param     {Object}    opts                            optional parameters
+   * @param     {Boolean}   opts.metadata                   return both value and metadata
+   * @return    {String|{value: String, timestamp: Number}} the value associated with the key, undefined if there's no such key
    */
-  async get (key) {
+  async get (key, opts = {}) {
     const x = await this._get(key)
-    return x ? x.value : x
+
+    if (!x) {
+      return x
+    }
+
+    if (opts.metadata) {
+      const metadata = this._extractMetadata(x)
+      return {
+        ...metadata,
+        value: x.value
+      }
+    }
+
+    return x.value
   }
 
   /**
@@ -35,10 +53,7 @@ class KeyValueStore {
       return x
     }
 
-    // ms -> seconds, see issue #396 for details
-    const timestamp = Math.floor(x.timeStamp / 1000)
-
-    return { timestamp }
+    return this._extractMetadata(x)
   }
 
   /**
@@ -96,6 +111,19 @@ class KeyValueStore {
   }
 
   /**
+   * Extract metadata from store object
+   * @private
+   * @param x {Object} data from store
+   * @return {Metadata} store metadata
+   */
+  _extractMetadata (x) {
+    // ms -> seconds, see issue #396 for details
+    const timestamp = Math.floor(x.timeStamp / 1000)
+
+    return { timestamp }
+  }
+
+  /**
    * Get the raw value of the given key
    * @private
    *
@@ -141,12 +169,19 @@ class KeyValueStore {
   }
 
   async _load (odbAddress) {
-    const dbKey = this._3id.getKeyringBySpaceName(this._name).getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
-    this._db = await this._orbitdb.keyvalue(odbAddress || this._name, {
-      key,
-      write: [key.getPublic('hex')]
-    })
+    const key = this._3id.getKeyringBySpaceName(this._name).getPublicKeys(true).signingKey
+    const opts = {
+      format: 'dag-pb',
+      accessController: {
+        write: [key],
+        type: 'legacy-ipfs-3box',
+        skipManifest: true
+      }
+    }
+    if (this._space) {
+      opts.identity = await this._3id.getOdbId(this._space)
+    }
+    this._db = await this._orbitdb.keyvalue(odbAddress || this._name, opts)
     await this._db.load()
     return this._db.address.toString()
   }
@@ -160,11 +195,30 @@ class KeyValueStore {
     await this._db.close()
   }
 
-  async all () {
+  /**
+   * Get all values and optionally metadata
+   *
+   * @param     {Object}    opts                                    optional parameters
+   * @param     {Boolean}   opts.metadata                           return both values and metadata
+   * @return    {Array<String|{value: String, timestamp: Number}>}  the values
+   */
+  async all (opts = {}) {
     this._requireLoad()
-    const entries = await this._db.all()
+    const entries = this._db.all
     let allSimple = {}
-    Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
+    Object.keys(entries).map(key => {
+      const entry = entries[key]
+
+      if (opts.metadata) {
+        allSimple[key] = {
+          ...this._extractMetadata(entry),
+          value: entry.value
+        }
+      } else {
+        allSimple[key] = entry.value
+      }
+    })
+
     return allSimple
   }
 

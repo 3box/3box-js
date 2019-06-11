@@ -1,6 +1,7 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
 const { sha256Multihash, throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
+const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
 const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
@@ -28,6 +29,13 @@ class Space {
     this.private = null
   }
 
+  /**
+   * @property {String} DID        the did of the user in this space
+   */
+  get DID () {
+    return this._3id.getSubDID(this._name)
+  }
+
   async open (opts = {}) {
     if (!this._store._db) {
       // store is not loaded opened yet
@@ -36,8 +44,12 @@ class Space {
       const spaceAddress = await this._store._load()
 
       const entries = await this._rootStore.iterator({ limit: -1 }).collect()
-      if (!entries.find(entry => entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)) {
-        this._rootStore.add({ odbAddress: spaceAddress })
+      const entry = entries.find(entry => entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)
+      if (!entry) {
+        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
+      } else if (!entry.payload.value.type) {
+        await this._rootStore.del(entry.hash)
+        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
       }
       const hasNumEntries = opts.numEntriesMessages && opts.numEntriesMessages[spaceAddress]
       const numEntries = hasNumEntries ? opts.numEntriesMessages[spaceAddress].numEntries : undefined
@@ -56,40 +68,70 @@ class Space {
    *
    * @param     {String}    name                    The name of the thread
    * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
+   * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    *
    * @return    {Thread}                            An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
-    console.warn('WARNING: Threads are still experimental, we recommend not relying on this feature for produciton yet.')
-    if (this._activeThreads[name]) return this._activeThreads[name]
-    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this, name)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, subscribeFn, this._ensureConnected)
+    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
+    if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    const address = thread._getThreadAddress()
+    if (this._activeThreads[address]) return this._activeThreads[address]
     await thread._load()
-    this._activeThreads[name] = thread
+    this._activeThreads[address] = thread
+    return thread
+  }
+
+  /**
+   * Join a thread by full thread address. Use this to start receiving updates from, and to post in threads
+   *
+   * @param     {String}    address                 The full address of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
+   *
+   * @return    {Thread}                            An instance of the thread class for the joined thread
+   */
+  async joinThreadByAddress (address, opts = {}) {
+    if (!OrbitDBAddress.isValid(address)) throw new Error('joinThreadByAddress: valid orbitdb address required')
+    const threadSpace = address.split('.')[2]
+    const threadName = address.split('.')[3]
+    if (threadSpace !== this._name) throw new Error('joinThreadByAddress: attempting to open thread from different space, must open within same space')
+    if (this._activeThreads[address]) return this._activeThreads[address]
+    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
+    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, threadName), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    await thread._load(address)
+    this._activeThreads[address] = thread
     return thread
   }
 
   /**
    * Subscribe to the given thread, if not already subscribed
    *
-   * @param     {String}    name                    The name of the thread
+   * @param     {String}    address                The address of the thread
+   * @param     {Object}    config                configuration and thread meta data
+   * @param     {String}    opts.name             Name of thread
+   * @param     {String}    opts.firstModerator   DID of the first moderator
+   * @param     {String}    opts.members          Boolean string, true if a members only thread
    */
-  async subscribeThread (name) {
-    const threadKey = `thread-${name}`
+  async subscribeThread (address, config = {}) {
+    if (!OrbitDBAddress.isValid(address)) throw new Error('subscribeThread: must subscribe to valid thread/orbitdb address')
+    const threadKey = `thread-${address}`
     await this._syncSpacePromise
     if (!(await this.public.get(threadKey))) {
-      await this.public.set(threadKey, { name })
+      await this.public.set(threadKey, Object.assign({}, config, { address }))
     }
   }
 
   /**
    * Unsubscribe from the given thread, if subscribed
    *
-   * @param     {String}    name                    The name of the thread
+   * @param     {String}    address     The address of the thread
    */
-  async unsubscribeThread (name) {
-    const threadKey = `thread-${name}`
+  async unsubscribeThread (address) {
+    const threadKey = `thread-${address}`
     if (await this.public.get(threadKey)) {
       await this.public.remove(threadKey)
     }
@@ -98,13 +140,17 @@ class Space {
   /**
    * Get a list of all the threads subscribed to in this space
    *
-   * @return    {Array<String>}                     A list of thread names
+   * @return    {Array<Objects>}    A list of thread objects as { address, firstModerator, members, name}
    */
   async subscribedThreads () {
     const allEntries = await this.public.all()
     return Object.keys(allEntries).reduce((threads, key) => {
       if (key.startsWith('thread')) {
-        threads.push(allEntries[key].name)
+        // ignores experimental threads (v1)
+        const address = key.split('thread-')[1]
+        if (OrbitDBAddress.isValid(address)) {
+          threads.push(allEntries[key])
+        }
       }
       return threads
     }, [])
@@ -116,7 +162,7 @@ module.exports = Space
 const publicStoreReducer = (store) => {
   const PREFIX = 'pub_'
   return {
-    get: async key => store.get(PREFIX + key),
+    get: async (key, opts = {}) => store.get(PREFIX + key, opts),
     getMetadata: async key => store.getMetadata(PREFIX + key),
     set: async (key, value) => {
       throwIfUndefined(key, 'key')
@@ -140,8 +186,8 @@ const publicStoreReducer = (store) => {
         return newLog
       }, [])
     },
-    all: async () => {
-      const entries = await store.all()
+    all: async (opts) => {
+      const entries = await store.all(opts)
       return Object.keys(entries).reduce((newAll, key) => {
         if (key.startsWith(PREFIX)) {
           newAll[key.slice(4)] = entries[key]
@@ -169,9 +215,21 @@ const privateStoreReducer = (store, keyring) => {
     return JSON.parse(unpad(keyring.symDecrypt(ciphertext, nonce)))
   }
   return {
-    get: async key => {
-      const entry = await store.get(dbKey(key))
-      return entry ? decryptEntry(entry).value : null
+    get: async (key, opts = {}) => {
+      const entry = await store.get(dbKey(key), opts)
+
+      if (!entry) {
+        return null
+      }
+
+      if (opts.metadata) {
+        return {
+          ...entry,
+          value: decryptEntry(entry.value).value
+        }
+      }
+
+      return decryptEntry(entry).value
     },
     getMetadata: async key => store.getMetadata(dbKey(key)),
     set: async (key, value) => store.set(dbKey(key), encryptEntry({ key, value })),
@@ -193,12 +251,22 @@ const privateStoreReducer = (store, keyring) => {
         return newLog
       }, [])
     },
-    all: async () => {
-      const entries = await store.all()
+    all: async (opts = {}) => {
+      const entries = await store.all(opts)
       return Object.keys(entries).reduce((newAll, key) => {
         if (key.startsWith(PREFIX)) {
-          const decEntry = decryptEntry(entries[key])
-          newAll[decEntry.key] = decEntry.value
+          const entry = entries[key]
+
+          if (opts.metadata) {
+            const decEntry = decryptEntry(entry.value)
+            newAll[decEntry.key] = {
+              ...entry,
+              value: decEntry.value
+            }
+          } else {
+            const decEntry = decryptEntry(entry)
+            newAll[decEntry.key] = decEntry.value
+          }
         }
         return newAll
       }, {})

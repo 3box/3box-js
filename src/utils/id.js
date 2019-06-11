@@ -45,5 +45,5 @@ module.exports = {
    * @param  {string}             opts.audience   The DID of the JWT's audience
    * @return {Object}                             The validated claim
    */
-  verifyClaim: didJWT.verifyJWT
+  verifyClaim: didJWT.verifyJWT,
 }

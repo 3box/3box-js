@@ -4,6 +4,15 @@ const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
+const AccessControllers = require('orbit-db-access-controllers')
+const {
+  LegacyIPFS3BoxAccessController,
+  ThreadAccessController,
+  ModeratorAccessController
+} = require('3box-orbitdb-plugins')
+AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+AccessControllers.addAccessController({ AccessController: ThreadAccessController })
+AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 
 const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
@@ -18,6 +27,7 @@ const API = require('./api')
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum'
 }
+
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
@@ -81,23 +91,31 @@ class Box {
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
-    // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
+    this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
+      directory: opts.orbitPath,
+      identity: await this._3id.getOdbId()
+    }) // , { cache })
     globalOrbitDB = this._orbitdb
 
-    const dbKey = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
+    const key = this._3id.getKeyringBySpaceName(rootStoreName).getPublicKeys(true).signingKey
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
-      key,
-      write: [key.getPublic('hex')]
+      format: 'dag-pb',
+      accessController: {
+        write: [key],
+        type: 'legacy-ipfs-3box',
+        skipManifest: true
+      }
     })
     const rootStoreAddress = this._rootStore.address.toString()
-
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
 
     const onNewPeer = async (topic, peer) => {
       if (peer === this.pinningNode.split('/').pop()) {
-        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress, did: this._3id.getDid() })
+        this._pubsub.publish(PINNING_ROOM, {
+          type: 'PIN_DB',
+          odbAddress: rootStoreAddress,
+          did: this._3id.muportDID
+        })
       }
     }
 
@@ -166,6 +184,8 @@ class Box {
    *
    * @param     {String}    address                 An ethereum address
    * @param     {Object}    opts                    Optional parameters
+   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
+   * @param     {String}    opts.metadata           flag to retrieve metadata
    * @param     {String}    opts.addressServer      URL of the Address Server
    * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
@@ -208,8 +228,9 @@ class Box {
    * @param     {String}    address                 An ethereum address
    * @param     {String}    name                    A space name
    * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
    * @param     {String}    opts.metadata           flag to retrieve metadata
+   * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Object}                            a json object with the public space data
    */
   static async getSpace (address, name, opts = {}) {
@@ -221,12 +242,38 @@ class Box {
    *
    * @param     {String}    space                   The name of the space the thread is in
    * @param     {String}    name                    The name of the thread
+   * @param     {String}    firstModerator          The DID (or ethereum address) of the first moderator
+   * @param     {Boolean}   members                 True if only members are allowed to post
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Array<Object>}                     An array of posts
    */
-  static async getThread (space, name, opts = {}) {
-    return API.getThread(space, name, opts.profileServer)
+  static async getThread (space, name, firstModerator, members, opts = {}) {
+    return API.getThread(space, name, firstModerator, members, opts)
+  }
+
+  /**
+   * Get all posts that are made to a thread.
+   *
+   * @param     {String}    address                 The orbitdb-address of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Array<Object>}                     An array of posts
+   */
+  static async getThreadByAddress (address, opts = {}) {
+    return API.getThreadByAddress(address, opts)
+  }
+
+  /**
+   * Get the configuration of a users 3Box
+   *
+   * @param     {String}    address                 The ethereum address
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Array<Object>}                     An array of posts
+   */
+  static async getConfig (address, opts = {}) {
+    return API.getConfig(address, opts)
   }
 
   /**
@@ -440,7 +487,7 @@ class Box {
 
     if (!linkData) {
       const address = this._3id.managementAddress
-      const did = this._3id.getDid()
+      const did = this._3id.muportDID
 
       const consent = await utils.getLinkConsent(address, did, this._web3provider)
 
