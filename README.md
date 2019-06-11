@@ -149,16 +149,19 @@ const config = await space.private.get('dapp-config')
 
 ## Threads API (Messaging)
 ### Add message threads to your app
-Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, in the same space) will be able to communicate in that thread.
+Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, in the same space, and same moderation configs) will be able to communicate in that thread.
 
 For the fully detailed spec, view the [documentation](https://github.com/3box/3box/blob/master/3IPs/3ip-2.md).
 
-**WARNING: this is an experimental feature, the API will likely change in the future!**
-
 #### Viewing a Thread
-You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object.
+You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. A thread can be referenced by all its configuration options or by its address.
 ```js
-const posts = await Box.getThread(spaceName, threadName)
+const posts = await Box.getThread(spaceName, threadName, firstModerator, membersThread)
+console.log(posts)
+```
+
+```js
+const posts = await Box.getThreadByAddress(threadAddress)
 console.log(posts)
 ```
 However if applications want to add interactivity to the thread, such as allowing the user to post in a thread or follow updates in a thread, you will need to open their space to enable additional functionality.
@@ -170,6 +173,19 @@ To post in a thread, a user must first join the thread.
 ```js
 const thread = await space.joinThread('myThread')
 ```
+
+A thread can also be given the moderation options when joining. You can pass `firstModerator`, a 3ID of the first moderator, and a `members` boolean which indicates if it is a members thread or not. Moderators can add other moderators, add members, and delete any posts in the thread. Members can post in member only threads.
+
+```js
+const thread = await space.joinThread('myThread', { firstModerator: 'some3ID', members: true })
+```
+
+Lastly a thread can be joined by its address.
+
+```js
+const thread = await space.joinThreadByAddress('/orbitdb/zdpuAp5QpBKR4BBVTvqe3KXVcNgo4z8Rkp9C5eK38iuEZj3jq/3box.thread.testSpace.testThread')
+```
+
 ##### 2. Posting to a thread
 This allows the user to add a message to the thread. The author of the message will be the user's 3Box DID. When a user posts in a thread, they are automatically subscribed to the thread and it is saved in the space used by the application under the key `thread-threadName`.
 ```js
@@ -184,9 +200,29 @@ console.log(posts)
 ##### 4. Listening for updates in thread
 This allows applications to listen for new posts in the thread, and perform an action when this occurs, such as adding the new message to the application's UI.
 ```js
-thread.onNewPost(myCallbackFunction)
+thread.onUpdate(myCallbackFunction)
 ```
 
+##### 5. Handling moderation and capabilities
+
+Add a moderator and list all existing moderators
+```js
+await thread.addModerator('some3ID')
+
+const mods = await thread.listModerators()
+```
+
+Add a member and list all existing members, if a members only thread
+```js
+await thread.addMember('some3ID')
+
+const members = await thread.listMembers()
+```
+
+Listen for when there has been moderators or member added.
+```js
+thread.onNewCapabilities(myCallbackFunction)
+```
 
 ## <a name="example"></a> Example Application
 
@@ -819,7 +855,7 @@ Get a list of all the threads subscribed to in this space
     * [.listMembers()](#Thread+listMembers) ⇒ <code>Array.&lt;String&gt;</code>
     * [.deletePost(id)](#Thread+deletePost)
     * [.getPosts(opts)](#Thread+getPosts) ⇒ <code>Array.&lt;Object&gt;</code>
-    * [.onNewPost(newPostFn)](#Thread+onNewPost)
+    * [.onUpdate(updateFn)](#Thread+onUpdate)
     * [.onNewCapabilities(updateFn)](#Thread+onNewCapabilities)
 
 <a name="new_Thread_new"></a>
@@ -906,19 +942,17 @@ the iterator will return all items (respecting limit and reverse).
 | opts.limit | <code>Integer</code> | Limiting the number of entries in result, defaults to -1 (no limit) |
 | opts.reverse | <code>Boolean</code> | If set to true will result in reversing the result |
 
-<a name="Thread+onNewPost"></a>
+<a name="Thread+onUpdate"></a>
 
-#### thread.onNewPost(newPostFn)
-Register a function to be called for every new
-post that is received from the network.
-The function takes one parameter, which is the post.
-Note that posts here might be out of order.
+#### thread.onUpdate(updateFn)
+Register a function to be called after new updates
+have been received from the network or locally.
 
 **Kind**: instance method of [<code>Thread</code>](#Thread)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| newPostFn | <code>function</code> | The function that will get called |
+| updateFn | <code>function</code> | The function that will get called |
 
 <a name="Thread+onNewCapabilities"></a>
 
