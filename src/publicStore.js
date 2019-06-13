@@ -10,13 +10,13 @@ class ProfileStore extends KeyValueStore {
   async set (key, value, opts = {}) {
     throwIfUndefined(key, 'key')
     // if this is the noLink call we shouldn't call _linkProfile.
-    if (!opts.noLink) this._linkProfile()
+    if (!opts.noLink) await this._linkProfile()
     return super.set(key, value)
   }
 
   async setMultiple (keys, values) {
     throwIfNotEqualLenArrays(keys, values)
-    this._linkProfile()
+    await this._linkProfile()
     return super.setMultiple(keys, values)
   }
 }

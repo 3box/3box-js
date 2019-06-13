@@ -488,8 +488,12 @@ class Box {
     if (!linkData) {
       const address = this._3id.managementAddress
       const did = this._3id.muportDID
-
-      const consent = await utils.getLinkConsent(address, did, this._web3provider)
+      let consent
+      try {
+        consent = await utils.getLinkConsent(address, did, this._web3provider)
+      } catch (e) {
+        throw new Error('Link consent message must be signed before adding data, to link address to store')
+      }
 
       linkData = {
         consent_msg: consent.msg,
@@ -506,11 +510,7 @@ class Box {
     }
 
     // Send consentSignature to 3box-address-server to link profile with ethereum address
-    try {
-      await utils.fetchJson(this._serverUrl + '/link', linkData)
-    } catch (err) {
-      console.error(err)
-    }
+    utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
   }
 
   async _ensurePinningNodeConnected (odbAddress, isThread) {

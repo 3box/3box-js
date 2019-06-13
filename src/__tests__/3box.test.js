@@ -319,7 +319,7 @@ describe('3Box', () => {
     //expect(box.public.set).toHaveBeenNthCalledWith(2, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7', { noLink: true })
     expect(box.public.set.mock.calls[1][0]).toEqual('proof_did')
     expect(didJWT.decodeJWT(box.public.set.mock.calls[1][1]).payload.iss).toMatchSnapshot()
-
+    await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
     expect(global.console.error).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
@@ -342,6 +342,7 @@ describe('3Box', () => {
     })
     global.console.error = jest.fn()
     await box._linkProfile()
+    await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
     expect(global.console.error).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
