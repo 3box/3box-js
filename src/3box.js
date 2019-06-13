@@ -417,7 +417,7 @@ class Box {
       try {
         opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
-        if (!await this.isAccountLinked()) this.linkAccount()
+        if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
         delete this.spaces[name]
         if (e.message.includes('User denied message signature.')) {
@@ -465,10 +465,15 @@ class Box {
    *
    * @param     {String}        type        The type of link (default 'ethereum')
    */
-  async linkAccount (type = ACCOUNT_TYPES.ethereum) {
+  async linkAddress (type = ACCOUNT_TYPES.ethereum) {
     if (type === ACCOUNT_TYPES.ethereum) {
       await this._linkProfile()
     }
+  }
+
+  async linkAccount (type = ACCOUNT_TYPES.ethereum) {
+    console.warn('linkAccount: deprecated, please use linkAddress going forward')
+    await this.linkAddress(type)
   }
 
   /**
@@ -476,10 +481,15 @@ class Box {
    *
    * @param     {String}        type        The type of link (default ethereum)
    */
-  async isAccountLinked (type = ACCOUNT_TYPES.ethereum) {
+  async isAddressLinked (type = ACCOUNT_TYPES.ethereum) {
     if (type === ACCOUNT_TYPES.ethereum) {
       return Boolean(await this.public.get('ethereum_proof'))
     }
+  }
+
+  async isAccountLinked (type = ACCOUNT_TYPES.ethereum) {
+    console.warn('isAccountLinked: deprecated, please use isAddressLinked going forward')
+    return this.isAddressLinked(type)
   }
 
   async _linkProfile () {
