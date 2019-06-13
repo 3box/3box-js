@@ -1,4 +1,5 @@
 const isIPFS = require('is-ipfs')
+const API = require('./api')
 
 const MODERATOR = 'MODERATOR'
 const MEMBER = 'MEMBER'
@@ -61,6 +62,9 @@ class Thread {
    */
   async addModerator (id) {
     this._requireLoad()
+    if (id.startsWith('0x')) {
+      id = await API.getSpaceDID(id, this._spaceName)
+    }
     if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
     return this._db.access.grant(MODERATOR, id)
   }
@@ -81,9 +85,13 @@ class Thread {
    * @param     {String}    id                      Member Id
    */
   async addMember (id) {
+    this._requireLoad()
+    this._throwIfNotMembers()
+    if (id.startsWith('0x')) {
+      id = await API.getSpaceDID(id, this._spaceName)
+    }
     if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
     this._throwIfNotMembers()
-    this._requireLoad()
     return this._db.access.grant(MEMBER, id)
   }
 
@@ -194,6 +202,9 @@ class Thread {
   async _initConfigs () {
     if (this._identity) return
     this._identity = await this._3id.getOdbId(this._spaceName)
+    if (this._firstModerator.startsWith('0x')) {
+      this._firstModerator = await API.getSpaceDID(this._firstModerator, this._spaceName)
+    }
     this._accessController = {
       type: 'thread-access',
       threadName: this._name,
