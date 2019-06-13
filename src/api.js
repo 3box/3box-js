@@ -55,12 +55,18 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metada
   }
 }
 
+// TODO consumes address now, could also give root DID to get space DID
+async function getSpaceDID (address, space, opts = {}) {
+  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+  const conf = await getConfig(address, opts)
+  if (!conf.spaces[space] || !conf.spaces[space].DID) throw new Error(`Could not find appropriate DID for address ${address}`)
+  return conf.spaces[space].DID
+}
+
 async function getThread (space, name, firstModerator, members, opts = {}) {
   const serverUrl = opts.profileServer || PROFILE_SERVER_URL
   if (firstModerator.startsWith('0x')) {
-    const conf = await getConfig(firstModerator, opts)
-    if (!conf.spaces[space] || !conf.spaces[space].DID) throw new Error(`Could not find appropriate DID for address ${firstModerator}`)
-    firstModerator = conf.spaces[space].DID
+    firstModerator = await getSpaceDID(firstModerator, space, opts)
   }
   return new Promise(async (resolve, reject) => {
     try {
@@ -179,4 +185,4 @@ async function getVerifiedAccounts (profile) {
   return verifs
 }
 
-module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getThread, getThreadByAddress, getConfig, getRootStoreAddress, getProfiles, getVerifiedAccounts }
+module.exports = { profileGraphQL, getProfile, getSpace, listSpaces, getThread, getThreadByAddress, getConfig, getRootStoreAddress, getProfiles, getVerifiedAccounts, getSpaceDID }
