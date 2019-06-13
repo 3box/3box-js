@@ -57,7 +57,6 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metada
 
 // TODO consumes address now, could also give root DID to get space DID
 async function getSpaceDID (address, space, opts = {}) {
-  const serverUrl = opts.profileServer || PROFILE_SERVER_URL
   const conf = await getConfig(address, opts)
   if (!conf.spaces[space] || !conf.spaces[space].DID) throw new Error(`Could not find appropriate DID for address ${address}`)
   return conf.spaces[space].DID
