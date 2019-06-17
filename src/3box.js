@@ -25,7 +25,8 @@ const config = require('./config.js')
 const API = require('./api')
 
 const ACCOUNT_TYPES = {
-  ethereum: 'ethereum'
+  ethereum: 'ethereum',
+  ethereumEOA: 'ethereum-eoa'
 }
 
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -465,7 +466,9 @@ class Box {
    *
    * @param     {String}        type        The type of link (default 'ethereum')
    */
-  async linkAddress (type = ACCOUNT_TYPES.ethereum) {
+  async linkAddress (type = ACCOUNT_TYPES.ethereum, proof) {
+    // TODOtake proof/args or just default to managementAddress? or another func
+    // await this._writeAddressLink(proof)
     if (type === ACCOUNT_TYPES.ethereum) {
       await this._linkProfile()
     }
@@ -482,7 +485,9 @@ class Box {
    * @param     {String}        type        The type of link (default ethereum)
    */
   async isAddressLinked (type = ACCOUNT_TYPES.ethereum) {
+    // TODO rebase with addresslink, and will this take address arg? or just defeault to check managementAddress, or another func
     if (type === ACCOUNT_TYPES.ethereum) {
+      // TODO get from root store
       return Boolean(await this.public.get('ethereum_proof'))
     }
   }
@@ -493,24 +498,28 @@ class Box {
   }
 
   async _linkProfile () {
-    let linkData = await this.public.get('ethereum_proof')
+    const address = this._3id.managementAddress
+    let linkData = await this._readAddressLink(address)
 
     if (!linkData) {
-      const address = this._3id.managementAddress
       const did = this._3id.muportDID
       let consent
       try {
         consent = await utils.getLinkConsent(address, did, this._web3provider)
       } catch (e) {
+        console.log(e)
         throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
       linkData = {
-        consent_msg: consent.msg,
-        consent_signature: consent.sig,
-        linked_did: did
+        version: 1,
+        type: ACCOUNT_TYPES.ethereumEOA,
+        message: consent.msg,
+        signature: consent.sig,
+        timestamp: consent.timestamp
       }
-      await this.public.set('ethereum_proof', linkData, { noLink: true })
+
+      await this._writeAddressLink(linkData)
     }
 
     // Ensure we self-published our did
@@ -521,6 +530,33 @@ class Box {
 
     // Send consentSignature to 3box-address-server to link profile with ethereum address
     utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
+  }
+
+  async _writeAddressLink(proof) {
+    const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
+    const link = {
+      type: 'address-link',
+      data
+    }
+    await this._rootStore.add(link)
+  }
+
+  async _readAddressLinks() {
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
+    return linkEntries.map(async (entry) => {
+      // TODO handle missing ipfs obj??, timeouts?
+      const obj = await this._ipfs.dag.get(entry.payload.value.data)
+      if (!obj.address) {
+        obj.address = utils.recoverPersonalSign(obj.message, obj.signature)
+      }
+      return obj
+    })
+  }
+
+  async _readAddressLink(address) {
+    const links = await this._readAddressLinks()
+    return links.find(link => link.address === address)
   }
 
   async _ensurePinningNodeConnected (odbAddress, isThread) {

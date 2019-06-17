@@ -1,6 +1,7 @@
 const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
+const sigUtil = require('eth-sig-util')
 
 const HTTPError = (status, message) => {
   const e = new Error(message)
@@ -8,12 +9,23 @@ const HTTPError = (status, message) => {
   return e
 }
 
-const getMessageConsent = (did) => (
-  'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
-)
+const getMessageConsent = (did, timestamp) => {
+  let msg = 'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
+  if (timestamp) msg += ' \n' + 'Timestamp: ' + timestamp
+  return msg
+}
 
 module.exports = {
   getMessageConsent,
+
+  recoverPersonalSign: (msg, personalSig) => {
+    if (!msg || !personalSig) throw new Error('recoverPersonalSign: missing arguments, msg and/or personalSig')
+    const msgParams = {
+      data: msg,
+      sig: personalSig
+    }
+    return sigUtil.recoverPersonalSignature(msgParams)
+  },
 
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
@@ -62,7 +74,8 @@ module.exports = {
   },
 
   getLinkConsent: (fromAddress, toDID, ethereum) => {
-    const text = getMessageConsent(toDID)
+    const timestamp = Math.floor(new Date().getTime() / 1000)
+    const text = getMessageConsent(toDID, timestamp)
     const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     const params = [msg, fromAddress]
     const method = 'personal_sign'
@@ -81,7 +94,8 @@ module.exports = {
           if (result.error) reject(result.error)
           const out = {
             msg: text,
-            sig: result.result
+            sig: result.result,
+            timestamp
           }
           resolve(out)
         }
