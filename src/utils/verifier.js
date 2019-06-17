@@ -102,8 +102,8 @@ module.exports = {
    * @return    {String}                                  The ethereum address used to sign the message
    */
   verifyEthereum: async (ethProof, did) => {
-    const consentMsg = ethProof['consent_msg']
-    const consentSig = ethProof['consent_signature']
+    const consentMsg = ethProof.version ?  ethProof.message : ethProof['consent_msg']
+    const consentSig = ethProof.version ?  ethProof.signature : ethProof['consent_signature']
 
     // Make sure the message matches our expectation
     const expected = getMessageConsent(did)
