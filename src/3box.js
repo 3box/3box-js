@@ -165,7 +165,7 @@ class Box {
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
+    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
@@ -462,37 +462,44 @@ class Box {
   }
 
   /**
-   * Creates a proof that links an external account to the 3Box account of the user.
+   * Creates a proof that links an ethereum address to the 3Box account of the user. If given proof, it will simply be added to the root store.
    *
-   * @param     {String}        type        The type of link (default 'ethereum')
+   * @param     {Object}    [link]                         Optional link object with type or proof
+   * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
+   * @param     {Object}    [link.proof ]                  URL of graphQL 3Box profile service
    */
-  async linkAddress (type = ACCOUNT_TYPES.ethereum, proof) {
-    // TODOtake proof/args or just default to managementAddress? or another func
-    // await this._writeAddressLink(proof)
-    if (type === ACCOUNT_TYPES.ethereum) {
+  async linkAddress (link={}) {
+    if (link.proof) {
+      await this._writeAddressLink(proof)
+      return
+    }
+    if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
       await this._linkProfile()
     }
   }
 
-  async linkAccount (type = ACCOUNT_TYPES.ethereum) {
+  async linkAccount (type = ACCOUNT_TYPES.ethereumEOA) {
     console.warn('linkAccount: deprecated, please use linkAddress going forward')
     await this.linkAddress(type)
   }
 
   /**
-   * Checks if there is a proof that links an external account to the 3Box account of the user.
+   * Checks if there is a proof that links an external account to the 3Box account of the user. If not params given and any link exists, returns true
    *
-   * @param     {String}        type        The type of link (default ethereum)
+   * @param     {Object}    [query]            Optional object with address and/or type.
+   * @param     {String}    [query.type]       Does the given type of link exist
+   * @param     {String}    [query.address]    Is the given adressed linked
    */
-  async isAddressLinked (type = ACCOUNT_TYPES.ethereum) {
-    // TODO rebase with addresslink, and will this take address arg? or just defeault to check managementAddress, or another func
-    if (type === ACCOUNT_TYPES.ethereum) {
-      // TODO get from root store
-      return Boolean(await this.public.get('ethereum_proof'))
-    }
+  async isAddressLinked (query={}) {
+    const links = await this._readAddressLinks()
+    const linksQuery = links.find(link => {
+      let res = query.address ? link.address === query.address : true
+      return query.type ? res && link.type === query.type : res
+    })
+    return Boolean(linksQuery)
   }
 
-  async isAccountLinked (type = ACCOUNT_TYPES.ethereum) {
+  async isAccountLinked (type = ACCOUNT_TYPES.ethereumEOA) {
     console.warn('isAccountLinked: deprecated, please use isAddressLinked going forward')
     return this.isAddressLinked(type)
   }
@@ -544,14 +551,15 @@ class Box {
   async _readAddressLinks() {
     const entries = await this._rootStore.iterator({ limit: -1 }).collect()
     const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
-    return linkEntries.map(async (entry) => {
+    const resolveLinks =  linkEntries.map(async (entry) => {
       // TODO handle missing ipfs obj??, timeouts?
-      const obj = await this._ipfs.dag.get(entry.payload.value.data)
+      const obj = (await this._ipfs.dag.get(entry.payload.value.data)).value
       if (!obj.address) {
         obj.address = utils.recoverPersonalSign(obj.message, obj.signature)
       }
       return obj
     })
+    return Promise.all(resolveLinks)
   }
 
   async _readAddressLink(address) {
