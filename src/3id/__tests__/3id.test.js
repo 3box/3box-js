@@ -40,12 +40,12 @@ describe('3id', () => {
   let threeId, ipfs
 
   beforeAll(async () => {
-    ipfs = await testUtils.initIPFS(0)
+    ipfs = await testUtils.initIPFS(6)
     registerResolver(ipfs)
   })
 
   afterAll(async () => {
-    await testUtils.stopIPFS(ipfs, 0)
+    await testUtils.stopIPFS(ipfs, 6)
   })
 
   beforeEach(() => {
