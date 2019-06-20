@@ -68,7 +68,7 @@ describe('Verified', () => {
     })
 
     it('should throw if gistUrl is empty', async () => {
-      expect(verified.addGithub('')).rejects.toEqual(new Error('The proof of your Github is not available'))
+      expect(await verified.addGithub('')).toEqual(null)
     })
   })
 
