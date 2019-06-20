@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.9.1 - 2019-06-19
+* feat: allow joinThread, addModerator, addMember to take both ethereum addresses or DIDs as function argument
+* ref: await linkProfile, throw error if not completed
+* ref: linkAccount -> linkAdress and isAccountLinked -> isAddressLinked (orignal functions deprecated)
+
 ## v1.9.0 - 2019-06-11
 * feat: add support for moderated and members threads
 * feat: update to latest orbitdb and ipfs
