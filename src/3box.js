@@ -491,6 +491,35 @@ class Box {
   }
 
   /**
+   * Remove given address link, returns true if successful
+   *
+   * @param     {String}   address      address that is linked
+   */
+  async removeAddressLink (address) {
+    const linkExist = await this._isAddressLinked({ address })
+    if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
+    const payload = {
+      address,
+      type: `delete-address-link`
+    }
+    const oneHour = 60 * 60
+    const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour })
+
+    try {
+      await utils.fetchJson(this._serverUrl + '/linkdelete', {
+        delete_token: deleteToken
+      })
+    } catch (err) {
+      // we capture http errors (500, etc)
+      // see: https://github.com/3box/3box-js/pull/351
+      if (!err.statusCode) {
+        throw new Error(err)
+      }
+    }
+    return true
+  }
+
+  /**
    * Checks if there is a proof that links an external account to the 3Box account of the user. If not params given and any link exists, returns true
    *
    * @param     {Object}    [query]            Optional object with address and/or type.
