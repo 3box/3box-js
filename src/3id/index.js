@@ -25,7 +25,7 @@ class ThreeId {
     localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
   }
 
-  async signJWT (payload, { use3ID, space } = {}) {
+  async signJWT (payload, { use3ID, space, expiresIn } = {}) {
     const keyring = space ? this._keyrings[space] : this._mainKeyring
     let issuer = this.muportDID
     if (use3ID) {
@@ -35,7 +35,8 @@ class ThreeId {
     }
     const settings = {
       signer: keyring.getJWTSigner(),
-      issuer
+      issuer,
+      expiresIn
     }
     return didJWT.createJWT(payload, settings)
   }
