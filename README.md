@@ -274,6 +274,7 @@ idUtils.verifyClaim(claim)
         * [.private](#Box+private)
         * [.verified](#Box+verified)
         * [.spaces](#Box+spaces)
+        * [.DID](#Box+DID)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
         * [.onSyncDone(syncDone)](#Box+onSyncDone)
         * [.linkAddress(type)](#Box+linkAddress)
@@ -340,6 +341,16 @@ Please use the **openBox** method to instantiate a 3Box
 | Name | Type | Description |
 | --- | --- | --- |
 | spaces | <code>Object</code> | an object containing all open spaces indexed by their name. |
+
+<a name="Box+DID"></a>
+
+#### box.DID
+**Kind**: instance property of [<code>Box</code>](#Box)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DID | <code>String</code> | the DID of the user |
 
 <a name="Box+openSpace"></a>
 

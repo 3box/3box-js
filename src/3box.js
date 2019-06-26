@@ -114,7 +114,7 @@ class Box {
         this._pubsub.publish(PINNING_ROOM, {
           type: 'PIN_DB',
           odbAddress: rootStoreAddress,
-          did: this._3id.muportDID
+          did: this.DID
         })
       }
     }
@@ -461,6 +461,13 @@ class Box {
   }
 
   /**
+   * @property {String} DID        the DID of the user
+   */
+  get DID () {
+    return this._3id.muportDID
+  }
+
+  /**
    * Creates a proof that links an external account to the 3Box account of the user.
    *
    * @param     {String}        type        The type of link (default 'ethereum')
@@ -497,7 +504,7 @@ class Box {
 
     if (!linkData) {
       const address = this._3id.managementAddress
-      const did = this._3id.muportDID
+      const did = this.DID
       let consent
       try {
         consent = await utils.getLinkConsent(address, did, this._web3provider)
