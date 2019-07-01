@@ -12,6 +12,10 @@ const getMessageConsent = (did) => (
   'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
 )
 
+const safeEthSend = (ethereum, data) => {
+  return Boolean(ethereum.sendAsync) ? ethereum.sendAsync(data) : ethereum.send(data)
+}
+
 module.exports = {
   getMessageConsent,
 
@@ -21,7 +25,7 @@ module.exports = {
     var params = [msg, fromAddress]
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
-      ethereum.sendAsync(
+      safeEthSend(ethereum,
         {
           jsonrpc: '2.0',
           id: 0,
@@ -44,7 +48,7 @@ module.exports = {
     var params = [msg, fromAddress]
     var method = 'personal_sign'
     return new Promise((resolve, reject) => {
-      ethereum.sendAsync(
+      safeEthSend(ethereum,
         {
           jsonrpc: '2.0',
           id: 0,
@@ -68,7 +72,7 @@ module.exports = {
     const method = 'personal_sign'
 
     return new Promise((resolve, reject) => {
-      ethereum.sendAsync(
+      safeEthSend(ethereum,
         {
           jsonrpc: '2.0',
           id: 0,
