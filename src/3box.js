@@ -468,9 +468,9 @@ class Box {
    * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
    * @param     {Object}    [link.proof ]                  URL of graphQL 3Box profile service
    */
-  async linkAddress (link={}) {
+  async linkAddress (link = {}) {
     if (link.proof) {
-      await this._writeAddressLink(proof)
+      await this._writeAddressLink(link.proof)
       return
     }
     if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
@@ -490,7 +490,8 @@ class Box {
    * @param     {String}    [query.type]       Does the given type of link exist
    * @param     {String}    [query.address]    Is the given adressed linked
    */
-  async isAddressLinked (query={}) {
+  async isAddressLinked (query = {}) {
+    if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
       let res = query.address ? link.address === query.address : true
@@ -539,8 +540,10 @@ class Box {
     utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
   }
 
-  async _writeAddressLink(proof) {
+  async _writeAddressLink (proof) {
     const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
+    const linkExist = await this._linkCIDExists(data)
+    if (linkExist) return
     const link = {
       type: 'address-link',
       data
@@ -548,10 +551,16 @@ class Box {
     await this._rootStore.add(link)
   }
 
-  async _readAddressLinks() {
+  async _linkCIDExists (cid) {
     const entries = await this._rootStore.iterator({ limit: -1 }).collect()
     const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
-    const resolveLinks =  linkEntries.map(async (entry) => {
+    return linkEntries.find(entry => entry.data === cid)
+  }
+
+  async _readAddressLinks () {
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
+    const resolveLinks = linkEntries.map(async (entry) => {
       // TODO handle missing ipfs obj??, timeouts?
       const obj = (await this._ipfs.dag.get(entry.payload.value.data)).value
       if (!obj.address) {
@@ -562,7 +571,7 @@ class Box {
     return Promise.all(resolveLinks)
   }
 
-  async _readAddressLink(address) {
+  async _readAddressLink (address) {
     const links = await this._readAddressLinks()
     return links.find(link => link.address === address)
   }
