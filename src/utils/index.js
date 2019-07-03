@@ -1,7 +1,7 @@
 const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
-const sigUtil = require('eth-sig-util')
+const ethers = require('ethers')
 
 const HTTPError = (status, message) => {
   const e = new Error(message)
@@ -22,13 +22,13 @@ const safeEthSend = (ethereum, data) => {
 module.exports = {
   getMessageConsent,
 
-  recoverPersonalSign: (msg, personalSig) => {
+  recoverPersonalSign: async (msg, personalSig) => {
     if (!msg || !personalSig) throw new Error('recoverPersonalSign: missing arguments, msg and/or personalSig')
     const msgParams = {
       data: msg,
       sig: personalSig
     }
-    return sigUtil.recoverPersonalSignature(msgParams)
+    return ethers.utils.verifyMessage(msg , personalSig)
   },
 
   openBoxConsent: (fromAddress, ethereum) => {
