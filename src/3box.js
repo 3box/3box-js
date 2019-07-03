@@ -489,7 +489,8 @@ class Box {
    * @param     {String}   address      address that is linked
    */
   async removeAddressLink (address) {
-    const linkExist = await this._isAddressLinked({ address })
+    address = address.toLowerCase()
+    const linkExist = await this.isAddressLinked({ address })
     if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
     const payload = {
       address,
@@ -509,6 +510,9 @@ class Box {
         throw new Error(err)
       }
     }
+
+    await this._deleteAddressLink(address)
+
     return true
   }
 
@@ -586,6 +590,13 @@ class Box {
     return linkEntries.find(entry => entry.data === cid)
   }
 
+  async _deleteAddressLink (address) {
+    address = address.toLowerCase()
+    const link = await this._readAddressLink(address)
+    if (!link) throw new Error('_deleteAddressLink: link for given address does not exist')
+    return this._rootStore.remove(link.entry.hash)
+  }
+
   async _readAddressLinks () {
     const entries = await this._rootStore.iterator({ limit: -1 }).collect()
     const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
@@ -595,12 +606,14 @@ class Box {
       if (!obj.address) {
         obj.address = utils.recoverPersonalSign(obj.message, obj.signature)
       }
+      obj.entry = entry
       return obj
     })
     return Promise.all(resolveLinks)
   }
 
   async _readAddressLink (address) {
+    address = address.toLowerCase()
     const links = await this._readAddressLinks()
     return links.find(link => link.address === address)
   }
