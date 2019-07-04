@@ -491,6 +491,39 @@ class Box {
   }
 
   /**
+   * Remove given address link, returns true if successful
+   *
+   * @param     {String}   address      address that is linked
+   */
+  async removeAddressLink (address) {
+    address = address.toLowerCase()
+    const linkExist = await this.isAddressLinked({ address })
+    if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
+    const payload = {
+      address,
+      type: `delete-address-link`
+    }
+    const oneHour = 60 * 60
+    const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour })
+
+    try {
+      await utils.fetchJson(this._serverUrl + '/linkdelete', {
+        delete_token: deleteToken
+      })
+    } catch (err) {
+      // we capture http errors (500, etc)
+      // see: https://github.com/3box/3box-js/pull/351
+      if (!err.statusCode) {
+        throw new Error(err)
+      }
+    }
+
+    await this._deleteAddressLink(address)
+
+    return true
+  }
+
+  /**
    * Checks if there is a proof that links an external account to the 3Box account of the user. If not params given and any link exists, returns true
    *
    * @param     {Object}    [query]            Optional object with address and/or type.
@@ -565,6 +598,13 @@ class Box {
     return linkEntries.find(entry => entry.data === cid)
   }
 
+  async _deleteAddressLink (address) {
+    address = address.toLowerCase()
+    const link = await this._readAddressLink(address)
+    if (!link) throw new Error('_deleteAddressLink: link for given address does not exist')
+    return this._rootStore.remove(link.entry.hash)
+  }
+
   async _readAddressLinks () {
     const entries = await this._rootStore.iterator({ limit: -1 }).collect()
     const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
@@ -574,12 +614,14 @@ class Box {
       if (!obj.address) {
         obj.address = utils.recoverPersonalSign(obj.message, obj.signature)
       }
+      obj.entry = entry
       return obj
     })
     return Promise.all(resolveLinks)
   }
 
   async _readAddressLink (address) {
+    address = address.toLowerCase()
     const links = await this._readAddressLinks()
     return links.find(link => link.address === address)
   }
