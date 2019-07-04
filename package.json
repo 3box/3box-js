@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
-    "test": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
+    "test": "rm -rf ./tmp && jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
     "test-update": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\" --updateSnapshot",
     "build:es5": "rm -rf ./lib; ./node_modules/.bin/babel src --out-dir lib --ignore=src/__tests__/,src/__mocks__/",
     "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",

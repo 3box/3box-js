@@ -25,7 +25,8 @@ const config = require('./config.js')
 const API = require('./api')
 
 const ACCOUNT_TYPES = {
-  ethereum: 'ethereum'
+  ethereum: 'ethereum',
+  ethereumEOA: 'ethereum-eoa'
 }
 
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -164,7 +165,7 @@ class Box {
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
+    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
@@ -468,56 +469,73 @@ class Box {
   }
 
   /**
-   * Creates a proof that links an external account to the 3Box account of the user.
+   * Creates a proof that links an ethereum address to the 3Box account of the user. If given proof, it will simply be added to the root store.
    *
-   * @param     {String}        type        The type of link (default 'ethereum')
+   * @param     {Object}    [link]                         Optional link object with type or proof
+   * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
+   * @param     {Object}    [link.proof ]                  URL of graphQL 3Box profile service
    */
-  async linkAddress (type = ACCOUNT_TYPES.ethereum) {
-    if (type === ACCOUNT_TYPES.ethereum) {
+  async linkAddress (link = {}) {
+    if (link.proof) {
+      await this._writeAddressLink(link.proof)
+      return
+    }
+    if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
       await this._linkProfile()
     }
   }
 
-  async linkAccount (type = ACCOUNT_TYPES.ethereum) {
+  async linkAccount (type = ACCOUNT_TYPES.ethereumEOA) {
     console.warn('linkAccount: deprecated, please use linkAddress going forward')
     await this.linkAddress(type)
   }
 
   /**
-   * Checks if there is a proof that links an external account to the 3Box account of the user.
+   * Checks if there is a proof that links an external account to the 3Box account of the user. If not params given and any link exists, returns true
    *
-   * @param     {String}        type        The type of link (default ethereum)
+   * @param     {Object}    [query]            Optional object with address and/or type.
+   * @param     {String}    [query.type]       Does the given type of link exist
+   * @param     {String}    [query.address]    Is the given adressed linked
    */
-  async isAddressLinked (type = ACCOUNT_TYPES.ethereum) {
-    if (type === ACCOUNT_TYPES.ethereum) {
-      return Boolean(await this.public.get('ethereum_proof'))
-    }
+  async isAddressLinked (query = {}) {
+    if (query.address) query.address = query.address.toLowerCase()
+    const links = await this._readAddressLinks()
+    const linksQuery = links.find(link => {
+      let res = query.address ? link.address === query.address : true
+      return query.type ? res && link.type === query.type : res
+    })
+    return Boolean(linksQuery)
   }
 
-  async isAccountLinked (type = ACCOUNT_TYPES.ethereum) {
+  async isAccountLinked (type = ACCOUNT_TYPES.ethereumEOA) {
     console.warn('isAccountLinked: deprecated, please use isAddressLinked going forward')
     return this.isAddressLinked(type)
   }
 
   async _linkProfile () {
-    let linkData = await this.public.get('ethereum_proof')
+    const address = this._3id.managementAddress
+    let linkData = await this._readAddressLink(address)
 
     if (!linkData) {
-      const address = this._3id.managementAddress
       const did = this.DID
+
       let consent
       try {
         consent = await utils.getLinkConsent(address, did, this._web3provider)
       } catch (e) {
+        console.log(e)
         throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
       linkData = {
-        consent_msg: consent.msg,
-        consent_signature: consent.sig,
-        linked_did: did
+        version: 1,
+        type: ACCOUNT_TYPES.ethereumEOA,
+        message: consent.msg,
+        signature: consent.sig,
+        timestamp: consent.timestamp
       }
-      await this.public.set('ethereum_proof', linkData, { noLink: true })
+
+      await this._writeAddressLink(linkData)
     }
 
     // Ensure we self-published our did
@@ -528,6 +546,42 @@ class Box {
 
     // Send consentSignature to 3box-address-server to link profile with ethereum address
     utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
+  }
+
+  async _writeAddressLink (proof) {
+    const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
+    const linkExist = await this._linkCIDExists(data)
+    if (linkExist) return
+    const link = {
+      type: 'address-link',
+      data
+    }
+    await this._rootStore.add(link)
+  }
+
+  async _linkCIDExists (cid) {
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
+    return linkEntries.find(entry => entry.data === cid)
+  }
+
+  async _readAddressLinks () {
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
+    const resolveLinks = linkEntries.map(async (entry) => {
+      // TODO handle missing ipfs obj??, timeouts?
+      const obj = (await this._ipfs.dag.get(entry.payload.value.data)).value
+      if (!obj.address) {
+        obj.address = utils.recoverPersonalSign(obj.message, obj.signature)
+      }
+      return obj
+    })
+    return Promise.all(resolveLinks)
+  }
+
+  async _readAddressLink (address) {
+    const links = await this._readAddressLinks()
+    return links.find(link => link.address === address)
   }
 
   async _ensurePinningNodeConnected (odbAddress, isThread) {
