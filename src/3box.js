@@ -554,6 +554,21 @@ class Box {
     return this.isAddressLinked(type)
   }
 
+  /**
+   * Lists address links associated with this 3Box
+   *
+   * @return    {Array}                        An array of link objects
+   */
+  async listAddressLinks () {
+    const entries = await this._readAddressLinks()
+    return entries.reduce((list, entry) => {
+      const item = Object.assign({}, entry)
+      item.linkId = item.entry.hash
+      delete item.entry
+      return item
+    }, [])
+  }
+
   async _linkProfile () {
     const address = this._3id.managementAddress
     let linkData = await this._readAddressLink(address)
@@ -621,7 +636,7 @@ class Box {
       // TODO handle missing ipfs obj??, timeouts?
       const obj = (await this._ipfs.dag.get(entry.payload.value.data)).value
       if (!obj.address) {
-        obj.address = utils.recoverPersonalSign(obj.message, obj.signature)
+        obj.address = await utils.recoverPersonalSign(obj.message, obj.signature)
       }
       obj.entry = entry
       return obj
