@@ -277,8 +277,10 @@ idUtils.verifyClaim(claim)
         * [.DID](#Box+DID)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
         * [.onSyncDone(syncDone)](#Box+onSyncDone)
-        * [.linkAddress(type)](#Box+linkAddress)
-        * [.isAddressLinked(type)](#Box+isAddressLinked)
+        * [.linkAddress([link])](#Box+linkAddress)
+        * [.removeAddressLink(address)](#Box+removeAddressLink)
+        * [.isAddressLinked([query])](#Box+isAddressLinked)
+        * [.listAddressLinks()](#Box+listAddressLinks) ⇒ <code>Array</code>
         * [.logout()](#Box+logout)
     * _static_
         * [.idUtils](#Box.idUtils)
@@ -380,26 +382,48 @@ Sets the callback function that will be called once when the db is fully synced.
 
 <a name="Box+linkAddress"></a>
 
-#### box.linkAddress(type)
-Creates a proof that links an external account to the 3Box account of the user.
+#### box.linkAddress([link])
+Creates a proof that links an ethereum address to the 3Box account of the user. If given proof, it will simply be added to the root store.
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| [link] | <code>Object</code> |  | Optional link object with type or proof |
+| [link.type] | <code>String</code> | <code>&#x27;ethereum-eoa&#x27;</code> | The type of link (default 'ethereum') |
+| [link.proof] | <code>Object</code> |  | URL of graphQL 3Box profile service |
+
+<a name="Box+removeAddressLink"></a>
+
+#### box.removeAddressLink(address)
+Remove given address link, returns true if successful
 
 **Kind**: instance method of [<code>Box</code>](#Box)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| type | <code>String</code> | The type of link (default 'ethereum') |
+| address | <code>String</code> | address that is linked |
 
 <a name="Box+isAddressLinked"></a>
 
-#### box.isAddressLinked(type)
-Checks if there is a proof that links an external account to the 3Box account of the user.
+#### box.isAddressLinked([query])
+Checks if there is a proof that links an external account to the 3Box account of the user. If not params given and any link exists, returns true
 
 **Kind**: instance method of [<code>Box</code>](#Box)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| type | <code>String</code> | The type of link (default ethereum) |
+| [query] | <code>Object</code> | Optional object with address and/or type. |
+| [query.type] | <code>String</code> | Does the given type of link exist |
+| [query.address] | <code>String</code> | Is the given adressed linked |
 
+<a name="Box+listAddressLinks"></a>
+
+#### box.listAddressLinks() ⇒ <code>Array</code>
+Lists address links associated with this 3Box
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+**Returns**: <code>Array</code> - An array of link objects  
 <a name="Box+logout"></a>
 
 #### box.logout()
