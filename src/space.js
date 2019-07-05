@@ -44,7 +44,7 @@ class Space {
       const spaceAddress = await this._store._load()
 
       const entries = await this._rootStore.iterator({ limit: -1 }).collect()
-      const entry = entries.find(entry => entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)
+      const entry = entries.find(entry => entry.payload.value.odbAddress && entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)
       if (!entry) {
         await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
       } else if (!entry.payload.value.type) {
