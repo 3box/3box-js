@@ -18,7 +18,7 @@
     "build": "npm run build:es5; npm run build:dist; npm run build:dist:prod; npm run build:dist:api",
     "prepublishOnly": "npm run build; npm run generate-readme",
     "example-server:start": "node example/server.js",
-    "example:start": "npm run build:dist -- --watch; npm run example-server:start",
+    "example:start": "npm run build:dist -- --watch & npm run example-server:start",
     "generate-readme": "cp readme-template.md README.md; ./node_modules/.bin/jsdoc2md -g none -d 3 'src/**/*.js' >> README.md"
   },
   "browser": {
