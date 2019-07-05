@@ -15,8 +15,15 @@ const getMessageConsent = (did, timestamp) => {
   return msg
 }
 
-const safeEthSend = (ethereum, data) => {
-  return Boolean(ethereum.sendAsync) ? ethereum.sendAsync(data) : ethereum.send(data)
+const safeEthSend = (ethereum, data, callback) => {
+  const send = Boolean(ethereum.sendAsync) ? ethereum.sendAsync : ethereum.send
+  return new Promise((resolve, reject) => {
+    send(data, function(err, result) {
+      if (err) reject(err)
+      if (result.error) reject(result.error)
+      resolve(result.result)
+    })
+  })
 }
 
 module.exports = {
@@ -36,21 +43,12 @@ module.exports = {
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return new Promise((resolve, reject) => {
-      safeEthSend(ethereum,
-        {
-          jsonrpc: '2.0',
-          id: 0,
-          method,
-          params,
-          fromAddress
-        },
-        function(err, result) {
-          if (err) reject(err)
-          if (result.error) reject(result.error)
-          resolve(result.result)
-        }
-      )
+    return safeEthSend(ethereum, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params,
+      fromAddress
     })
   },
 
@@ -59,52 +57,34 @@ module.exports = {
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return new Promise((resolve, reject) => {
-      safeEthSend(ethereum,
-        {
-          jsonrpc: '2.0',
-          id: 0,
-          method,
-          params,
-          fromAddress
-        },
-        function(err, result) {
-          if (err) reject(err)
-          if (result.error) reject(result.error)
-          resolve(result.result)
-        }
-      )
+    return safeEthSend(ethereum, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params,
+      fromAddress
     })
   },
 
-  getLinkConsent: (fromAddress, toDID, ethereum) => {
+  getLinkConsent: async (fromAddress, toDID, ethereum) => {
     const timestamp = Math.floor(new Date().getTime() / 1000)
     const text = getMessageConsent(toDID, timestamp)
     const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     const params = [msg, fromAddress]
     const method = 'personal_sign'
 
-    return new Promise((resolve, reject) => {
-      safeEthSend(ethereum,
-        {
-          jsonrpc: '2.0',
-          id: 0,
-          method,
-          params,
-          fromAddress
-        },
-        function(err, result) {
-          if (err) reject(err)
-          if (result.error) reject(result.error)
-          const out = {
-            msg: text,
-            sig: result.result,
-            timestamp
-          }
-          resolve(out)
-        }
-      )
+    const sig = await safeEthSend(ethereum, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params,
+      fromAddress
     })
+    return {
+      msg: text,
+      sig,
+      timestamp
+    }
   },
 
   fetchJson: async (url, body) => {
