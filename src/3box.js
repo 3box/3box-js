@@ -178,6 +178,15 @@ class Box {
       await this._rootStore.add({ odbAddress: privOdbAddress })
     }
     this._publishRootStore(rootStoreAddress)
+    const pinAddressLinks = async () => {
+      // Filter for address-links, get CID, and get to pin it
+      entries
+        .filter(entry => entry.payload.value.type === 'address-link')
+        .map(entry => {
+          this._ipfs.dag.get(entry.payload.value.data)
+        })
+    }
+    pinAddressLinks()
   }
 
   /**
