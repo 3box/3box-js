@@ -623,7 +623,7 @@ class Box {
   async _readAddressLink (address) {
     address = address.toLowerCase()
     const links = await this._readAddressLinks()
-    return links.find(link => link.address === address)
+    return links.find(link => link.address.toLowerCase() === address)
   }
 
   async _ensurePinningNodeConnected (odbAddress, isThread) {
