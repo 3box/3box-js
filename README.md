@@ -234,7 +234,9 @@ $ npm run example:start
 
 This runs a simple server at `http://localhost:3000/` that serves the static `example/index.html` file. This allows it easily interact with metamask. You can edit the `example/index.html` file to try differnt code.
 
-## Optimize build for read-only 3Box API
+## Build
+
+### Optimize build for read-only 3Box API
 
 If you only want to fetch profile data from 3Box's profile APIs you can optimize by importing only those functions or the API specific dist file. Since this includes minimal dependencies, file size is ~ 80kb vs 4+mb for the full build.
 
@@ -243,6 +245,14 @@ const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require
 ```
 ```html
 <script src="https://unpkg.com/3box/dist/3box.api.min.js"></script>
+```
+
+### Resolving build size issues and out of memory errors
+
+Some platforms, tooling, or configs have caused the build process to throw out of memory errors. This is a combination of the size of our library (plus dependencies) and the specific configs you have for your build. It could be things like tooling running on dependencies and not just your source or dependencies be recursively resolved. You can attempt to build the library anyways by adding the follow environment variable to increase memory for the node process.
+
+```
+NODE_OPTIONS=--max_old_space_size=4096 npm run build
 ```
 
 ## <a name="datastandards"></a> Data Standards
@@ -1093,4 +1103,3 @@ Throws an error if the verification fails.
 | Param | Type | Description |
 | --- | --- | --- |
 | claim | <code>String</code> | A did-JWT claim ownership of an email username |
-
