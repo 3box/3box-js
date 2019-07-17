@@ -205,7 +205,7 @@ class KeyValueStore {
   async all (opts = {}) {
     this._requireLoad()
     const entries = this._db.all
-    let allSimple = {}
+    const allSimple = {}
     Object.keys(entries).map(key => {
       const entry = entries[key]
 

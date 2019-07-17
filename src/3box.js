@@ -129,7 +129,7 @@ class Box {
     ])
 
     let syncPromises = []
-    let hasResponse = {}
+    const hasResponse = {}
 
     // Filters and store space related messages for 3secs, the best effort
     // simple approach, until refactor
@@ -306,7 +306,7 @@ class Box {
     // opts = Object.assign({ iframeStore: true }, opts)
     const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
     let usingGlobalIPFS = false
-    let usingGlobalOrbitDB = false
+    // let usingGlobalOrbitDB = false
     let ipfs
     let orbitdb
     if (globalIPFS) {
@@ -356,7 +356,7 @@ class Box {
       const closeAll = async () => {
         await rootStore.close()
         await publicStore.close()
-        if (!usingGlobalOrbitDB) await orbitdb.stop()
+        // if (!usingGlobalOrbitDB) await orbitdb.stop()
         if (!usingGlobalIPFS) {} // await ipfs.stop()
       }
       // close but don't wait for it
@@ -543,7 +543,7 @@ class Box {
     if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
-      let res = query.address ? link.address === query.address : true
+      const res = query.address ? link.address === query.address : true
       return query.type ? res && link.type === query.type : res
     })
     return Boolean(linksQuery)
