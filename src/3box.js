@@ -482,7 +482,7 @@ class Box {
    *
    * @param     {Object}    [link]                         Optional link object with type or proof
    * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
-   * @param     {Object}    [link.proof ]                  Proof object, should follow spec: https://github.com/3box/3box/blob/master/3IPs/3ip-5.md
+   * @param     {Object}    [link.proof]                   Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md)
    */
   async linkAddress (link = {}) {
     if (link.proof) {

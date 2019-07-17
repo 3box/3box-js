@@ -401,7 +401,7 @@ Creates a proof that links an ethereum address to the 3Box account of the user. 
 | --- | --- | --- | --- |
 | [link] | <code>Object</code> |  | Optional link object with type or proof |
 | [link.type] | <code>String</code> | <code>&#x27;ethereum-eoa&#x27;</code> | The type of link (default 'ethereum') |
-| [link.proof] | <code>Object</code> |  | URL of graphQL 3Box profile service |
+| [link.proof] | <code>Object</code> |  | Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md) |
 
 <a name="Box+removeAddressLink"></a>
 
@@ -1103,3 +1103,4 @@ Throws an error if the verification fails.
 | Param | Type | Description |
 | --- | --- | --- |
 | claim | <code>String</code> | A did-JWT claim ownership of an email username |
+
