@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.10.0 - 2019-07-17
+* feat: added ability to link multiple ethereum addresses to a 3Box
+* feat: added ability to add a link proof manually
+* feat: address links are now stored in the rootstore instead of the public profile
+* feat: added getter for DID
+* fix: support web3 1.0 providers
+
 ## v1.9.1 - 2019-06-19
 * feat: allow joinThread, addModerator, addMember to take both ethereum addresses or DIDs as function argument
 * ref: await linkProfile, throw error if not completed
