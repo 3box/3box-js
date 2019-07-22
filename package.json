@@ -9,7 +9,6 @@
   "scripts": {
     "lint": "./node_modules/.bin/standard --verbose src/**",
     "test": "rm -rf ./tmp && jest --forceExit --coverage --runInBand --testURL=\"http://localhost\"",
-    "test-update": "rm -rf ./tmp ; jest --forceExit --coverage --runInBand --testURL=\"http://localhost\" --updateSnapshot",
     "build:es5": "rm -rf ./lib; ./node_modules/.bin/babel src --out-dir lib --ignore=src/__tests__/,src/__mocks__/",
     "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",
     "build:dist:dev": "./node_modules/.bin/webpack --config webpack.dev.config.js --mode=development",
@@ -52,6 +51,7 @@
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "^0.1.0",
+    "identity-wallet": "0.1.0-beta.5",
     "ipfs": "^0.36.3",
     "ipfs-did-document": "^1.2.3",
     "ipfs-mini": "^1.1.5",

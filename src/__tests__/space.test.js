@@ -7,13 +7,9 @@ const threeIdMock = {
   initKeyringByName: jest.fn(() => {
     return false
   }),
-  getKeyringBySpaceName: jest.fn(() => {
-    return {
-      getDBSalt: jest.fn(),
-      symEncrypt: data => { return { ciphertext: 'wow, such encrypted/' + data, nonce: 123 } },
-      symDecrypt: data => data.split('/')[1]
-    }
-  }),
+  hashDBKey: jest.fn(key => `${key}asdfasdfasdf`),
+  encrypt: data => { return { ciphertext: 'wow, such encrypted/' + data, nonce: 123 } },
+  decrypt: ({ciphertext, nonce}) => ciphertext.split('/')[1],
   signJWT: (payload, { space }) => {
     return `a fake jwt for ${space}`
   },
@@ -38,7 +34,6 @@ describe('Space', () => {
   beforeEach(() => {
     rootstoreMock.add.mockClear()
     threeIdMock.initKeyringByName.mockClear()
-    threeIdMock.getKeyringBySpaceName.mockClear()
   })
 
   it('should be correctly constructed', async () => {
@@ -62,7 +57,6 @@ describe('Space', () => {
     expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME1)
     expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
     expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME1)
-    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME1 + '.keyvalue')
     await syncDonePromise
   })
 
@@ -87,7 +81,6 @@ describe('Space', () => {
     expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME2)
     expect(rootstoreMock.add).toHaveBeenCalledTimes(0)
     expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME2)
-    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME2 + '.keyvalue')
     await syncDonePromise
   })
 
@@ -105,7 +98,6 @@ describe('Space', () => {
     expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME2), odbAddress:'/orbitdb/myodbaddr' })
     expect(rootstoreMock.del).toHaveBeenCalledWith('a hash')
     expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME2)
-    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME2 + '.keyvalue')
     await syncDonePromise
   })
 
@@ -137,10 +129,10 @@ describe('Space', () => {
     })
 
     it('log should only return public values', async () => {
-      const log1 = space.public.log
+      const log1 = await space.public.log()
       expect(log1).toMatchSnapshot()
       space._store.set('key', 'value')
-      const log2 = space.public.log
+      const log2 = await space.public.log()
       expect(log2).toEqual(log1)
     })
 
@@ -184,10 +176,10 @@ describe('Space', () => {
 
     it('log should only return private values', async () => {
       const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'sv1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'sv3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'sv4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'sv5' } ]
-      const log1 = space.private.log
+      const log1 = await space.private.log()
       expect(log1).toEqual(refLog)
       space._store.set('key', 'value')
-      const log2 = space.private.log
+      const log2 = await space.private.log()
       expect(log2).toEqual(log1)
     })
 

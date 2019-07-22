@@ -172,7 +172,7 @@ class KeyValueStore {
   }
 
   async _load (odbAddress) {
-    const key = this._3id.getKeyringBySpaceName(this._name).getPublicKeys(true).signingKey
+    const key = (await this._3id.getPublicKeys(this._space, true)).signingKey
     const opts = {
       ...ORBITDB_OPTS,
       format: 'dag-pb',
@@ -238,7 +238,7 @@ class KeyValueStore {
    *
    * @return    {Array<Object>}     Array of ordered log entry objects
    */
-  get log () {
+  async log () {
     return this._db._oplog.values.map(obj => {
       return { op: obj.payload.op,
         key: obj.payload.key,

@@ -3,6 +3,15 @@ const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
 const ethers = require('ethers')
 
+const ENC_BLOCK_SIZE = 24
+
+const pad = (val, blockSize = ENC_BLOCK_SIZE) => {
+  const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
+  return `${val}${'\0'.repeat(blockDiff)}`
+}
+
+const unpad = padded => padded.replace(/\0+$/, '')
+
 const HTTPError = (status, message) => {
   const e = new Error(message)
   e.statusCode = status
@@ -25,6 +34,7 @@ const safeEthSend = (ethereum, data, callback) => {
     })
   })
 }
+
 
 module.exports = {
   getMessageConsent,
@@ -131,5 +141,7 @@ module.exports = {
     const digest = Buffer.from(sha256.digest(str))
     return Multihash.encode(digest, 'sha2-256').toString('hex')
   },
-  sha256
+  sha256,
+  pad,
+  unpad
 }

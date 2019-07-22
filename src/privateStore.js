@@ -1,17 +1,14 @@
 const KeyValueStore = require('./keyValueStore')
 const utils = require('./utils/index')
 
-const ENC_BLOCK_SIZE = 24
 
 class PrivateStore extends KeyValueStore {
   constructor (orbitdb, name, ensureConnected, _3id) {
     super(orbitdb, name, ensureConnected, _3id)
-    this.keyring = _3id.getKeyringBySpaceName(name)
-    this._salt = this.keyring.getDBSalt()
   }
 
   async get (key, opts = {}) {
-    const entry = await super.get(this._genDbKey(key), opts)
+    const entry = await super.get(await this._3id.hashDBKey(key), opts)
     if (!entry) {
       return null
     }
@@ -19,7 +16,7 @@ class PrivateStore extends KeyValueStore {
     if (opts.metadata) {
       return {
         ...entry,
-        value: this._decryptEntry(entry.value)
+        value: await this._decryptEntry(entry.value)
       }
     }
 
@@ -28,24 +25,26 @@ class PrivateStore extends KeyValueStore {
 
   async getMetadata (key) {
     // Note: assumes metadata is not encrypted.
-    return super.getMetadata(this._genDbKey(key))
+    return super.getMetadata(await this._3id.hashDBKey(key))
   }
 
   async set (key, value) {
-    value = this._encryptEntry(value)
-    key = this._genDbKey(key)
+    utils.throwIfUndefined(key, 'key')
+    value = await this._encryptEntry(value)
+    key = await this._3id.hashDBKey(key)
     return super.set(key, value)
   }
 
   async setMultiple (keys, values) {
     utils.throwIfNotEqualLenArrays(keys, values)
-    const dbKeys = keys.map(this._genDbKey, this)
-    const encryptedValues = values.map(this._encryptEntry, this)
+    const dbKeys = await Promise.all(keys.map(key => this._3id.hashDBKey(key), this))
+    const encryptedValues = await Promise.all(values.map(this._encryptEntry, this))
     return super.setMultiple(dbKeys, encryptedValues)
   }
 
   async remove (key) {
-    key = this._genDbKey(key)
+    utils.throwIfUndefined(key, 'key')
+    key = await this._3id.hashDBKey(key)
     return super.remove(key)
   }
 
@@ -62,34 +61,26 @@ class PrivateStore extends KeyValueStore {
    *
    * @return    {Array<Object>}     Array of ordered log entry objects
    */
-  get log () {
-    return super.log.map(obj => {
-      return Object.assign(obj, { value: obj.value ? this._decryptEntry(obj.value) : null })
-    })
+  async log () {
+    const encLog = await super.log()
+    const log = []
+    for (const entry of encLog) {
+      log.push(Object.assign(
+        entry,
+        { value: entry.value ? await this._decryptEntry(entry.value) : null }
+      ))
+    }
+    return log
   }
 
-  _genDbKey (key) {
-    utils.throwIfUndefined(key, 'key')
-    return utils.sha256Multihash(this._salt + key)
-  }
-
-  _encryptEntry (entry) {
+  async _encryptEntry (entry) {
     if (typeof entry === 'undefined') throw new Error('Entry to encrypt cannot be undefined')
 
-    return this.keyring.symEncrypt(this._pad(JSON.stringify(entry)))
+    return this._3id.encrypt(JSON.stringify(entry))
   }
 
-  _decryptEntry ({ ciphertext, nonce }) {
-    return JSON.parse(this._unpad(this.keyring.symDecrypt(ciphertext, nonce)))
-  }
-
-  _pad (val, blockSize = ENC_BLOCK_SIZE) {
-    const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
-    return `${val}${'\0'.repeat(blockDiff)}`
-  }
-
-  _unpad (padded) {
-    return padded.replace(/\0+$/, '')
+  async _decryptEntry (encObj) {
+    return JSON.parse(await this._3id.decrypt(encObj))
   }
 }
 

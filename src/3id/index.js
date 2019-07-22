@@ -144,13 +144,25 @@ class ThreeId {
     publishToInfura()
   }
 
-  getKeyringBySpaceName (name) {
-    const split = name.split('.')
-    if (split[0] === this.muportFingerprint) {
-      return this._mainKeyring
-    } else {
-      return this._keyrings[split[2]]
-    }
+  async getPublicKeys (space, uncompressed) {
+    return this._keyringBySpace(space).getPublicKeys(uncompressed)
+  }
+
+  async encrypt (message, space) {
+    return this._keyringBySpace(space).symEncrypt(utils.pad(message))
+  }
+
+  async decrypt (encObj, space) {
+    return utils.unpad(this._keyringBySpace(space).symDecrypt(encObj.ciphertext, encObj.nonce))
+  }
+
+  async hashDBKey (key, space) {
+    const salt = this._keyringBySpace(space).getDBSalt()
+    return utils.sha256Multihash(salt + key)
+  }
+
+  _keyringBySpace (space) {
+    return space ? this._keyrings[space] : this._mainKeyring
   }
 
   async initKeyringByName (name) {
@@ -167,7 +179,7 @@ class ThreeId {
     }
   }
 
-  logout() {
+  logout () {
     localstorage.remove(STORAGE_KEY + this.managementAddress)
   }
 
@@ -200,6 +212,9 @@ class ThreeId {
     const _3id = new ThreeId(serialized3id, ethereum, ipfs, opts)
     await _3id._initDID(opts.muportIpfs || MUPORT_IPFS)
     return _3id
+  }
+
+  static async getIdFromIdentityWallet (idWallet, opts = {}) {
   }
 }
 

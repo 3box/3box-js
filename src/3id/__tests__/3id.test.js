@@ -14,7 +14,9 @@ jest.mock('../../utils/index', () => {
       if (str === 'did:muport:Qmsdsdf87g329') return 'ab8c73d8f'
       return 'b932fe7ab'
     }),
-    sha256
+    sha256,
+    pad: x => x,
+    unpad: x => x
   }
 })
 
@@ -124,16 +126,6 @@ describe('3id', () => {
   })
 
   describe('keyring logic', () => {
-    it('should get main keyring using rootStore/public/private name', async () => {
-      const fingerprint = threeId.muportFingerprint
-      let kr = threeId.getKeyringBySpaceName(fingerprint + '.root')
-      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_1).seed)
-      kr = threeId.getKeyringBySpaceName(fingerprint + '.public')
-      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_1).seed)
-      kr = threeId.getKeyringBySpaceName(fingerprint + '.private')
-      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_1).seed)
-    })
-
     it('should init space keyrings correctly', async () => {
       let requiredConsent = await threeId.initKeyringByName(SPACE_1)
       expect(requiredConsent).toEqual(true)
@@ -156,11 +148,25 @@ describe('3id', () => {
       expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(2)
     })
 
-    it('should get space keyrings correctly', async () => {
-      let kr = threeId.getKeyringBySpaceName(`3box.space.${SPACE_1}.keyvalue`)
-      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_2).spaceSeeds[SPACE_1])
-      kr = threeId.getKeyringBySpaceName(`3box.space.${SPACE_2}.keyvalue`)
-      expect(kr._seed).toEqual(JSON.parse(ADDR_1_STATE_2).spaceSeeds[SPACE_2])
+    it('should get public keys correctly', async () => {
+      expect(await threeId.getPublicKeys(null, false)).toMatchSnapshot()
+      expect(await threeId.getPublicKeys(SPACE_1, false)).toMatchSnapshot()
+      expect(await threeId.getPublicKeys(null, true)).toMatchSnapshot()
+      expect(await threeId.getPublicKeys(SPACE_1, true)).toMatchSnapshot()
+    })
+
+    it('should hashDBKey correctly', async () => {
+      expect(await threeId.hashDBKey('somekey')).toMatchSnapshot()
+      expect(await threeId.hashDBKey('somekey', SPACE_1)).toMatchSnapshot()
+    })
+
+    it('should encrypt and decrypt correctly', async () => {
+      const message = 'test message'
+      const enc1 = await threeId.encrypt(message)
+      expect(await threeId.decrypt(enc1)).toEqual(message)
+      const enc2 = await threeId.encrypt(message, SPACE_1)
+      expect(await threeId.decrypt(enc2, SPACE_1)).toEqual(message)
+      expect(await threeId.decrypt(enc1, SPACE_1)).toEqual(null)
     })
 
     it('should get identity with spaces automatically initialized', async () => {

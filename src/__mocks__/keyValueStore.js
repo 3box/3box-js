@@ -92,10 +92,10 @@ class KeyValueStore {
     return allSimple
   }
 
-  get log () {
+  async log () {
     // simple mock, order and del ops not retained
     const all = this._db.all()
-    return   Object.keys(all).map(key => ({'op': 'PUT', 'key': key, 'value': all[key].value, 'timeStamp': all[key].timeStamp}))
+    return Object.keys(all).map(key => ({'op': 'PUT', 'key': key, 'value': all[key].value, 'timeStamp': all[key].timeStamp}))
   }
 }
 
