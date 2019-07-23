@@ -181,7 +181,12 @@ class ThreeId {
     if (serialized3id) {
       if (opts.consentCallback) opts.consentCallback(false)
     } else {
-      const sig = await utils.openBoxConsent(normalizedAddress, ethereum)
+      let sig
+      if (opts.contentSignature) {
+        sig = opts.contentSignature
+      } else {
+        sig = await utils.openBoxConsent(normalizedAddress, ethereum)
+      }
       if (opts.consentCallback) opts.consentCallback(true)
       const entropy = '0x' + utils.sha256(sig.slice(2))
       const mnemonic = HDNode.entropyToMnemonic(entropy)

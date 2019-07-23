@@ -400,6 +400,7 @@ class Box {
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.addressServer      URL of the Address Server
+   * @param     {String}            opts.contentSignature   A signature, provided by a client of 3box using the private keys associated with the given address, of the 3box consent message
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, ethereumProvider, opts = {}) {
