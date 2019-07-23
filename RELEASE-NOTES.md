@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.10.1 - 2019-07-23
+* fix: support usage of multiple tabs without data loss
+
 ## v1.10.0 - 2019-07-17
 * feat: added ability to link multiple ethereum addresses to a 3Box
 * feat: added ability to add a link proof manually
