@@ -1,4 +1,7 @@
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils/index')
+const config = require('./config')
+
+const ORBITDB_OPTS = config.orbitdb_options
 
 class KeyValueStore {
   /**
@@ -171,6 +174,7 @@ class KeyValueStore {
   async _load (odbAddress) {
     const key = this._3id.getKeyringBySpaceName(this._name).getPublicKeys(true).signingKey
     const opts = {
+      ...ORBITDB_OPTS,
       format: 'dag-pb',
       accessController: {
         write: [key],

@@ -59,7 +59,7 @@
     "js-sha256": "^0.9.0",
     "muport-did-resolver": "^0.3.0",
     "node-fetch": "^2.6.0",
-    "orbit-db": "^0.21.2",
+    "orbit-db": "^0.21.4",
     "orbit-db-cache-postmsg-proxy": "^0.1.1",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",

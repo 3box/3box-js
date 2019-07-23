@@ -1,6 +1,8 @@
 const isIPFS = require('is-ipfs')
 const API = require('./api')
+const config = require('./config')
 
+const ORBITDB_OPTS = config.orbitdb_options
 const MODERATOR = 'MODERATOR'
 const MEMBER = 'MEMBER'
 
@@ -181,6 +183,7 @@ class Thread {
     await this._initConfigs()
     const identity = this._identity
     this._db = await this._orbitdb.feed(odbAddress || this._name, {
+      ...ORBITDB_OPTS,
       identity,
       accessController: this._accessController
     })

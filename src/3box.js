@@ -35,6 +35,7 @@ const PINNING_ROOM = config.pinning_room
 // const IFRAME_STORE_VERSION = '0.0.3'
 // const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 const IPFS_OPTIONS = config.ipfs_options
+const ORBITDB_OPTS = config.orbitdb_options
 
 let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
@@ -101,6 +102,7 @@ class Box {
 
     const key = this._3id.getKeyringBySpaceName(rootStoreName).getPublicKeys(true).signingKey
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
+      ...ORBITDB_OPTS,
       format: 'dag-pb',
       accessController: {
         write: [key],
