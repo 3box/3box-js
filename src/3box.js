@@ -4,6 +4,15 @@ const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 // const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
 // const { createProxyClient } = require('ipfs-postmsg-proxy')
+const AccessControllers = require('orbit-db-access-controllers')
+const {
+  LegacyIPFS3BoxAccessController,
+  ThreadAccessController,
+  ModeratorAccessController
+} = require('3box-orbitdb-plugins')
+AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+AccessControllers.addAccessController({ AccessController: ThreadAccessController })
+AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 
 const ThreeId = require('./3id')
 const PublicStore = require('./publicStore')
@@ -14,6 +23,11 @@ const utils = require('./utils/index')
 const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
+
+const ACCOUNT_TYPES = {
+  ethereum: 'ethereum',
+  ethereumEOA: 'ethereum-eoa'
+}
 
 const ADDRESS_SERVER_URL = config.address_server_url
 const PINNING_NODE = config.pinning_node
@@ -78,23 +92,31 @@ class Box {
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
-    // const cache = (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-    this._orbitdb = new OrbitDB(this._ipfs, opts.orbitPath) // , { cache })
+    this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
+      directory: opts.orbitPath,
+      identity: await this._3id.getOdbId()
+    }) // , { cache })
     globalOrbitDB = this._orbitdb
 
-    const dbKey = this._3id.getKeyringBySpaceName(rootStoreName).getDBKey()
-    const key = await this._orbitdb.keystore.importPrivateKey(dbKey)
+    const key = this._3id.getKeyringBySpaceName(rootStoreName).getPublicKeys(true).signingKey
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
-      key,
-      write: [key.getPublic('hex')]
+      format: 'dag-pb',
+      accessController: {
+        write: [key],
+        type: 'legacy-ipfs-3box',
+        skipManifest: true
+      }
     })
     const rootStoreAddress = this._rootStore.address.toString()
-
     this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
 
     const onNewPeer = async (topic, peer) => {
       if (peer === this.pinningNode.split('/').pop()) {
-        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress, did: this._3id.getDid() })
+        this._pubsub.publish(PINNING_ROOM, {
+          type: 'PIN_DB',
+          odbAddress: rootStoreAddress,
+          did: this.DID
+        })
       }
     }
 
@@ -107,7 +129,7 @@ class Box {
     ])
 
     let syncPromises = []
-    let hasResponse = {}
+    const hasResponse = {}
 
     // Filters and store space related messages for 3secs, the best effort
     // simple approach, until refactor
@@ -143,7 +165,7 @@ class Box {
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
+    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
@@ -156,6 +178,15 @@ class Box {
       await this._rootStore.add({ odbAddress: privOdbAddress })
     }
     this._publishRootStore(rootStoreAddress)
+    const pinAddressLinks = async () => {
+      // Filter for address-links, get CID, and get to pin it
+      entries
+        .filter(entry => entry.payload.value.type === 'address-link')
+        .map(entry => {
+          this._ipfs.dag.get(entry.payload.value.data)
+        })
+    }
+    pinAddressLinks()
   }
 
   /**
@@ -163,6 +194,8 @@ class Box {
    *
    * @param     {String}    address                 An ethereum address
    * @param     {Object}    opts                    Optional parameters
+   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
+   * @param     {String}    opts.metadata           flag to retrieve metadata
    * @param     {String}    opts.addressServer      URL of the Address Server
    * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
    * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
@@ -205,8 +238,9 @@ class Box {
    * @param     {String}    address                 An ethereum address
    * @param     {String}    name                    A space name
    * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
    * @param     {String}    opts.metadata           flag to retrieve metadata
+   * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Object}                            a json object with the public space data
    */
   static async getSpace (address, name, opts = {}) {
@@ -218,12 +252,38 @@ class Box {
    *
    * @param     {String}    space                   The name of the space the thread is in
    * @param     {String}    name                    The name of the thread
+   * @param     {String}    firstModerator          The DID (or ethereum address) of the first moderator
+   * @param     {Boolean}   members                 True if only members are allowed to post
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.profileServer      URL of Profile API server
    * @return    {Array<Object>}                     An array of posts
    */
-  static async getThread (space, name, opts = {}) {
-    return API.getThread(space, name, opts.profileServer)
+  static async getThread (space, name, firstModerator, members, opts = {}) {
+    return API.getThread(space, name, firstModerator, members, opts)
+  }
+
+  /**
+   * Get all posts that are made to a thread.
+   *
+   * @param     {String}    address                 The orbitdb-address of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Array<Object>}                     An array of posts
+   */
+  static async getThreadByAddress (address, opts = {}) {
+    return API.getThreadByAddress(address, opts)
+  }
+
+  /**
+   * Get the configuration of a users 3Box
+   *
+   * @param     {String}    address                 The ethereum address
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.profileServer      URL of Profile API server
+   * @return    {Array<Object>}                     An array of posts
+   */
+  static async getConfig (address, opts = {}) {
+    return API.getConfig(address, opts)
   }
 
   /**
@@ -244,10 +304,9 @@ class Box {
     }
 
     // opts = Object.assign({ iframeStore: true }, opts)
-    console.log(opts.addressServer)
     const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
     let usingGlobalIPFS = false
-    let usingGlobalOrbitDB = false
+    // let usingGlobalOrbitDB = false
     let ipfs
     let orbitdb
     if (globalIPFS) {
@@ -297,7 +356,7 @@ class Box {
       const closeAll = async () => {
         await rootStore.close()
         await publicStore.close()
-        if (!usingGlobalOrbitDB) await orbitdb.stop()
+        // if (!usingGlobalOrbitDB) await orbitdb.stop()
         if (!usingGlobalIPFS) {} // await ipfs.stop()
       }
       // close but don't wait for it
@@ -368,6 +427,7 @@ class Box {
       try {
         opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
+        if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
         delete this.spaces[name]
         if (e.message.includes('User denied message signature.')) {
@@ -410,21 +470,129 @@ class Box {
     return true
   }
 
+  /**
+   * @property {String} DID        the DID of the user
+   */
+  get DID () {
+    return this._3id.muportDID
+  }
+
+  /**
+   * Creates a proof that links an ethereum address to the 3Box account of the user. If given proof, it will simply be added to the root store.
+   *
+   * @param     {Object}    [link]                         Optional link object with type or proof
+   * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
+   * @param     {Object}    [link.proof]                   Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md)
+   */
+  async linkAddress (link = {}) {
+    if (link.proof) {
+      await this._writeAddressLink(link.proof)
+      return
+    }
+    if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
+      await this._linkProfile()
+    }
+  }
+
+  async linkAccount (type = ACCOUNT_TYPES.ethereumEOA) {
+    console.warn('linkAccount: deprecated, please use linkAddress going forward')
+    await this.linkAddress(type)
+  }
+
+  /**
+   * Remove given address link, returns true if successful
+   *
+   * @param     {String}   address      address that is linked
+   */
+  async removeAddressLink (address) {
+    address = address.toLowerCase()
+    const linkExist = await this.isAddressLinked({ address })
+    if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
+    const payload = {
+      address,
+      type: `delete-address-link`
+    }
+    const oneHour = 60 * 60
+    const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour })
+
+    try {
+      await utils.fetchJson(this._serverUrl + '/linkdelete', {
+        delete_token: deleteToken
+      })
+    } catch (err) {
+      // we capture http errors (500, etc)
+      // see: https://github.com/3box/3box-js/pull/351
+      if (!err.statusCode) {
+        throw new Error(err)
+      }
+    }
+
+    await this._deleteAddressLink(address)
+
+    return true
+  }
+
+  /**
+   * Checks if there is a proof that links an external account to the 3Box account of the user. If not params given and any link exists, returns true
+   *
+   * @param     {Object}    [query]            Optional object with address and/or type.
+   * @param     {String}    [query.type]       Does the given type of link exist
+   * @param     {String}    [query.address]    Is the given adressed linked
+   */
+  async isAddressLinked (query = {}) {
+    if (query.address) query.address = query.address.toLowerCase()
+    const links = await this._readAddressLinks()
+    const linksQuery = links.find(link => {
+      const res = query.address ? link.address === query.address : true
+      return query.type ? res && link.type === query.type : res
+    })
+    return Boolean(linksQuery)
+  }
+
+  async isAccountLinked (type = ACCOUNT_TYPES.ethereumEOA) {
+    console.warn('isAccountLinked: deprecated, please use isAddressLinked going forward')
+    return this.isAddressLinked(type)
+  }
+
+  /**
+   * Lists address links associated with this 3Box
+   *
+   * @return    {Array}                        An array of link objects
+   */
+  async listAddressLinks () {
+    const entries = await this._readAddressLinks()
+    return entries.reduce((list, entry) => {
+      const item = Object.assign({}, entry)
+      item.linkId = item.entry.hash
+      delete item.entry
+      return item
+    }, [])
+  }
+
   async _linkProfile () {
-    let linkData = await this.public.get('ethereum_proof')
+    const address = this._3id.managementAddress
+    let linkData = await this._readAddressLink(address)
 
     if (!linkData) {
-      const address = this._3id.managementAddress
-      const did = this._3id.getDid()
+      const did = this.DID
 
-      const consent = await utils.getLinkConsent(address, did, this._web3provider)
+      let consent
+      try {
+        consent = await utils.getLinkConsent(address, did, this._web3provider)
+      } catch (e) {
+        console.log(e)
+        throw new Error('Link consent message must be signed before adding data, to link address to store')
+      }
 
       linkData = {
-        consent_msg: consent.msg,
-        consent_signature: consent.sig,
-        linked_did: did
+        version: 1,
+        type: ACCOUNT_TYPES.ethereumEOA,
+        message: consent.msg,
+        signature: consent.sig,
+        timestamp: consent.timestamp
       }
-      await this.public.set('ethereum_proof', linkData, { noLink: true })
+
+      await this._writeAddressLink(linkData)
     }
 
     // Ensure we self-published our did
@@ -434,11 +602,52 @@ class Box {
     }
 
     // Send consentSignature to 3box-address-server to link profile with ethereum address
-    try {
-      await utils.fetchJson(this._serverUrl + '/link', linkData)
-    } catch (err) {
-      console.error(err)
+    utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
+  }
+
+  async _writeAddressLink (proof) {
+    const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
+    const linkExist = await this._linkCIDExists(data)
+    if (linkExist) return
+    const link = {
+      type: 'address-link',
+      data
     }
+    await this._rootStore.add(link)
+  }
+
+  async _linkCIDExists (cid) {
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
+    return linkEntries.find(entry => entry.data === cid)
+  }
+
+  async _deleteAddressLink (address) {
+    address = address.toLowerCase()
+    const link = await this._readAddressLink(address)
+    if (!link) throw new Error('_deleteAddressLink: link for given address does not exist')
+    return this._rootStore.remove(link.entry.hash)
+  }
+
+  async _readAddressLinks () {
+    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
+    const resolveLinks = linkEntries.map(async (entry) => {
+      // TODO handle missing ipfs obj??, timeouts?
+      const obj = (await this._ipfs.dag.get(entry.payload.value.data)).value
+      if (!obj.address) {
+        obj.address = await utils.recoverPersonalSign(obj.message, obj.signature)
+      }
+      obj.entry = entry
+      return obj
+    })
+    return Promise.all(resolveLinks)
+  }
+
+  async _readAddressLink (address) {
+    address = address.toLowerCase()
+    const links = await this._readAddressLinks()
+    return links.find(link => link.address.toLowerCase() === address)
   }
 
   async _ensurePinningNodeConnected (odbAddress, isThread) {

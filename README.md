@@ -88,6 +88,19 @@ await box.private.set('email', 'oed@email.service')
 await box.private.remove('email')
 ```
 
+##### Set multiple fields at once:
+```js
+const fields = ['name', 'website', 'employer']
+const values = ['Jon Schwartz', 'openworklabs.com', 'Open Work Labs']
+
+await box.public.setMultiple(fields, values)
+
+const privateFields = ['age', 'coinBalance']
+const privateValues = ['xxx', 'yyy']
+
+await box.private.setMultiple(privateFields, privateValues)
+```
+
 <!-- commenting this out for now, not really needed when we're not using the iframe
 #### IPFS Configs
 
@@ -136,16 +149,19 @@ const config = await space.private.get('dapp-config')
 
 ## Threads API (Messaging)
 ### Add message threads to your app
-Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, in the same space) will be able to communicate in that thread.
+Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, in the same space, and same moderation configs) will be able to communicate in that thread.
 
 For the fully detailed spec, view the [documentation](https://github.com/3box/3box/blob/master/3IPs/3ip-2.md).
 
-**WARNING: this is an experimental feature, the API will likely change in the future!**
-
 #### Viewing a Thread
-You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. 
+You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. A thread can be referenced by all its configuration options or by its address.
 ```js
-const posts = await Box.getThread(spaceName, threadName)
+const posts = await Box.getThread(spaceName, threadName, firstModerator, membersThread)
+console.log(posts)
+```
+
+```js
+const posts = await Box.getThreadByAddress(threadAddress)
 console.log(posts)
 ```
 However if applications want to add interactivity to the thread, such as allowing the user to post in a thread or follow updates in a thread, you will need to open their space to enable additional functionality.
@@ -153,10 +169,23 @@ However if applications want to add interactivity to the thread, such as allowin
 #### Interacting with a Thread
 
 ##### 1. Joining a thread
-To post in a thread, a user must first join the thread.
+To post in a thread, a user must first join the thread. This will implicitly use the moderation options where the current user is the `firstModerator` and `members` is false.
 ```js
 const thread = await space.joinThread('myThread')
 ```
+
+A thread can also be given the moderation options when joining. You can pass `firstModerator`, a 3ID of the first moderator, and a `members` boolean which indicates if it is a members thread or not. Moderators can add other moderators, add members, and delete any posts in the thread. Members can post in member only threads.
+
+```js
+const thread = await space.joinThread('myThread', { firstModerator: 'some3ID', members: true })
+```
+
+Lastly a thread can be joined by its address.
+
+```js
+const thread = await space.joinThreadByAddress('/orbitdb/zdpuAp5QpBKR4BBVTvqe3KXVcNgo4z8Rkp9C5eK38iuEZj3jq/3box.thread.testSpace.testThread')
+```
+
 ##### 2. Posting to a thread
 This allows the user to add a message to the thread. The author of the message will be the user's 3Box DID. When a user posts in a thread, they are automatically subscribed to the thread and it is saved in the space used by the application under the key `thread-threadName`.
 ```js
@@ -171,9 +200,29 @@ console.log(posts)
 ##### 4. Listening for updates in thread
 This allows applications to listen for new posts in the thread, and perform an action when this occurs, such as adding the new message to the application's UI.
 ```js
-thread.onNewPost(myCallbackFunction)
+thread.onUpdate(myCallbackFunction)
 ```
 
+##### 5. Handling moderation and capabilities
+
+Add a moderator and list all existing moderators
+```js
+await thread.addModerator('some3ID')
+
+const mods = await thread.listModerators()
+```
+
+Add a member and list all existing members, if a members only thread
+```js
+await thread.addMember('some3ID')
+
+const members = await thread.listMembers()
+```
+
+Listen for when there has been moderators or member added.
+```js
+thread.onNewCapabilities(myCallbackFunction)
+```
 
 ## <a name="example"></a> Example Application
 
@@ -185,7 +234,9 @@ $ npm run example:start
 
 This runs a simple server at `http://localhost:3000/` that serves the static `example/index.html` file. This allows it easily interact with metamask. You can edit the `example/index.html` file to try differnt code.
 
-## Optimize build for read-only 3Box API
+## Build
+
+### Optimize build for read-only 3Box API
 
 If you only want to fetch profile data from 3Box's profile APIs you can optimize by importing only those functions or the API specific dist file. Since this includes minimal dependencies, file size is ~ 80kb vs 4+mb for the full build.
 
@@ -194,6 +245,14 @@ const { profileGraphQL, getProfile, getProfiles, getVerifiedAccounts } = require
 ```
 ```html
 <script src="https://unpkg.com/3box/dist/3box.api.min.js"></script>
+```
+
+### Resolving build size issues and out of memory errors
+
+Some platforms, tooling, or configs have caused the build process to throw out of memory errors. This is a combination of the size of our library (plus dependencies) and the specific configs you have for your build. It could be things like tooling running on dependencies and not just your source or dependencies be recursively resolved. You can attempt to build the library anyways by adding the follow environment variable to increase memory for the node process.
+
+```
+NODE_OPTIONS=--max_old_space_size=4096 npm run build
 ```
 
 ## <a name="datastandards"></a> Data Standards
@@ -225,8 +284,13 @@ idUtils.verifyClaim(claim)
         * [.private](#Box+private)
         * [.verified](#Box+verified)
         * [.spaces](#Box+spaces)
+        * [.DID](#Box+DID)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
         * [.onSyncDone(syncDone)](#Box+onSyncDone)
+        * [.linkAddress([link])](#Box+linkAddress)
+        * [.removeAddressLink(address)](#Box+removeAddressLink)
+        * [.isAddressLinked([query])](#Box+isAddressLinked)
+        * [.listAddressLinks()](#Box+listAddressLinks) ⇒ <code>Array</code>
         * [.logout()](#Box+logout)
     * _static_
         * [.idUtils](#Box.idUtils)
@@ -236,7 +300,9 @@ idUtils.verifyClaim(claim)
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
         * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
         * [.getSpace(address, name, opts)](#Box.getSpace) ⇒ <code>Object</code>
-        * [.getThread(space, name, opts)](#Box.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
+        * [.getThread(space, name, firstModerator, members, opts)](#Box.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
+        * [.getThreadByAddress(address, opts)](#Box.getThreadByAddress) ⇒ <code>Array.&lt;Object&gt;</code>
+        * [.getConfig(address, opts)](#Box.getConfig) ⇒ <code>Array.&lt;Object&gt;</code>
         * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
@@ -288,6 +354,16 @@ Please use the **openBox** method to instantiate a 3Box
 | --- | --- | --- |
 | spaces | <code>Object</code> | an object containing all open spaces indexed by their name. |
 
+<a name="Box+DID"></a>
+
+#### box.DID
+**Kind**: instance property of [<code>Box</code>](#Box)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DID | <code>String</code> | the DID of the user |
+
 <a name="Box+openSpace"></a>
 
 #### box.openSpace(name, opts) ⇒ [<code>Space</code>](#Space)
@@ -314,6 +390,50 @@ Sets the callback function that will be called once when the db is fully synced.
 | --- | --- | --- |
 | syncDone | <code>function</code> | The function that will be called |
 
+<a name="Box+linkAddress"></a>
+
+#### box.linkAddress([link])
+Creates a proof that links an ethereum address to the 3Box account of the user. If given proof, it will simply be added to the root store.
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| [link] | <code>Object</code> |  | Optional link object with type or proof |
+| [link.type] | <code>String</code> | <code>&#x27;ethereum-eoa&#x27;</code> | The type of link (default 'ethereum') |
+| [link.proof] | <code>Object</code> |  | Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md) |
+
+<a name="Box+removeAddressLink"></a>
+
+#### box.removeAddressLink(address)
+Remove given address link, returns true if successful
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | address that is linked |
+
+<a name="Box+isAddressLinked"></a>
+
+#### box.isAddressLinked([query])
+Checks if there is a proof that links an external account to the 3Box account of the user. If not params given and any link exists, returns true
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [query] | <code>Object</code> | Optional object with address and/or type. |
+| [query.type] | <code>String</code> | Does the given type of link exist |
+| [query.address] | <code>String</code> | Is the given adressed linked |
+
+<a name="Box+listAddressLinks"></a>
+
+#### box.listAddressLinks() ⇒ <code>Array</code>
+Lists address links associated with this 3Box
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+**Returns**: <code>Array</code> - An array of link objects  
 <a name="Box+logout"></a>
 
 #### box.logout()
@@ -387,6 +507,8 @@ Get the public profile of a given address
 | --- | --- | --- |
 | address | <code>String</code> | An ethereum address |
 | opts | <code>Object</code> | Optional parameters |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
+| opts.metadata | <code>String</code> | flag to retrieve metadata |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.useCacheService | <code>Boolean</code> | Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true. |
@@ -419,12 +541,13 @@ Get the public data in a space of a given address with the given name
 | address | <code>String</code> | An ethereum address |
 | name | <code>String</code> | A space name |
 | opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
 | opts.metadata | <code>String</code> | flag to retrieve metadata |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
 
 <a name="Box.getThread"></a>
 
-#### Box.getThread(space, name, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+#### Box.getThread(space, name, firstModerator, members, opts) ⇒ <code>Array.&lt;Object&gt;</code>
 Get all posts that are made to a thread.
 
 **Kind**: static method of [<code>Box</code>](#Box)  
@@ -434,6 +557,36 @@ Get all posts that are made to a thread.
 | --- | --- | --- |
 | space | <code>String</code> | The name of the space the thread is in |
 | name | <code>String</code> | The name of the thread |
+| firstModerator | <code>String</code> | The DID (or ethereum address) of the first moderator |
+| members | <code>Boolean</code> | True if only members are allowed to post |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.getThreadByAddress"></a>
+
+#### Box.getThreadByAddress(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get all posts that are made to a thread.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The orbitdb-address of the thread |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="Box.getConfig"></a>
+
+#### Box.getConfig(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get the configuration of a users 3Box
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The ethereum address |
 | opts | <code>Object</code> | Optional parameters |
 | opts.profileServer | <code>String</code> | URL of Profile API server |
 
@@ -515,10 +668,12 @@ Check if the given address is logged in
 * [KeyValueStore](#KeyValueStore)
     * [new KeyValueStore()](#new_KeyValueStore_new)
     * [.log](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
-    * [.get(key)](#KeyValueStore+get) ⇒ <code>String</code>
+    * [.get(key, opts)](#KeyValueStore+get) ⇒ <code>String</code> \| <code>Object</code>
     * [.getMetadata(key)](#KeyValueStore+getMetadata) ⇒ <code>Metadata</code>
     * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
+    * [.setMultiple(keys, values)](#KeyValueStore+setMultiple) ⇒ <code>Boolean</code>
     * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
+    * [.all(opts)](#KeyValueStore+all) ⇒ <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code>
 
 <a name="new_KeyValueStore_new"></a>
 
@@ -542,15 +697,17 @@ const log = store.log
 ```
 <a name="KeyValueStore+get"></a>
 
-#### keyValueStore.get(key) ⇒ <code>String</code>
-Get the value of the given key
+#### keyValueStore.get(key, opts) ⇒ <code>String</code> \| <code>Object</code>
+Get the value and optionally metadata of the given key
 
 **Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
-**Returns**: <code>String</code> - the value associated with the key, undefined if there's no such key  
+**Returns**: <code>String</code> \| <code>Object</code> - the value associated with the key, undefined if there's no such key  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>String</code> | the key |
+| opts | <code>Object</code> | optional parameters |
+| opts.metadata | <code>Boolean</code> | return both value and metadata |
 
 <a name="KeyValueStore+getMetadata"></a>
 
@@ -577,6 +734,19 @@ Set a value for the given key
 | key | <code>String</code> | the key |
 | value | <code>String</code> | the value |
 
+<a name="KeyValueStore+setMultiple"></a>
+
+#### keyValueStore.setMultiple(keys, values) ⇒ <code>Boolean</code>
+Set multiple values for multiple keys
+
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Boolean</code> - true if successful, throw error if not  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| keys | <code>Array.&lt;String&gt;</code> | the keys |
+| values | <code>Array.&lt;String&gt;</code> | the values |
+
 <a name="KeyValueStore+remove"></a>
 
 #### keyValueStore.remove(key) ⇒ <code>Boolean</code>
@@ -589,6 +759,19 @@ Remove the value for the given key
 | --- | --- | --- |
 | key | <code>String</code> | the key |
 
+<a name="KeyValueStore+all"></a>
+
+#### keyValueStore.all(opts) ⇒ <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code>
+Get all values and optionally metadata
+
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code> - the values  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| opts | <code>Object</code> | optional parameters |
+| opts.metadata | <code>Boolean</code> | return both values and metadata |
+
 <a name="Space"></a>
 
 ### Space
@@ -598,10 +781,12 @@ Remove the value for the given key
     * [new Space()](#new_Space_new)
     * [.public](#Space+public)
     * [.private](#Space+private)
+    * [.DID](#Space+DID)
     * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
-    * [.subscribeThread(name)](#Space+subscribeThread)
-    * [.unsubscribeThread(name)](#Space+unsubscribeThread)
-    * [.subscribedThreads()](#Space+subscribedThreads) ⇒ <code>Array.&lt;String&gt;</code>
+    * [.joinThreadByAddress(address, opts)](#Space+joinThreadByAddress) ⇒ [<code>Thread</code>](#Thread)
+    * [.subscribeThread(address, config)](#Space+subscribeThread)
+    * [.unsubscribeThread(address)](#Space+unsubscribeThread)
+    * [.subscribedThreads()](#Space+subscribedThreads) ⇒ <code>Array.&lt;Objects&gt;</code>
 
 <a name="new_Space_new"></a>
 
@@ -628,6 +813,16 @@ Please use **box.openSpace** to get the instance of this class
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the space |
 
+<a name="Space+DID"></a>
+
+#### space.DID
+**Kind**: instance property of [<code>Space</code>](#Space)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DID | <code>String</code> | the did of the user in this space |
+
 <a name="Space+joinThread"></a>
 
 #### space.joinThread(name, opts) ⇒ [<code>Thread</code>](#Thread)
@@ -640,37 +835,57 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 | --- | --- | --- |
 | name | <code>String</code> | The name of the thread |
 | opts | <code>Object</code> | Optional parameters |
+| opts.firstModerator | <code>String</code> | DID of first moderator of a thread, by default, user is first moderator |
+| opts.members | <code>Boolean</code> | join a members only thread, which only members can post in, defaults to open thread |
+| opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
+
+<a name="Space+joinThreadByAddress"></a>
+
+#### space.joinThreadByAddress(address, opts) ⇒ [<code>Thread</code>](#Thread)
+Join a thread by full thread address. Use this to start receiving updates from, and to post in threads
+
+**Kind**: instance method of [<code>Space</code>](#Space)  
+**Returns**: [<code>Thread</code>](#Thread) - An instance of the thread class for the joined thread  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The full address of the thread |
+| opts | <code>Object</code> | Optional parameters |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 
 <a name="Space+subscribeThread"></a>
 
-#### space.subscribeThread(name)
+#### space.subscribeThread(address, config)
 Subscribe to the given thread, if not already subscribed
 
 **Kind**: instance method of [<code>Space</code>](#Space)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The name of the thread |
+| address | <code>String</code> | The address of the thread |
+| config | <code>Object</code> | configuration and thread meta data |
+| opts.name | <code>String</code> | Name of thread |
+| opts.firstModerator | <code>String</code> | DID of the first moderator |
+| opts.members | <code>String</code> | Boolean string, true if a members only thread |
 
 <a name="Space+unsubscribeThread"></a>
 
-#### space.unsubscribeThread(name)
+#### space.unsubscribeThread(address)
 Unsubscribe from the given thread, if subscribed
 
 **Kind**: instance method of [<code>Space</code>](#Space)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>String</code> | The name of the thread |
+| address | <code>String</code> | The address of the thread |
 
 <a name="Space+subscribedThreads"></a>
 
-#### space.subscribedThreads() ⇒ <code>Array.&lt;String&gt;</code>
+#### space.subscribedThreads() ⇒ <code>Array.&lt;Objects&gt;</code>
 Get a list of all the threads subscribed to in this space
 
 **Kind**: instance method of [<code>Space</code>](#Space)  
-**Returns**: <code>Array.&lt;String&gt;</code> - A list of thread names  
+**Returns**: <code>Array.&lt;Objects&gt;</code> - A list of thread objects as { address, firstModerator, members, name}  
 <a name="Thread"></a>
 
 ### Thread
@@ -679,8 +894,14 @@ Get a list of all the threads subscribed to in this space
 * [Thread](#Thread)
     * [new Thread()](#new_Thread_new)
     * [.post(message)](#Thread+post) ⇒ <code>String</code>
+    * [.addModerator(id)](#Thread+addModerator)
+    * [.listModerators()](#Thread+listModerators) ⇒ <code>Array.&lt;String&gt;</code>
+    * [.addMember(id)](#Thread+addMember)
+    * [.listMembers()](#Thread+listMembers) ⇒ <code>Array.&lt;String&gt;</code>
+    * [.deletePost(id)](#Thread+deletePost)
     * [.getPosts(opts)](#Thread+getPosts) ⇒ <code>Array.&lt;Object&gt;</code>
-    * [.onNewPost(newPostFn)](#Thread+onNewPost)
+    * [.onUpdate(updateFn)](#Thread+onUpdate)
+    * [.onNewCapabilities(updateFn)](#Thread+onNewCapabilities)
 
 <a name="new_Thread_new"></a>
 
@@ -698,6 +919,53 @@ Post a message to the thread
 | Param | Type | Description |
 | --- | --- | --- |
 | message | <code>Object</code> | The message |
+
+<a name="Thread+addModerator"></a>
+
+#### thread.addModerator(id)
+Add a moderator to this thread, throws error is user can not add a moderator
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | Moderator Id |
+
+<a name="Thread+listModerators"></a>
+
+#### thread.listModerators() ⇒ <code>Array.&lt;String&gt;</code>
+List moderators
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+**Returns**: <code>Array.&lt;String&gt;</code> - Array of moderator DIDs  
+<a name="Thread+addMember"></a>
+
+#### thread.addMember(id)
+Add a member to this thread, throws if user can not add member, throw is not member thread
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | Member Id |
+
+<a name="Thread+listMembers"></a>
+
+#### thread.listMembers() ⇒ <code>Array.&lt;String&gt;</code>
+List members, throws if not member thread
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+**Returns**: <code>Array.&lt;String&gt;</code> - Array of member DIDs  
+<a name="Thread+deletePost"></a>
+
+#### thread.deletePost(id)
+Delete post
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | Moderator Id |
 
 <a name="Thread+getPosts"></a>
 
@@ -719,19 +987,32 @@ the iterator will return all items (respecting limit and reverse).
 | opts.limit | <code>Integer</code> | Limiting the number of entries in result, defaults to -1 (no limit) |
 | opts.reverse | <code>Boolean</code> | If set to true will result in reversing the result |
 
-<a name="Thread+onNewPost"></a>
+<a name="Thread+onUpdate"></a>
 
-#### thread.onNewPost(newPostFn)
-Register a function to be called for every new
-post that is received from the network.
-The function takes one parameter, which is the post.
-Note that posts here might be out of order.
+#### thread.onUpdate(updateFn)
+Register a function to be called after new updates
+have been received from the network or locally.
 
 **Kind**: instance method of [<code>Thread</code>](#Thread)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| newPostFn | <code>function</code> | The function that will get called |
+| updateFn | <code>function</code> | The function that will get called |
+
+<a name="Thread+onNewCapabilities"></a>
+
+#### thread.onNewCapabilities(updateFn)
+Register a function to be called for every new
+capability that is added to the thread access controller.
+This inlcudes when a moderator or member is added.
+The function takes one parameter, which is the capabilities obj, or
+you can call listModerator / listMembers again instead.
+
+**Kind**: instance method of [<code>Thread</code>](#Thread)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| updateFn | <code>function</code> | The function that will get called |
 
 <a name="Verified"></a>
 

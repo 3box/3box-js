@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Keyring derives correct keys from seed 1`] = `
+Object {
+  "asymEncryptionKey": "wW1wkjQ7kaZiBvk4bhukQ15Idx6d31XKFpq/jeup5nc=",
+  "ethereumKey": "027422e4f0321f010fd6b763bac41db22dcbf3717c7a9762bd7d2b9ce302152060",
+  "signingKey": "028aaa695fa16f2a2279e1de718d80e00f4f4ddf30fe8674bbdb9e1f11778c2f77",
+}
+`;
+
+exports[`Keyring derives correct keys from seed 2`] = `
+Object {
+  "asymEncryptionKey": "wW1wkjQ7kaZiBvk4bhukQ15Idx6d31XKFpq/jeup5nc=",
+  "ethereumKey": "047422e4f0321f010fd6b763bac41db22dcbf3717c7a9762bd7d2b9ce302152060fadae876631bc2138ce3f3e4aa1eb4514445a04fb7ba2de7a07effba252e1e4a",
+  "signingKey": "048aaa695fa16f2a2279e1de718d80e00f4f4ddf30fe8674bbdb9e1f11778c2f77f8ffb5ad2bd3f1f9840b3462c26f756ec0f47626894c20ed247145f5c0e26fe8",
+}
+`;
+
+exports[`Keyring signs data correctly 1`] = `
+Object {
+  "r": "b1f9c552e21b40fe95c5d3074a4ef3948a092a77fc814781bf8ae3a263499e0a",
+  "recoveryParam": 1,
+  "s": "a57bdeb64a1490c3e8877d2d6e0c0450a87b765d8bf6f541b65bbf3aac1926f2",
+}
+`;

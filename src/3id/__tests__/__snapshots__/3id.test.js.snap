@@ -1,0 +1,233 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`3id getIdFromEthAddress should create a new identity on first call 1`] = `"did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy"`;
+
+exports[`3id getIdFromEthAddress should create a new identity on first call 2`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy",
+  "publicKey": Array [
+    Object {
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+      "publicKeyHex": "04e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e58883192ebba78d74641207e1d67a8451284f9f2315282311a3179e01e4f92b0676",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#encryptionKey",
+      "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x12345",
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+  ],
+}
+`;
+
+exports[`3id keyring logic should init space keyrings correctly 1`] = `"did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy"`;
+
+exports[`3id keyring logic should init space keyrings correctly 2`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy#subSigningKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy",
+  "proof": Object {
+    "alg": "ES256K",
+    "signature": "6ENPqmm0sZZiAYfxj3pLNV1CxmNepRfDXe92c-Gz_HerFnUlQ8qK8SfJ1kcpyjyr-vq7kLZ4t9I4E6_cd21ssw",
+  },
+  "publicKey": Array [
+    Object {
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+      "publicKeyHex": "04e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e58883192ebba78d74641207e1d67a8451284f9f2315282311a3179e01e4f92b0676",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#encryptionKey",
+      "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x12345",
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy#subSigningKey",
+      "publicKeyHex": "04a514c9de733883c7e264353988188dd815677af6d219068b540077a8eeaf5aad8ca93b512006fd50257347f849475dfe719acfc60256e40b5f4399dcc7350bbf",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy#subEncryptionKey",
+      "publicKeyBase64": "zaPBNwm0qXFe9lUAqldGuhNdle6jbRtyUISoO+S3CBY=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+  ],
+  "root": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy",
+  "space": "space1",
+}
+`;
+
+exports[`3id keyring logic should init space keyrings correctly 3`] = `"did:3:bafyreihflugvhgu5gxh5yxeajxsrw5mxv46ejsp3ga24jvtli25az4r3cm"`;
+
+exports[`3id keyring logic should init space keyrings correctly 4`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:bafyreihflugvhgu5gxh5yxeajxsrw5mxv46ejsp3ga24jvtli25az4r3cm#subSigningKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:bafyreihflugvhgu5gxh5yxeajxsrw5mxv46ejsp3ga24jvtli25az4r3cm",
+  "proof": Object {
+    "alg": "ES256K",
+    "signature": "r5tZSizljdgVmjb1SOIQjavqxw8s8LS1CNPrIyGq-9kYnlNbqH5yT2UcZPyexeyji08x3Og9ymPMYfSVJxwnNA",
+  },
+  "publicKey": Array [
+    Object {
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+      "publicKeyHex": "04e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e58883192ebba78d74641207e1d67a8451284f9f2315282311a3179e01e4f92b0676",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#encryptionKey",
+      "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x12345",
+      "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreihflugvhgu5gxh5yxeajxsrw5mxv46ejsp3ga24jvtli25az4r3cm#subSigningKey",
+      "publicKeyHex": "04a514c9de733883c7e264353988188dd815677af6d219068b540077a8eeaf5aad8ca93b512006fd50257347f849475dfe719acfc60256e40b5f4399dcc7350bbf",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreihflugvhgu5gxh5yxeajxsrw5mxv46ejsp3ga24jvtli25az4r3cm#subEncryptionKey",
+      "publicKeyBase64": "zaPBNwm0qXFe9lUAqldGuhNdle6jbRtyUISoO+S3CBY=",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+  ],
+  "root": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy",
+  "space": "space2",
+}
+`;
+
+exports[`3id login/out logic should log out correctly 1`] = `
+Object {
+  "doc": Object {
+    "@context": "https://w3id.org/did/v1",
+    "authentication": Array [
+      Object {
+        "publicKey": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+        "type": "Secp256k1SignatureAuthentication2018",
+      },
+    ],
+    "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy",
+    "publicKey": Array [
+      Object {
+        "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+        "publicKeyHex": "04e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e58883192ebba78d74641207e1d67a8451284f9f2315282311a3179e01e4f92b0676",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#encryptionKey",
+        "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+        "type": "Curve25519EncryptionPublicKey",
+      },
+      Object {
+        "ethereumAddress": "0x12345",
+        "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#managementKey",
+        "type": "Secp256k1VerificationKey2018",
+      },
+    ],
+  },
+  "issuer": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy",
+  "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOm51bGwsImRhdGEiOiJzb21lIGRhdGEiLCJpc3MiOiJkaWQ6MzpiYWZ5cmVpZnY2cHdmZDdiZWZzMjV3dWVreW9rZDNoaXFmNHhoNmE3NG12bnhocmNpdTI1bG0zc3V6eSJ9.PJ80TSj1qFOmP_rKCaMAzA-Q_SgCfi8OhpyCfOIuG9jR27Nk4_al6UefpaDZsFMGQDTrk-84DHok6RKE8kdh0A",
+  "payload": Object {
+    "data": "some data",
+    "iat": null,
+    "iss": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy",
+  },
+  "signer": Object {
+    "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+    "publicKeyHex": "04e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e58883192ebba78d74641207e1d67a8451284f9f2315282311a3179e01e4f92b0676",
+    "type": "Secp256k1VerificationKey2018",
+  },
+}
+`;
+
+exports[`3id login/out logic should log out correctly 2`] = `
+Object {
+  "doc": Object {
+    "@context": "https://w3id.org/did/v1",
+    "authentication": Array [
+      Object {
+        "publicKey": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy#subSigningKey",
+        "type": "Secp256k1SignatureAuthentication2018",
+      },
+    ],
+    "id": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy",
+    "proof": Object {
+      "alg": "ES256K",
+      "signature": "6ENPqmm0sZZiAYfxj3pLNV1CxmNepRfDXe92c-Gz_HerFnUlQ8qK8SfJ1kcpyjyr-vq7kLZ4t9I4E6_cd21ssw",
+    },
+    "publicKey": Array [
+      Object {
+        "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#signingKey",
+        "publicKeyHex": "04e9e888359453eb2188f166972424cd4c036e400ed4c1ec5832f2bb457e07e58883192ebba78d74641207e1d67a8451284f9f2315282311a3179e01e4f92b0676",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#encryptionKey",
+        "publicKeyBase64": "gSXOO8r9n4Nz0qkJHwa9pSpK9qGzl6IsrP4bTd5c/3w=",
+        "type": "Curve25519EncryptionPublicKey",
+      },
+      Object {
+        "ethereumAddress": "0x12345",
+        "id": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy#managementKey",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy#subSigningKey",
+        "publicKeyHex": "04a514c9de733883c7e264353988188dd815677af6d219068b540077a8eeaf5aad8ca93b512006fd50257347f849475dfe719acfc60256e40b5f4399dcc7350bbf",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy#subEncryptionKey",
+        "publicKeyBase64": "zaPBNwm0qXFe9lUAqldGuhNdle6jbRtyUISoO+S3CBY=",
+        "type": "Curve25519EncryptionPublicKey",
+      },
+    ],
+    "root": "did:3:bafyreifv6pwfd7befs25wuekyokd3hiqf4xh6a74mvnxhrciu25lm3suzy",
+    "space": "space1",
+  },
+  "issuer": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy",
+  "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOm51bGwsImRhdGEiOiJzb21lIGRhdGEiLCJpc3MiOiJkaWQ6MzpiYWZ5cmVpZzRxeXg0cDVrc2N4emV4dHg2aWNmYXBxd2hscnlvNjRtNnNmYWN5NjdqbnV3bmZ5bHVkeSJ9.4NtQXdg4FLH8_ZK8TFZKufiSGvo4PQXe-48-V_EVVSAtY8r5oXkpotgKS_fio5YfPiRQWXBbTrDqpAdCjl8bNQ",
+  "payload": Object {
+    "data": "some data",
+    "iat": null,
+    "iss": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy",
+  },
+  "signer": Object {
+    "id": "did:3:bafyreig4qyx4p5kscxzextx6icfapqwhlryo64m6sfacy67jnuwnfyludy#subSigningKey",
+    "publicKeyHex": "04a514c9de733883c7e264353988188dd815677af6d219068b540077a8eeaf5aad8ca93b512006fd50257347f849475dfe719acfc60256e40b5f4399dcc7350bbf",
+    "type": "Secp256k1VerificationKey2018",
+  },
+}
+`;

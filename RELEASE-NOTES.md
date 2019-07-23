@@ -1,5 +1,47 @@
 # Release Notes
 
+## v1.10.0 - 2019-07-17
+* feat: added ability to link multiple ethereum addresses to a 3Box
+* feat: added ability to add a link proof manually
+* feat: address links are now stored in the rootstore instead of the public profile
+* feat: added getter for DID
+* fix: support web3 1.0 providers
+
+## v1.9.1 - 2019-06-19
+* feat: allow joinThread, addModerator, addMember to take both ethereum addresses or DIDs as function argument
+* ref: await linkProfile, throw error if not completed
+* ref: linkAccount -> linkAdress and isAccountLinked -> isAddressLinked (orignal functions deprecated)
+
+## v1.9.0 - 2019-06-11
+* feat: add support for moderated and members threads
+* feat: update to latest orbitdb and ipfs
+* feat: add 3ID
+
+Along with support for moderated and members threads, this replaces experimental threads seen in prior releases. Look for API changes to use new version of threads.
+
+Also with the upgrade of OrbitDB, an upgrade of this library is required for everything to continue working as expected. More details here - https://medium.com/3box/3box-js-1-9-soft-fork-upgrade-bcd79bb5f29c
+
+## v1.8.5 - 2019-05-30
+* Fix: Return promise in public set/remove methods of spaces
+
+## v1.8.4 - 2019-05-30
+* Fix: Actually link profile when opening space and haven't used public store (fix bug from v1.8.2)
+
+## v1.8.3 - 2019-05-24
+* Fix: functions in the api module now work without an opts object being passed
+
+## v1.8.2 - 2019-05-21
+* Fix: Link profile when opening space and haven't used public store
+* Feat: Add the ability to manually check and add account linking
+
+## v1.8.1 - 2019-05-16
+* Fix: Resolved issue with `getVerifiedAccounts` returning an empty objec
+
+## v1.8.0 - 2019-05-09
+* Feature: Add `setMultiple` method, enables multiple fields to be set at once.
+
+Special thanks to @Schwartz10 for contributing this feature!
+
 ## v1.7.2 - 2019-04-30
 * Fix: Don't allow setting values wihtout a 'key'
 * Fix: Ensure that linkProfile only happens once

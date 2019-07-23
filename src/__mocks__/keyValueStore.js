@@ -1,5 +1,7 @@
 import { throwIfNotEqualLenArrays } from '../utils'
 
+const generateTimestamp = () => 1558954408 // don't really need a real timestamp here.
+
 class KeyValueStore {
   constructor (orbitdb, name, ensureConnected, threeId) {
     this._orbitdb = orbitdb
@@ -8,9 +10,18 @@ class KeyValueStore {
     this._3id = threeId
     this._store = {}
   }
-  async get (key) {
+  async get (key, opts = {}) {
     this._requireLoad()
-    return this._db.get(key)
+    const value = await this._db.get(key)
+
+    if (value && opts.metadata) {
+      return {
+        value,
+        timestamp: generateTimestamp()
+      }
+    }
+
+    return value
   }
 
   async set (key, value) {
@@ -61,11 +72,23 @@ class KeyValueStore {
     this._requireLoad()
   }
 
-  async all () {
+  async all (opts = {}) {
     this._requireLoad()
     const entries = await this._db.all()
     let allSimple = {}
-    Object.keys(entries).map(key => { allSimple[key] = entries[key].value })
+    Object.keys(entries).map(key => {
+      const entry = entries[key]
+
+      if (opts.metadata) {
+        allSimple[key] = {
+          value: entry.value,
+          timestamp: generateTimestamp()
+        }
+      } else {
+        allSimple[key] = entry.value
+      }
+    })
+
     return allSimple
   }
 

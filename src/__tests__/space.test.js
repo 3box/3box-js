@@ -13,12 +13,17 @@ const threeIdMock = {
       symEncrypt: data => { return { ciphertext: 'wow, such encrypted/' + data, nonce: 123 } },
       symDecrypt: data => data.split('/')[1]
     }
-  })
+  }),
+  signJWT: (payload, { space }) => {
+    return `a fake jwt for ${space}`
+  },
+  getSubDID: (space) => `subdid-${space}`
 }
 let rootstoreMockData = []
 const rootstoreMock = {
   iterator: () => { return { collect: () => rootstoreMockData } },
-  add: jest.fn()
+  add: jest.fn(),
+  del: jest.fn()
 }
 
 const Space = require('../space')
@@ -55,7 +60,7 @@ describe('Space', () => {
     })
     await space.open(opts)
     expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME1)
-    expect(rootstoreMock.add).toHaveBeenCalledWith({ odbAddress:'/orbitdb/myodbaddr' })
+    expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
     expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME1)
     expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME1 + '.keyvalue')
     await syncDonePromise
@@ -70,7 +75,7 @@ describe('Space', () => {
   })
 
   it('should open correctly and not add to rootStore if entry already present', async () => {
-    rootstoreMockData.push({ payload: { value: { odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } })
+    rootstoreMockData = [{ payload: { value: { type: 'space', odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } }]
     let opts = {
       consentCallback: jest.fn(),
     }
@@ -86,6 +91,24 @@ describe('Space', () => {
     await syncDonePromise
   })
 
+  it('should open correctly and add to rootStore if old entry already present', async () => {
+    rootstoreMockData = [{ hash: 'a hash', payload: { value: { odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } }]
+    let opts = {
+      consentCallback: jest.fn(),
+    }
+    const syncDonePromise = new Promise((resolve, reject) => {
+      opts.onSyncDone = resolve
+    })
+    space = new Space(NAME2, threeIdMock, ORBITDB, rootstoreMock, ENSURE_CONNECTED)
+    await space.open(opts)
+    expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME2)
+    expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME2), odbAddress:'/orbitdb/myodbaddr' })
+    expect(rootstoreMock.del).toHaveBeenCalledWith('a hash')
+    expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME2)
+    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME2 + '.keyvalue')
+    await syncDonePromise
+  })
+
   describe('public store reducer', () => {
     it('get/set/remove works correctly', async () => {
       await space.public.set('k1', 'v1')
@@ -93,7 +116,10 @@ describe('Space', () => {
       await space.public.set('k3', 'v3')
       expect(await space.public.get('k1')).toEqual('v1')
       expect(await space.public.get('k2')).toEqual('v2')
-      expect(await space.public.get('k3')).toEqual('v3')
+      const entry = await space.public.get('k3', { metadata: true })
+      expect(entry.value).toEqual('v3')
+      expect(entry.timestamp).toBeGreaterThan(0)
+
       await space.public.remove('k2')
       expect(await space.public.get('k2')).toBeUndefined()
     })
@@ -111,21 +137,16 @@ describe('Space', () => {
     })
 
     it('log should only return public values', async () => {
-      const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'v1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'v3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'v4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'v5' } ]
       const log1 = space.public.log
-      expect(log1).toEqual(refLog)
+      expect(log1).toMatchSnapshot()
       space._store.set('key', 'value')
       const log2 = space.public.log
       expect(log2).toEqual(log1)
     })
 
     it('all should return all values from public store', async () => {
-      expect(await space.public.all()).toEqual({
-        k1: 'v1',
-        k3: 'v3',
-        k4: 'v4',
-        k5: 'v5',
-      })
+      expect(await space.public.all()).toMatchSnapshot()
+      expect(await space.public.all({ metadata: true })).toMatchSnapshot()
     })
 
     it('should throw if key not given', async () => {
@@ -141,7 +162,10 @@ describe('Space', () => {
       await space.private.set('k3', 'sv3')
       expect(await space.private.get('k1')).toEqual('sv1')
       expect(await space.private.get('k2')).toEqual('sv2')
-      expect(await space.private.get('k3')).toEqual('sv3')
+      const entry = await space.private.get('k3', { metadata: true })
+      expect(entry.value).toEqual('sv3')
+      expect(entry.timestamp).toBeGreaterThan(0)
+
       await space.private.remove('k2')
       expect(await space.private.get('k2')).toEqual(null)
     })
@@ -168,11 +192,19 @@ describe('Space', () => {
     })
 
     it('all should return all values from private store', async () => {
-      expect(await space.private.all()).toEqual({
+      const expected = {
         k1: 'sv1',
         k3: 'sv3',
         k4: 'sv4',
         k5: 'sv5'
+      }
+
+      expect(await space.private.all()).toEqual(expected)
+
+      const result = await space.private.all({ metadata: true })
+      Object.entries(expected).map(([k,v]) => {
+        expect(result[k].value).toEqual(v)
+        expect(result[k].timestamp).toBeGreaterThan(0)
       })
     })
 
@@ -187,15 +219,25 @@ describe('Space', () => {
       Thread.mockClear()
     })
 
+    const threadAddress = '/orbitdb/zdpuAmUTuZVp5QNw75E9KVaQwfPSM611FCPR2RmMGF6jxWzxW/3box.thread.a.z'
+    const threadAddress2 = '/orbitdb/zdpuAu3nxzphjPVgP3sw4HufdG3uvZTerUgS6rQQtk29UAhbd/3box.thread.a.a'
+
+    it('does not subscribe or return invalid thread address (ignore experimental)', async () => {
+      await expect(space.subscribeThread('t1')).rejects.toThrowErrorMatchingSnapshot()
+      // experimental threads
+      await space.public.set('thread-t1')
+      expect(await space.subscribedThreads()).toEqual([])
+    })
+
     it('subscribes to thread correctly', async () => {
-      await space.subscribeThread('t1')
-      expect(await space.public.get('thread-t1')).toEqual({ name: 't1' })
-      expect(await space.subscribedThreads()).toEqual(['t1'])
+      await space.subscribeThread(threadAddress)
+      expect(await space.public.get(`thread-${threadAddress}`)).toEqual({ address: threadAddress })
+      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
 
     it('unsubscribes from thread correctly', async () => {
-      await space.unsubscribeThread('t1')
-      expect(await space.public.get('thread-t1')).toEqual()
+      await space.unsubscribeThread(threadAddress)
+      expect(await space.public.get(`thread-${threadAddress}`)).toEqual()
       expect(await space.subscribedThreads()).toEqual([])
     })
 
@@ -207,8 +249,13 @@ describe('Space', () => {
       expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][3]()
-      expect(await space.subscribedThreads()).toEqual(['t2'])
+      await Thread.mock.calls[0][5](threadAddress)
+      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
+    })
+
+    it('a thread loaded by address, must be in same space as threadname, otherwise throws', async () => {
+      const threadAddress = "/orbitdb/zdpuAz8c2gjonfuhYCfPJqZJUfYM5Kd7bpHaMyJZSLDMHSNvQ/3box.thread.errorspace.test"
+      await expect(space.joinThreadByAddress(threadAddress)).rejects.toThrow(/must open within same space/)
     })
 
     it('joins thread correctly, no auto subscription', async () => {
@@ -219,8 +266,8 @@ describe('Space', () => {
       expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][3]()
-      expect(await space.subscribedThreads()).toEqual(['t2'])
+      await Thread.mock.calls[0][5](threadAddress2)
+      expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
   })
 })

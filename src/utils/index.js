@@ -1,6 +1,7 @@
 const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
+const ethers = require('ethers')
 
 const HTTPError = (status, message) => {
   const e = new Error(message)
@@ -8,33 +9,46 @@ const HTTPError = (status, message) => {
   return e
 }
 
-const getMessageConsent = (did) => (
-  'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
-)
+const getMessageConsent = (did, timestamp) => {
+  let msg = 'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
+  if (timestamp) msg += ' \n' + 'Timestamp: ' + timestamp
+  return msg
+}
+
+const safeEthSend = (ethereum, data, callback) => {
+  const send = Boolean(ethereum.sendAsync) ? ethereum.sendAsync : ethereum.send
+  return new Promise((resolve, reject) => {
+    send(data, function(err, result) {
+      if (err) reject(err)
+      if (result.error) reject(result.error)
+      resolve(result.result)
+    })
+  })
+}
 
 module.exports = {
   getMessageConsent,
+
+  recoverPersonalSign: async (msg, personalSig) => {
+    if (!msg || !personalSig) throw new Error('recoverPersonalSign: missing arguments, msg and/or personalSig')
+    const msgParams = {
+      data: msg,
+      sig: personalSig
+    }
+    return ethers.utils.verifyMessage(msg , personalSig)
+  },
 
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return new Promise((resolve, reject) => {
-      ethereum.sendAsync(
-        {
-          jsonrpc: '2.0',
-          id: 0,
-          method,
-          params,
-          fromAddress
-        },
-        function(err, result) {
-          if (err) reject(err)
-          if (result.error) reject(result.error)
-          resolve(result.result)
-        }
-      )
+    return safeEthSend(ethereum, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params,
+      fromAddress
     })
   },
 
@@ -43,50 +57,34 @@ module.exports = {
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return new Promise((resolve, reject) => {
-      ethereum.sendAsync(
-        {
-          jsonrpc: '2.0',
-          id: 0,
-          method,
-          params,
-          fromAddress
-        },
-        function(err, result) {
-          if (err) reject(err)
-          if (result.error) reject(result.error)
-          resolve(result.result)
-        }
-      )
+    return safeEthSend(ethereum, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params,
+      fromAddress
     })
   },
 
-  getLinkConsent: (fromAddress, toDID, ethereum) => {
-    const text = getMessageConsent(toDID)
+  getLinkConsent: async (fromAddress, toDID, ethereum) => {
+    const timestamp = Math.floor(new Date().getTime() / 1000)
+    const text = getMessageConsent(toDID, timestamp)
     const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     const params = [msg, fromAddress]
     const method = 'personal_sign'
 
-    return new Promise((resolve, reject) => {
-      ethereum.sendAsync(
-        {
-          jsonrpc: '2.0',
-          id: 0,
-          method,
-          params,
-          fromAddress
-        },
-        function(err, result) {
-          if (err) reject(err)
-          if (result.error) reject(result.error)
-          const out = {
-            msg: text,
-            sig: result.result
-          }
-          resolve(out)
-        }
-      )
+    const sig = await safeEthSend(ethereum, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params,
+      fromAddress
     })
+    return {
+      msg: text,
+      sig,
+      timestamp
+    }
   },
 
   fetchJson: async (url, body) => {

@@ -108,7 +108,25 @@ const CONF_6 = {
     Bootstrap: []
   }
 }
-const CONFS = [CONF_1, CONF_2, CONF_3, CONF_4, CONF_5, CONF_6]
+
+const CONF_7 = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  repo: './tmp/ipfs9/',
+  config: {
+    Addresses: {
+      Swarm: [
+        '/ip4/127.0.0.1/tcp/4019',
+        '/ip4/127.0.0.1/tcp/4020/ws'
+      ],
+      API: '/ip4/127.0.0.1/tcp/5020',
+      Gateway: '/ip4/127.0.0.1/tcp/9097'
+    },
+    Bootstrap: []
+  }
+}
+const CONFS = [CONF_1, CONF_2, CONF_3, CONF_4, CONF_5, CONF_6, CONF_7]
 
 module.exports = {
   initIPFS: async (useAltConf) => {
