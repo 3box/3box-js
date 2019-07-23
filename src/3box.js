@@ -65,6 +65,7 @@ class Box {
     this._ipfs = ipfs
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     this._onSyncDoneCB = () => {}
+    this._boxSynced = false
     /**
      * @property {KeyValueStore} public         access the profile store of the users 3Box
      */
@@ -157,6 +158,7 @@ class Box {
           const promises = syncPromises
           syncPromises = []
           await Promise.all(promises)
+          this._boxSynced = true
           this._onSyncDoneCB()
           // this._pubsub.unsubscribe(PINNING_ROOM)
         }
@@ -450,6 +452,9 @@ class Box {
    */
   onSyncDone (syncDone) {
     this._onSyncDoneCB = syncDone
+    if (this._boxSynced) {
+      this._onSyncDoneCB()
+    }
   }
 
   async _publishRootStore (rootStoreAddress) {
