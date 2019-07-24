@@ -1,3 +1,4 @@
+const Log = require('ipfs-log')
 const IFRAME_STORE_VERSION = '0.0.3'
 
 module.exports = {
@@ -12,8 +13,12 @@ module.exports = {
     },
     preload: { enabled: false },
     config: {
-      Bootstrap: [ ]
+      Bootstrap: []
     }
+  },
+  orbitdb_options: {
+    syncLocal: true,
+    sortFn: Log.Sorting.SortByEntryHash // this option is required now but will likely not be in the future.
   },
   graphql_server_url: process.env.GRAPHQL_SERVER_URL || 'https://api.3box.io/graph/',
   profile_server_url: process.env.PROFILE_SERVER_URL || 'https://ipfs.3box.io',

@@ -35,6 +35,7 @@ const PINNING_ROOM = config.pinning_room
 // const IFRAME_STORE_VERSION = '0.0.3'
 // const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 const IPFS_OPTIONS = config.ipfs_options
+const ORBITDB_OPTS = config.orbitdb_options
 
 let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
@@ -65,6 +66,7 @@ class Box {
     this._ipfs = ipfs
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     this._onSyncDoneCB = () => {}
+    this._boxSynced = false
     /**
      * @property {KeyValueStore} public         access the profile store of the users 3Box
      */
@@ -100,6 +102,7 @@ class Box {
 
     const key = this._3id.getKeyringBySpaceName(rootStoreName).getPublicKeys(true).signingKey
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
+      ...ORBITDB_OPTS,
       format: 'dag-pb',
       accessController: {
         write: [key],
@@ -129,7 +132,7 @@ class Box {
     ])
 
     let syncPromises = []
-    let hasResponse = {}
+    const hasResponse = {}
 
     // Filters and store space related messages for 3secs, the best effort
     // simple approach, until refactor
@@ -157,6 +160,7 @@ class Box {
           const promises = syncPromises
           syncPromises = []
           await Promise.all(promises)
+          this._boxSynced = true
           this._onSyncDoneCB()
           // this._pubsub.unsubscribe(PINNING_ROOM)
         }
@@ -306,7 +310,7 @@ class Box {
     // opts = Object.assign({ iframeStore: true }, opts)
     const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
     let usingGlobalIPFS = false
-    let usingGlobalOrbitDB = false
+    // let usingGlobalOrbitDB = false
     let ipfs
     let orbitdb
     if (globalIPFS) {
@@ -356,7 +360,7 @@ class Box {
       const closeAll = async () => {
         await rootStore.close()
         await publicStore.close()
-        if (!usingGlobalOrbitDB) await orbitdb.stop()
+        // if (!usingGlobalOrbitDB) await orbitdb.stop()
         if (!usingGlobalIPFS) {} // await ipfs.stop()
       }
       // close but don't wait for it
@@ -450,6 +454,9 @@ class Box {
    */
   onSyncDone (syncDone) {
     this._onSyncDoneCB = syncDone
+    if (this._boxSynced) {
+      this._onSyncDoneCB()
+    }
   }
 
   async _publishRootStore (rootStoreAddress) {
@@ -543,7 +550,7 @@ class Box {
     if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
-      let res = query.address ? link.address === query.address : true
+      const res = query.address ? link.address === query.address : true
       return query.type ? res && link.type === query.type : res
     })
     return Boolean(linksQuery)

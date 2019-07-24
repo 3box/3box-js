@@ -67,40 +67,31 @@ async function getThread (space, name, firstModerator, members, opts = {}) {
   if (firstModerator.startsWith('0x')) {
     firstModerator = await getSpaceDID(firstModerator, space, opts)
   }
-  return new Promise(async (resolve, reject) => {
-    try {
-      let url = `${serverUrl}/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`
-      url += `&mod=${encodeURIComponent(firstModerator)}&members=${encodeURIComponent(members)}`
-      const res = await utils.fetchJson(url)
-      resolve(res)
-    } catch (err) {
-      reject(err)
-    }
-  })
+  try {
+    let url = `${serverUrl}/thread?space=${encodeURIComponent(space)}&name=${encodeURIComponent(name)}`
+    url += `&mod=${encodeURIComponent(firstModerator)}&members=${encodeURIComponent(members)}`
+    return await utils.fetchJson(url)
+  } catch (err) {
+    throw new Error(err)
+  }
 }
 
 async function getThreadByAddress (address, opts = {}) {
   const serverUrl = opts.profileServer || PROFILE_SERVER_URL
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await utils.fetchJson(`${serverUrl}/thread?address=${encodeURIComponent(address)}`)
-      resolve(res)
-    } catch (err) {
-      reject(err)
-    }
-  })
+  try {
+    return await utils.fetchJson(`${serverUrl}/thread?address=${encodeURIComponent(address)}`)
+  } catch (err) {
+    throw new Error(err)
+  }
 }
 
 async function getConfig (address, opts = {}) {
   const serverUrl = opts.profileServer || PROFILE_SERVER_URL
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await utils.fetchJson(`${serverUrl}/config?address=${encodeURIComponent(address)}`)
-      resolve(res)
-    } catch (err) {
-      reject(err)
-    }
-  })
+  try {
+    return await utils.fetchJson(`${serverUrl}/config?address=${encodeURIComponent(address)}`)
+  } catch (err) {
+    throw new Error(err)
+  }
 }
 
 async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata, blocklist } = {}) {
@@ -151,7 +142,7 @@ async function profileGraphQL (query, opts = {}) {
 }
 
 async function getVerifiedAccounts (profile) {
-  let verifs = {}
+  const verifs = {}
   try {
     const did = await verifier.verifyDID(profile.proof_did)
 
