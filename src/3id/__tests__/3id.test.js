@@ -33,6 +33,8 @@ const ADDR_3_STATE_1 = '{"managementAddress":"0xlmnop","seed":"0xaedd3b597a14ad1
 const SPACE_1 = 'space1'
 const SPACE_2 = 'space2'
 const ETHEREUM = 'mockEthProvider'
+const CONTENT_SIGNATURE_1 = '0xsomeContentSignature'
+const NOT_CONTENT_SIGNATURE_1 = '0xanIncorrectSignature'
 
 const mockedUtils = require('../../utils/index')
 
@@ -91,7 +93,7 @@ describe('3id', () => {
     })
 
     it('should create a new identity when passed a contentSignature', async () => {
-      const opts = { consentCallback: jest.fn(), contentSignature: '0xsomeContentSignature' }
+      const opts = { consentCallback: jest.fn(), contentSignature: CONTENT_SIGNATURE_1 }
       const contentSignatureThreeId = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
       expect(contentSignatureThreeId.serializeState()).toEqual(ADDR_3_STATE_1)
       expect(contentSignatureThreeId.DID).toMatchSnapshot()
@@ -102,7 +104,7 @@ describe('3id', () => {
 
     it('should create the same identity given the same address and contentSignature', async () => {
       // did is mocked, so compares serialized state
-      const opts = { contentSignature: '0xsomeContentSignature' }
+      const opts = { contentSignature: CONTENT_SIGNATURE_1 }
       const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
       clearLocalStorage3id(ADDR_3)
       const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
@@ -112,7 +114,7 @@ describe('3id', () => {
 
     it('should NOT create the same identity given the same address but a different contentSignature', async () => {
       // did is mocked, so compares serialized state
-      const opts = { contentSignature: '0xsomeIncorrectSignature' }
+      const opts = { contentSignature: NOT_CONTENT_SIGNATURE_1 }
       const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
       clearLocalStorage3id(ADDR_3)
       const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
