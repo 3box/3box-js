@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.10.2 - 2019-07-25
+* feat: allow `consentSignature` to be passed as an option to `openBox`
+
 ## v1.10.1 - 2019-07-23
 * fix: support usage of multiple tabs without data loss
 
