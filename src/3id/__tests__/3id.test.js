@@ -25,12 +25,16 @@ const clearLocalStorage3id = (address) => {
 
 const ADDR_1 = '0x12345'
 const ADDR_2 = '0xabcde'
+const ADDR_3 = '0xlmnop'
 const ADDR_1_STATE_1 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{}}'
 const ADDR_1_STATE_2 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{"space1":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450","space2":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450"}}'
 const ADDR_2_STATE = '{"managementAddress":"0xabcde","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{}}'
+const ADDR_3_STATE_1 = '{"managementAddress":"0xlmnop","seed":"0xaedd3b597a14ad1c941ca535208fabd0b44a668dd0c8156f68a823ef8d713212d356731839a354ac5b781f4b986ff54aa2cadfa3551846c9e43bfa0122f3d55b","spaceSeeds":{}}'
 const SPACE_1 = 'space1'
 const SPACE_2 = 'space2'
 const ETHEREUM = 'mockEthProvider'
+const CONTENT_SIGNATURE_1 = '0xsomeContentSignature'
+const NOT_CONTENT_SIGNATURE_1 = '0xanIncorrectSignature'
 
 const mockedUtils = require('../../utils/index')
 
@@ -86,6 +90,36 @@ describe('3id', () => {
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
       expect(opts.consentCallback).toHaveBeenCalledWith(false)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+    })
+
+    it('should create a new identity when passed a contentSignature', async () => {
+      const opts = { consentCallback: jest.fn(), contentSignature: CONTENT_SIGNATURE_1 }
+      const contentSignatureThreeId = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      expect(contentSignatureThreeId.serializeState()).toEqual(ADDR_3_STATE_1)
+      expect(contentSignatureThreeId.DID).toMatchSnapshot()
+      expect(opts.consentCallback).toHaveBeenCalledWith(true)
+      expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+      expect(await resolve(contentSignatureThreeId.DID)).toMatchSnapshot()
+    })
+
+    it('should create the same identity given the same address and contentSignature', async () => {
+      // did is mocked, so compares serialized state
+      const opts = { contentSignature: CONTENT_SIGNATURE_1 }
+      const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      clearLocalStorage3id(ADDR_3)
+      const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+      expect(threeId1.serializeState()).toEqual(threeId2.serializeState())
+    })
+
+    it('should NOT create the same identity given the same address but a different contentSignature', async () => {
+      // did is mocked, so compares serialized state
+      const opts = { contentSignature: NOT_CONTENT_SIGNATURE_1 }
+      const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      clearLocalStorage3id(ADDR_3)
+      const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+      expect(threeId1.serializeState()).not.toEqual(threeId2.serializeState())
     })
   })
 
