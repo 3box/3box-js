@@ -1,6 +1,6 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
-const { sha256Multihash, throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
+const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
@@ -38,8 +38,11 @@ class Space {
   async open (opts = {}) {
     if (!this._store._db) {
       // store is not loaded opened yet
-      const consentNeeded = await this._3id.initKeyringByName(this._name)
-      if (opts.consentCallback) opts.consentCallback(consentNeeded, this._name)
+      const authenticated = await this._3id.isAuthenticated([this._name])
+      if (!authenticated) {
+        await this._3id.authenticate([this._name])
+      }
+      if (opts.consentCallback) opts.consentCallback(!authenticated, this._name)
       const spaceAddress = await this._store._load()
 
       const entries = await this._rootStore.iterator({ limit: -1 }).collect()

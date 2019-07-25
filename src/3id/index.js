@@ -16,29 +16,33 @@ const STORAGE_KEY = 'serialized3id_'
 const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_port, protocol: config.muport_ipfs_protocol}
 
 class ThreeId {
-  constructor (serializeState, ethereum, ipfs, opts) {
+  constructor (idWallet, ethereum, ipfs, opts = {}) {
+    this.idWallet = idWallet
     this._ethereum = ethereum
     this._ipfs = ipfs
-    this._keyrings = {}
-    this._initKeys(serializeState, opts)
+    this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
+    this._pubkeys = { spaces: {} }
     registerResolver(ipfs)
-    localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
   }
 
   async signJWT (payload, { use3ID, space, expiresIn } = {}) {
-    const keyring = space ? this._keyrings[space] : this._mainKeyring
     let issuer = this.muportDID
     if (use3ID) {
       issuer = this.DID
     } else if (space) {
       issuer = this._subDIDs[space]
     }
-    const settings = {
-      signer: keyring.getJWTSigner(),
-      issuer,
-      expiresIn
+    if (this.idWallet) {
+      return this.idWallet.signClaim(payload, { DID: issuer, space, expiresIn })
+    } else {
+      const keyring = this._keyringBySpace(space)
+      const settings = {
+        signer: keyring.getJWTSigner(),
+        issuer,
+        expiresIn
+      }
+      return didJWT.createJWT(payload, settings)
     }
-    return didJWT.createJWT(payload, settings)
   }
 
   get DID () {
@@ -62,6 +66,7 @@ class ThreeId {
   }
 
   serializeState () {
+    if (this.idWallet) throw new Error('Can not serializeState of IdentityWallet')
     let stateObj = {
       managementAddress: this.managementAddress,
       seed: this._mainKeyring.serialize(),
@@ -73,8 +78,10 @@ class ThreeId {
     return JSON.stringify(stateObj)
   }
 
-  _initKeys (serializeState) {
-    const state = JSON.parse(serializeState)
+  _initKeys (serializedState) {
+    if (this.idWallet) throw new Error('Can not initKeys of IdentityWallet')
+    this._keyrings = {}
+    const state = JSON.parse(serializedState)
     // TODO remove toLowerCase() in future, should be sanitized elsewhere
     //      this forces existing state to correct state so that address <->
     //      rootstore relation holds
@@ -83,12 +90,18 @@ class ThreeId {
     Object.keys(state.spaceSeeds).map(name => {
       this._keyrings[name] = new Keyring(state.spaceSeeds[name])
     })
+    localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
   }
 
-  async _initDID (muportIpfs) {
-    const muportPromise = this._initMuport(muportIpfs)
+  async _initDID () {
+    const muportPromise = this._initMuport()
     this._rootDID = await this._init3ID()
-    const spaces = Object.keys(this._keyrings)
+    let spaces
+    if (this.idWallet) {
+      spaces = Object.keys(this._pubkeys.spaces)
+    } else {
+      spaces = Object.keys(this._keyrings)
+    }
     const subDIDs = await Promise.all(
       spaces.map(space => {
         return this._init3ID(space)
@@ -103,14 +116,13 @@ class ThreeId {
 
   async _init3ID (spaceName) {
     const doc = new DidDocument(this._ipfs, DID_METHOD_NAME)
+    const pubkeys = await this.getPublicKeys(spaceName, true)
     if (!spaceName) {
-      const pubkeys = this._mainKeyring.getPublicKeys(true)
       doc.addPublicKey('signingKey', 'Secp256k1VerificationKey2018', 'publicKeyHex', pubkeys.signingKey)
       doc.addPublicKey('encryptionKey', 'Curve25519EncryptionPublicKey', 'publicKeyBase64', pubkeys.asymEncryptionKey)
-      doc.addPublicKey('managementKey', 'Secp256k1VerificationKey2018', 'ethereumAddress', this.managementAddress)
+      doc.addPublicKey('managementKey', 'Secp256k1VerificationKey2018', 'ethereumAddress', pubkeys.managementKey)
       doc.addAuthentication('Secp256k1SignatureAuthentication2018', 'signingKey')
     } else {
-      const pubkeys = this._keyrings[spaceName].getPublicKeys(true)
       doc.addPublicKey('subSigningKey', 'Secp256k1VerificationKey2018', 'publicKeyHex', pubkeys.signingKey)
       doc.addPublicKey('subEncryptionKey', 'Curve25519EncryptionPublicKey', 'publicKeyBase64', pubkeys.asymEncryptionKey)
       doc.addAuthentication('Secp256k1SignatureAuthentication2018', 'subSigningKey')
@@ -129,14 +141,14 @@ class ThreeId {
     return doc.DID
   }
 
-  async _initMuport (muportIpfs) {
-    let keys = this._mainKeyring.getPublicKeys()
-    const doc = createMuportDocument(keys.signingKey, this.managementAddress, keys.asymEncryptionKey)
+  async _initMuport () {
+    const keys = this.getPublicKeys(null, true)
+    const doc = createMuportDocument(keys.signingKey, keys.managementKey, keys.asymEncryptionKey)
     let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
     this._muportDID = 'did:muport:' + docHash
     this.muportFingerprint = utils.sha256Multihash(this.muportDID)
     const publishToInfura = async () => {
-      const ipfsMini = new IpfsMini(muportIpfs)
+      const ipfsMini = new IpfsMini(this._muportIpfs)
       ipfsMini.addJSON(doc, (err, res) => {
         if (err) console.error(err)
       })
@@ -144,28 +156,45 @@ class ThreeId {
     publishToInfura()
   }
 
-  async getPublicKeys (space, uncompressed) {
-    return this._keyringBySpace(space).getPublicKeys(uncompressed)
+  async getAddress () {
+    if (this.idWallet) {
+      return this.idWallet.getAddress()
+    } else {
+      return this.managementAddress
+    }
   }
 
-  async encrypt (message, space) {
-    return this._keyringBySpace(space).symEncrypt(utils.pad(message))
+  async authenticate (spaces = [], opts = {}) {
+    if (this.idWallet) {
+      const pubkeys = await this.idWallet.authenticate(spaces, opts)
+      this._pubkeys.main = pubkeys.main
+      this._pubkeys.spaces = Object.assign(this._pubkeys.spaces, pubkeys.spaces)
+      if (!this.DID) {
+        await this._initDID()
+      } else {
+        for (const space of spaces) {
+          this._subDIDs[space] = await this._init3ID(space)
+        }
+      }
+    } else {
+      for (const space of spaces) {
+        await this._initKeyringByName(space)
+      }
+    }
   }
 
-  async decrypt (encObj, space) {
-    return utils.unpad(this._keyringBySpace(space).symDecrypt(encObj.ciphertext, encObj.nonce))
+  async isAuthenticated (spaces = []) {
+    if (this.idWallet) {
+      return this.idWallet.isAuthenticated(spaces)
+    } else {
+      return spaces
+        .map(space => Boolean(this._keyrings[space]))
+        .reduce((acc, val) => acc && val, true)
+    }
   }
 
-  async hashDBKey (key, space) {
-    const salt = this._keyringBySpace(space).getDBSalt()
-    return utils.sha256Multihash(salt + key)
-  }
-
-  _keyringBySpace (space) {
-    return space ? this._keyrings[space] : this._mainKeyring
-  }
-
-  async initKeyringByName (name) {
+  async _initKeyringByName (name) {
+    if (this.idWallet) throw new Error('Can not initKeyringByName of IdentityWallet')
     if (!this._keyrings[name]) {
       const sig = await utils.openSpaceConsent(this.managementAddress, this._ethereum, name)
       const entropy = '0x' + utils.sha256(sig.slice(2))
@@ -177,6 +206,49 @@ class ThreeId {
     } else {
       return false
     }
+  }
+
+  async getPublicKeys (space, uncompressed) {
+    let pubkeys
+    if (this.idWallet) {
+      pubkeys = Object.assign({}, space ? this._pubkeys.spaces[space] : this._pubkeys.main)
+      if (uncompressed) {
+        pubkeys.signingKey = Keyring.uncompress(pubkeys.signingKey)
+      }
+    } else {
+      pubkeys = this._keyringBySpace(space).getPublicKeys(uncompressed)
+      pubkeys.managementKey = this.managementAddress
+    }
+    return pubkeys
+  }
+
+  async encrypt (message, space) {
+    if (this.idWallet) {
+      return this.idWallet.encrypt(message, space)
+    } else {
+      return this._keyringBySpace(space).symEncrypt(utils.pad(message))
+    }
+  }
+
+  async decrypt (encObj, space) {
+    if (this.idWallet) {
+      return this.idWallet.decrypt(encObj, space)
+    } else {
+      return utils.unpad(this._keyringBySpace(space).symDecrypt(encObj.ciphertext, encObj.nonce))
+    }
+  }
+
+  async hashDBKey (key, space) {
+    if (this.idWallet) {
+      return this.idWallet.hashDBKey(key, space)
+    } else {
+      const salt = this._keyringBySpace(space).getDBSalt()
+      return utils.sha256Multihash(salt + key)
+    }
+  }
+
+  _keyringBySpace (space) {
+    return space ? this._keyrings[space] : this._mainKeyring
   }
 
   logout () {
@@ -209,12 +281,15 @@ class ThreeId {
         spaceSeeds: {}
       })
     }
-    const _3id = new ThreeId(serialized3id, ethereum, ipfs, opts)
-    await _3id._initDID(opts.muportIpfs || MUPORT_IPFS)
-    return _3id
+    const threeId = new ThreeId(null, ethereum, ipfs, opts)
+    threeId._initKeys(serialized3id)
+    await threeId._initDID()
+    return threeId
   }
 
-  static async getIdFromIdentityWallet (idWallet, opts = {}) {
+  static async getIdFromIdentityWallet (idWallet, ipfs, opts = {}) {
+    const threeId = new ThreeId(idWallet, null, ipfs, opts)
+    return threeId
   }
 }
 

@@ -1,12 +1,7 @@
 const KeyValueStore = require('./keyValueStore')
 const utils = require('./utils/index')
 
-
 class PrivateStore extends KeyValueStore {
-  constructor (orbitdb, name, ensureConnected, _3id) {
-    super(orbitdb, name, ensureConnected, _3id)
-  }
-
   async get (key, opts = {}) {
     const entry = await super.get(await this._3id.hashDBKey(key), opts)
     if (!entry) {

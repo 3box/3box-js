@@ -4,6 +4,7 @@ const localstorage = require('store')
 const { verifyJWT } = require('did-jwt')
 const resolve = require('did-resolver').default
 const registerResolver = require('3id-resolver')
+const IdentityWallet = require('identity-wallet')
 
 jest.mock('../../utils/index', () => {
   const sha256 = require('js-sha256').sha256
@@ -25,6 +26,7 @@ const clearLocalStorage3id = (address) => {
   localstorage.remove(STORAGE_KEY + address)
 }
 
+const ID_WALLET_SEED = '0x8726348762348723487238476238746827364872634876234876234'
 const ADDR_1 = '0x12345'
 const ADDR_2 = '0xabcde'
 const ADDR_3 = '0xlmnop'
@@ -43,7 +45,7 @@ const mockedUtils = require('../../utils/index')
 
 describe('3id', () => {
 
-  let threeId, ipfs
+  let threeId, ipfs, idw3id
 
   beforeAll(async () => {
     ipfs = await testUtils.initIPFS(6)
@@ -123,85 +125,159 @@ describe('3id', () => {
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
       expect(threeId1.serializeState()).not.toEqual(threeId2.serializeState())
     })
+
+    describe('keyring logic', () => {
+      it('should init space keyrings correctly', async () => {
+        let authenticated = await threeId.isAuthenticated([SPACE_1])
+        expect(authenticated).toEqual(false)
+        await threeId.authenticate([SPACE_1])
+        expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(1)
+        expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_1)
+        let subDid = threeId.getSubDID(SPACE_1)
+        expect(subDid).toMatchSnapshot()
+        expect(await resolve(subDid)).toMatchSnapshot()
+
+        authenticated = await threeId.isAuthenticated([SPACE_1])
+        expect(authenticated).toEqual(true)
+        authenticated = await threeId.isAuthenticated([SPACE_1, SPACE_2])
+        expect(authenticated).toEqual(false)
+
+        authenticated = await threeId.isAuthenticated([SPACE_2])
+        expect(authenticated).toEqual(false)
+        await threeId.authenticate([SPACE_2])
+        expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(2)
+        expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_2)
+        subDid = threeId.getSubDID(SPACE_2)
+        expect(subDid).toMatchSnapshot()
+        expect(await resolve(subDid)).toMatchSnapshot()
+
+        authenticated = await threeId.isAuthenticated([SPACE_2])
+        expect(authenticated).toEqual(true)
+        authenticated = await threeId.isAuthenticated([SPACE_1, SPACE_2])
+        expect(authenticated).toEqual(true)
+      })
+
+      it('should get public keys correctly', async () => {
+        expect(await threeId.getPublicKeys(null, false)).toMatchSnapshot()
+        expect(await threeId.getPublicKeys(SPACE_1, false)).toMatchSnapshot()
+        expect(await threeId.getPublicKeys(null, true)).toMatchSnapshot()
+        expect(await threeId.getPublicKeys(SPACE_1, true)).toMatchSnapshot()
+      })
+
+      it('should hashDBKey correctly', async () => {
+        expect(await threeId.hashDBKey('somekey')).toMatchSnapshot()
+        expect(await threeId.hashDBKey('somekey', SPACE_1)).toMatchSnapshot()
+      })
+
+      it('should encrypt and decrypt correctly', async () => {
+        const message = 'test message'
+        const enc1 = await threeId.encrypt(message)
+        expect(await threeId.decrypt(enc1)).toEqual(message)
+        const enc2 = await threeId.encrypt(message, SPACE_1)
+        expect(await threeId.decrypt(enc2, SPACE_1)).toEqual(message)
+        expect(await threeId.decrypt(enc1, SPACE_1)).toEqual(null)
+      })
+
+      it('should get identity with spaces automatically initialized', async () => {
+        threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs)
+        expect(threeId.serializeState()).toEqual(ADDR_1_STATE_2)
+        expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
+      })
+    })
+
+    describe('claim signing', () => {
+      it('should sign jwts correctly with rootDID', async () => {
+        const jwt = await threeId.signJWT({
+          iat: null,
+          data: 'some data'
+        }, { use3ID: true })
+        await expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
+      })
+
+      it('should sign jwts correctly with subDID', async () => {
+        const jwt = await threeId.signJWT({
+          iat: null,
+          data: 'some data'
+        }, { space: SPACE_1 })
+        await expect(verifyJWT(jwt, { auth: true })).resolves.toMatchSnapshot()
+      })
+    })
+
+    describe('login/out logic', () => {
+      it('should be logged in', async () => {
+        expect(ThreeId.isLoggedIn(ADDR_1)).toEqual(true)
+      })
+
+      it('should log out correctly', async () => {
+        threeId.logout()
+        expect(ThreeId.isLoggedIn(ADDR_1)).toEqual(false)
+      })
+    })
   })
 
-  describe('keyring logic', () => {
-    it('should init space keyrings correctly', async () => {
-      let requiredConsent = await threeId.initKeyringByName(SPACE_1)
-      expect(requiredConsent).toEqual(true)
-      expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(1)
-      expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_1)
-      let subDid = threeId.getSubDID(SPACE_1)
-      expect(subDid).toMatchSnapshot()
-      expect(await resolve(subDid)).toMatchSnapshot()
-
-      requiredConsent = await threeId.initKeyringByName(SPACE_2)
-      expect(requiredConsent).toEqual(true)
-      expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(2)
-      expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_2)
-      subDid = threeId.getSubDID(SPACE_2)
-      expect(subDid).toMatchSnapshot()
-      expect(await resolve(subDid)).toMatchSnapshot()
-
-      requiredConsent = await threeId.initKeyringByName(SPACE_2)
-      expect(requiredConsent).toEqual(false)
-      expect(mockedUtils.openSpaceConsent).toHaveBeenCalledTimes(2)
+  describe('getIdFromIdentityWallet', () => {
+    it('instantiate threeId with IdentityWallet', async () => {
+      const idWallet = new IdentityWallet({ seed: ID_WALLET_SEED })
+      idw3id = await ThreeId.getIdFromIdentityWallet(idWallet, ipfs)
+      expect(idw3id.DID).toBeUndefined()
+      await idw3id.authenticate()
+      expect(idw3id.DID).toMatchSnapshot()
+      expect(await idw3id.getPublicKeys()).toMatchSnapshot()
+      expect(await idw3id.getPublicKeys(null, true)).toMatchSnapshot()
+      expect(await resolve(idw3id.DID)).toMatchSnapshot()
     })
 
-    it('should get public keys correctly', async () => {
-      expect(await threeId.getPublicKeys(null, false)).toMatchSnapshot()
-      expect(await threeId.getPublicKeys(SPACE_1, false)).toMatchSnapshot()
-      expect(await threeId.getPublicKeys(null, true)).toMatchSnapshot()
-      expect(await threeId.getPublicKeys(SPACE_1, true)).toMatchSnapshot()
+    describe('keyring logic', () => {
+      it('should init space keyrings correctly', async () => {
+        await idw3id.authenticate([SPACE_1])
+        let subDid = idw3id.getSubDID(SPACE_1)
+        expect(subDid).toMatchSnapshot()
+        expect(await resolve(subDid)).toMatchSnapshot()
+
+        await idw3id.authenticate([SPACE_2])
+        subDid = idw3id.getSubDID(SPACE_2)
+        expect(subDid).toMatchSnapshot()
+        expect(await resolve(subDid)).toMatchSnapshot()
+      })
+
+      it('should get public keys correctly', async () => {
+        expect(await idw3id.getPublicKeys(null, false)).toMatchSnapshot()
+        expect(await idw3id.getPublicKeys(SPACE_1, false)).toMatchSnapshot()
+        expect(await idw3id.getPublicKeys(null, true)).toMatchSnapshot()
+        expect(await idw3id.getPublicKeys(SPACE_1, true)).toMatchSnapshot()
+      })
+
+      it('should hashDBKey correctly', async () => {
+        expect(await idw3id.hashDBKey('somekey')).toMatchSnapshot()
+        expect(await idw3id.hashDBKey('somekey', SPACE_1)).toMatchSnapshot()
+      })
+
+      it('should encrypt and decrypt correctly', async () => {
+        const message = 'test message'
+        const enc1 = await idw3id.encrypt(message)
+        expect(await idw3id.decrypt(enc1)).toEqual(message)
+        const enc2 = await idw3id.encrypt(message, SPACE_1)
+        expect(await idw3id.decrypt(enc2, SPACE_1)).toEqual(message)
+        await expect(idw3id.decrypt(enc1, SPACE_1)).rejects.toMatchSnapshot()
+      })
     })
 
-    it('should hashDBKey correctly', async () => {
-      expect(await threeId.hashDBKey('somekey')).toMatchSnapshot()
-      expect(await threeId.hashDBKey('somekey', SPACE_1)).toMatchSnapshot()
-    })
+    describe('claim signing', () => {
+      it('should sign jwts correctly with rootDID', async () => {
+        const jwt = await idw3id.signJWT({
+          iat: null,
+          data: 'some data'
+        }, { use3ID: true })
+        await expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
+      })
 
-    it('should encrypt and decrypt correctly', async () => {
-      const message = 'test message'
-      const enc1 = await threeId.encrypt(message)
-      expect(await threeId.decrypt(enc1)).toEqual(message)
-      const enc2 = await threeId.encrypt(message, SPACE_1)
-      expect(await threeId.decrypt(enc2, SPACE_1)).toEqual(message)
-      expect(await threeId.decrypt(enc1, SPACE_1)).toEqual(null)
-    })
-
-    it('should get identity with spaces automatically initialized', async () => {
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs)
-      expect(threeId.serializeState()).toEqual(ADDR_1_STATE_2)
-      expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
-    })
-  })
-
-  describe('claim signing', () => {
-    it('should sign jwts correctly with rootDID', async () => {
-      const jwt = await threeId.signJWT({
-        iat: null,
-        data: 'some data'
-      }, { use3ID: true })
-      expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
-    })
-
-    it('should sign jwts correctly with subDID', async () => {
-      const jwt = await threeId.signJWT({
-        iat: null,
-        data: 'some data'
-      }, { space: SPACE_1 })
-      expect(verifyJWT(jwt, { auth: true })).resolves.toMatchSnapshot()
-    })
-  })
-
-  describe('login/out logic', () => {
-    it('should be logged in', async () => {
-      expect(ThreeId.isLoggedIn(ADDR_1)).toEqual(true)
-    })
-
-    it('should log out correctly', async () => {
-      threeId.logout()
-      expect(ThreeId.isLoggedIn(ADDR_1)).toEqual(false)
+      it('should sign jwts correctly with subDID', async () => {
+        const jwt = await idw3id.signJWT({
+          iat: null,
+          data: 'some data'
+        }, { space: SPACE_1 })
+        await expect(verifyJWT(jwt, { auth: true })).resolves.toMatchSnapshot()
+      })
     })
   })
 })

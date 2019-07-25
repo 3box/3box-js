@@ -35,7 +35,7 @@ jest.mock('../3id', () => {
     const instance = threeIDMockFactory(did)
     const extend = {
       muportDID: did.replace('3', 'muport'),
-      managementAddress: managementKey,
+      getAddress: async () => managementKey,
       logout: logoutFn,
       // muportFingerprint: managementKey === '0x12345' ? 'b932fe7ab' : 'ab8c73d8f',
       muportFingerprint: randomStr(),

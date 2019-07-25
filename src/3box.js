@@ -599,7 +599,7 @@ class Box {
   }
 
   async _linkProfile () {
-    const address = this._3id.managementAddress
+    const address = await this._3id.getAddress()
     let linkData = await this._readAddressLink(address)
 
     if (!linkData) {
@@ -706,7 +706,7 @@ class Box {
   async logout () {
     await this.close()
     this._3id.logout()
-    const address = this._3id.managementAddress
+    const address = await this._3id.getAddress()
     localstorage.remove('linkConsent_' + address)
   }
 
