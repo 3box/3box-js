@@ -647,6 +647,7 @@ Opens the 3Box associated with the given address
 | opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
+| opts.contentSignature | <code>String</code> | A signature, provided by a client of 3box using the private keys associated with the given address, of the 3box consent message |
 
 <a name="Box.isLoggedIn"></a>
 
