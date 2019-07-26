@@ -16,7 +16,7 @@ const getMessageConsent = (did, timestamp) => {
 }
 
 const safeEthSend = (ethereum, data, callback) => {
-  const send = Boolean(ethereum.sendAsync) ? ethereum.sendAsync : ethereum.send
+  const send = (Boolean(ethereum.sendAsync) ? ethereum.sendAsync : ethereum.send).bind(ethereum)
   return new Promise((resolve, reject) => {
     send(data, function(err, result) {
       if (err) reject(err)
