@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.10.3 - 2019-07-26
+* fix: resolves issue with portis and fortmatic web3 providers
+
 ## v1.10.2 - 2019-07-25
 * feat: allow `consentSignature` to be passed as an option to `openBox`
 
