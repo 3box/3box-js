@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.10.4 - 2019-07-31
+* fix: solved issue with joining multiple threads
+
 ## v1.10.3 - 2019-07-26
 * fix: resolves issue with portis and fortmatic web3 providers
 

@@ -7,8 +7,10 @@ To view the contribution guide, go to the main 3box repo here:
 
 ## Release checklist
 - [ ] Add release notes and update version in package.json
+- [ ] Run `$ npm run generate-readme`
 - [ ] Make sure correct dependencies are installed and that tests and builds pass
-- [ ] Create release branch `release/vX.X.X` and a PR to `master`
+- [ ] Create release branch `release/vX.X.X`
+- [ ] Make a commit `$ git commit -m "Release vX.X.X"` and make a PR to `master`
 - [ ] Get at least one review and merge
 - [ ] Checkout `master` locally
 - [ ] When tests pass on CI tag the version `$ git tag vX.X.X` and push
