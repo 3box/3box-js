@@ -78,7 +78,7 @@ class Space {
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
     if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
     const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
-    const address = thread._getThreadAddress()
+    const address = await thread._getThreadAddress()
     if (this._activeThreads[address]) return this._activeThreads[address]
     await thread._load()
     this._activeThreads[address] = thread

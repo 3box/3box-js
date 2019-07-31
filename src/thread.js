@@ -55,6 +55,7 @@ class Thread {
       accessController: this._accessController
     }, false)).toString()
     this._address = address
+    return this._address
   }
 
   /**
