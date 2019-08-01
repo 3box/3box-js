@@ -228,10 +228,13 @@ describe('3Box', () => {
     const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
     pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
+    const rootStoreAddress = box._rootStore.address.toString()
+    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: rootStoreAddress, numEntries: 0 })
     await syncPromise
+    await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress')
-    expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[0][1].address_token).payload.rootStoreAddress).toEqual(box._rootStore.address.toString())
+    expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[0][1].address_token).payload.rootStoreAddress).toEqual(rootStoreAddress)
 
     pubsub.unsubscribe('3box-pinning')
     await box.close()
@@ -496,8 +499,7 @@ describe('3Box', () => {
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith('0xabcde', 'web3prov', boxOpts.ipfs, boxOpts)
 
     await box2._linkProfile()
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
-    expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(2, 'address-server/link', {
+    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/link', {
       message: `I agree to stuff,${didMuPort2}`,
       signature: "0xSuchRealSig,0xabcde",
       timestamp: 111,
@@ -506,9 +508,6 @@ describe('3Box', () => {
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
     await publishPromise
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
-    expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress')
-    expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[0][1].address_token).payload.rootStoreAddress).toEqual(box2._rootStore.address.toString())
     pubsub.unsubscribe('3box-pinning')
     box2.close()
   })

@@ -145,6 +145,29 @@ class Box {
         setTimeout(() => { spaceMessageFilterActive = false }, 3000)
       }
       if (data.type === 'HAS_ENTRIES') {
+        console.log(data)
+        if (data.odbAddress === rootStoreAddress) {
+          if (data.numEntries === 0) {
+            await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress)
+            this._boxSynced = true
+            this._onSyncDoneCB()
+          } else {
+            const numRemoteEntries = data.numEntries
+            const numEntriesDefined = !(numRemoteEntries === null || numRemoteEntries === undefined)
+            syncPromises.push(new Promise((resolve, reject) => {
+              console.log('root', numEntriesDefined, numRemoteEntries, this._rootStore._oplog.values.length)
+              if (numEntriesDefined && numRemoteEntries <= this._rootStore._oplog.values.length) resolve()
+              this._rootStore.events.on('replicated', () => {
+                console.log('replicated root', this._rootStore._oplog.values.length)
+                if (numRemoteEntries <= this._rootStore._oplog.values.length) {
+                  resolve()
+                  this._rootStore.events.removeAllListeners('replicated')
+                  this._rootStore.events.removeAllListeners('replicate.progress')
+                }
+              })
+            }))
+          }
+        }
         if (data.odbAddress === privStoreAddress && !hasResponse[privStoreAddress]) {
           syncPromises.push(this.private._sync(data.numEntries))
           hasResponse[privStoreAddress] = true
@@ -156,10 +179,11 @@ class Box {
         if (spaceMessageFilterActive && data.odbAddress.includes('space') === true) {
           this.spacesPubSubMessages[data.odbAddress] = data
         }
-        if (syncPromises.length === 2) {
+        if (syncPromises.length === 3) {
           const promises = syncPromises
           syncPromises = []
           await Promise.all(promises)
+          await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress)
           this._boxSynced = true
           this._onSyncDoneCB()
           // this._pubsub.unsubscribe(PINNING_ROOM)
@@ -169,11 +193,10 @@ class Box {
 
     this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
 
-    await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress, this.pinningNode)
+    await this._rootStore.load()
   }
 
   async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
-    await this._rootStore.load()
     const entries = await this._rootStore.iterator({ limit: -1 }).collect()
     if (!entries.find(e => e.payload.value.odbAddress === pubOdbAddress)) {
       await this._rootStore.add({ odbAddress: pubOdbAddress })

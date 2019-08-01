@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.10.4",
+  "version": "1.10.5-beta.2",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
