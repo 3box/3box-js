@@ -45,7 +45,7 @@
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
     "3box-orbitdb-plugins": "^1.0.5",
-    "3id-resolver": "^0.0.5",
+    "3id-resolver": "^0.0.6",
     "@babel/runtime": "^7.4.5",
     "did-jwt": "^0.2.0",
     "ethers": "^4.0.28",
