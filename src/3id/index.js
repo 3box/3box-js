@@ -6,7 +6,6 @@ const localstorage = require('store')
 const Identities = require('orbit-db-identity-provider')
 const { OdbIdentityProvider } = require('3box-orbitdb-plugins')
 Identities.addIdentityProvider(OdbIdentityProvider)
-const registerResolver = require('3id-resolver')
 const utils = require('../utils/index')
 const Keyring = require('./keyring')
 const config = require('../config.js')
@@ -22,7 +21,6 @@ class ThreeId {
     this._ipfs = ipfs
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
-    registerResolver(ipfs)
   }
 
   async signJWT (payload, { use3ID, space, expiresIn } = {}) {

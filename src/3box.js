@@ -1,20 +1,8 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
-const OrbitDB = require('orbit-db')
-const Pubsub = require('orbit-db-pubsub')
-// const OrbitDBCacheProxy = require('orbit-db-cache-postmsg-proxy').Client
-// const { createProxyClient } = require('ipfs-postmsg-proxy')
-const AccessControllers = require('orbit-db-access-controllers')
-const {
-  LegacyIPFS3BoxAccessController,
-  ThreadAccessController,
-  ModeratorAccessController
-} = require('3box-orbitdb-plugins')
-AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
-AccessControllers.addAccessController({ AccessController: ThreadAccessController })
-AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 
 const ThreeId = require('./3id')
+const Replicator = require('./replicator')
 const PublicStore = require('./publicStore')
 const PrivateStore = require('./privateStore')
 const Verified = require('./verified')
@@ -30,14 +18,9 @@ const ACCOUNT_TYPES = {
 }
 
 const ADDRESS_SERVER_URL = config.address_server_url
-const PINNING_NODE = config.pinning_node
-const PINNING_ROOM = config.pinning_room
-// const IFRAME_STORE_VERSION = '0.0.3'
-// const IFRAME_STORE_URL = `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`
 const IPFS_OPTIONS = config.ipfs_options
-const ORBITDB_OPTS = config.orbitdb_options
 
-let globalIPFS, globalOrbitDB // , ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
 /*
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -65,8 +48,6 @@ class Box {
     this._web3provider = ethereumProvider
     this._ipfs = ipfs
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
-    this._onSyncDoneCB = () => {}
-    this._boxSynced = false
     /**
      * @property {KeyValueStore} public         access the profile store of the users 3Box
      */
@@ -83,135 +64,42 @@ class Box {
      * @property {Object} spaces            an object containing all open spaces indexed by their name.
      */
     this.spaces = {}
+    /**
+     * @property {Promise} syncDone         A promise that is resolved when the box is synced
+     */
+    this.syncDone = null
 
     // local store of all pinning server pubsub messages seen related to spaces
     this.spacesPubSubMessages = {}
+    this.hasPublishedLink = {}
   }
 
   async _load (opts = {}) {
-    const rootStoreName = this._3id.muportFingerprint + '.root'
+    this.replicator = await Replicator.create(this._ipfs, opts)
 
-    this.pinningNode = opts.pinningNode || PINNING_NODE
-    this._ipfs.swarm.connect(this.pinningNode, () => {})
-
-    this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
-      directory: opts.orbitPath,
-      identity: await this._3id.getOdbId()
-    }) // , { cache })
-    globalOrbitDB = this._orbitdb
-
-    const key = (await this._3id.getPublicKeys(null, true)).signingKey
-    this._rootStore = await this._orbitdb.feed(rootStoreName, {
-      ...ORBITDB_OPTS,
-      format: 'dag-pb',
-      accessController: {
-        write: [key],
-        type: 'legacy-ipfs-3box',
-        skipManifest: true
-      }
-    })
-    const rootStoreAddress = this._rootStore.address.toString()
-    this._pubsub = new Pubsub(this._ipfs, (await this._ipfs.id()).id)
-
-    const onNewPeer = async (topic, peer) => {
-      if (peer === this.pinningNode.split('/').pop()) {
-        this._pubsub.publish(PINNING_ROOM, {
-          type: 'PIN_DB',
-          odbAddress: rootStoreAddress,
-          did: this.DID
-        })
-      }
+    const address = await this._3id.getAddress()
+    const rootstoreAddress = address ? await this._getRootstore(address) : null
+    if (rootstoreAddress) {
+      this.replicator.start(rootstoreAddress, { profiles: true })
+      await this.replicator.rootstoreSyncDone
+      const authData = this.replicator.getAuthData()
+      await this._3id.authenticate(null, { authData })
+    } else {
+      await this._3id.authenticate()
+      const rootstoreName = this._3id.muportFingerprint + '.root'
+      const key = (await this._3id.getPublicKeys(null, true)).signingKey
+      await this.replicator.new(rootstoreName, key, this.DID)
+      this._publishRootStore(this.replicator.rootstore.address.toString())
     }
+    this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
+    this.syncDone = this.replicator.syncDone
 
-    this.public = new PublicStore(this._orbitdb, this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this._ensurePinningNodeConnected.bind(this), this._3id)
-    this.private = new PrivateStore(this._orbitdb, this._3id.muportFingerprint + '.private', this._ensurePinningNodeConnected.bind(this), this._3id)
-
-    const [pubStoreAddress, privStoreAddress] = await Promise.all([
+    this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
+    this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
+    await Promise.all([
       this.public._load(),
       this.private._load()
     ])
-
-    let syncPromises = []
-    const hasResponse = {}
-
-    // Filters and store space related messages for 3secs, the best effort
-    // simple approach, until refactor
-    let spaceMessageFilterActive = true
-    let filterTimeSet = false
-
-    const onMessageRes = async (topic, data) => {
-      if (!filterTimeSet) {
-        filterTimeSet = true
-        setTimeout(() => { spaceMessageFilterActive = false }, 3000)
-      }
-      if (data.type === 'HAS_ENTRIES') {
-        if (data.odbAddress === rootStoreAddress) {
-          if (data.numEntries === 0) {
-            await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress)
-            this._boxSynced = true
-            this._onSyncDoneCB()
-          } else {
-            const numRemoteEntries = data.numEntries
-            const numEntriesDefined = !(numRemoteEntries === null || numRemoteEntries === undefined)
-            syncPromises.push(new Promise((resolve, reject) => {
-              if (numEntriesDefined && numRemoteEntries <= this._rootStore._oplog.values.length) resolve()
-              this._rootStore.events.on('replicated', () => {
-                if (numRemoteEntries <= this._rootStore._oplog.values.length) {
-                  resolve()
-                  this._rootStore.events.removeAllListeners('replicated')
-                  this._rootStore.events.removeAllListeners('replicate.progress')
-                }
-              })
-            }))
-          }
-        }
-        if (data.odbAddress === privStoreAddress && !hasResponse[privStoreAddress]) {
-          syncPromises.push(this.private._sync(data.numEntries))
-          hasResponse[privStoreAddress] = true
-        }
-        if (data.odbAddress === pubStoreAddress && !hasResponse[pubStoreAddress]) {
-          syncPromises.push(this.public._sync(data.numEntries))
-          hasResponse[pubStoreAddress] = true
-        }
-        if (spaceMessageFilterActive && data.odbAddress.includes('space') === true) {
-          this.spacesPubSubMessages[data.odbAddress] = data
-        }
-        if (syncPromises.length === 3) {
-          const promises = syncPromises
-          syncPromises = []
-          await Promise.all(promises)
-          await this._createRootStore(rootStoreAddress, privStoreAddress, pubStoreAddress)
-          this._boxSynced = true
-          this._onSyncDoneCB()
-          // this._pubsub.unsubscribe(PINNING_ROOM)
-        }
-      }
-    }
-
-    this._pubsub.subscribe(PINNING_ROOM, onMessageRes, onNewPeer)
-
-    await this._rootStore.load()
-  }
-
-  async _createRootStore (rootStoreAddress, privOdbAddress, pubOdbAddress) {
-    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
-    if (!entries.find(e => e.payload.value.odbAddress === pubOdbAddress)) {
-      await this._rootStore.add({ odbAddress: pubOdbAddress })
-    }
-    if (!entries.find(e => e.payload.value.odbAddress === privOdbAddress)) {
-      await this._rootStore.add({ odbAddress: privOdbAddress })
-    }
-    this._publishRootStore(rootStoreAddress)
-    const pinAddressLinks = async () => {
-      // Filter for address-links, get CID, and get to pin it
-      entries
-        .filter(entry => entry.payload.value.type === 'address-link')
-        .map(entry => {
-          this._ipfs.dag.get(entry.payload.value.data)
-          // TODO - actually pin entires
-        })
-    }
-    pinAddressLinks()
   }
 
   /**
@@ -324,72 +212,9 @@ class Box {
   }
 
   static async _getProfileOrbit (address, opts = {}) {
-    if (idUtils.isMuportDID(address)) {
-      throw new Error('DID are supported in the cached version only')
-    }
-
-    // opts = Object.assign({ iframeStore: true }, opts)
-    const rootStoreAddress = await API.getRootStoreAddress(address.toLowerCase(), opts.addressServer)
-    let usingGlobalIPFS = false
-    // let usingGlobalOrbitDB = false
-    let ipfs
-    let orbitdb
-    if (globalIPFS) {
-      ipfs = globalIPFS
-      usingGlobalIPFS = true
-    } else {
-      ipfs = await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
-    }
-    if (globalOrbitDB) {
-      orbitdb = globalOrbitDB
-      usingGlobalIPFS = true
-    } else {
-      const cache = null // (opts.iframeStore && !!cacheProxy) ? cacheProxy : null
-      orbitdb = new OrbitDB(ipfs, opts.orbitPath, { cache })
-    }
-
-    const pinningNode = opts.pinningNode || PINNING_NODE
-    ipfs.swarm.connect(pinningNode, () => {})
-
-    const publicStore = new PublicStore(orbitdb)
-
-    if (rootStoreAddress) {
-      const rootStore = await orbitdb.open(rootStoreAddress)
-      const readyPromise = new Promise((resolve, reject) => {
-        rootStore.events.on('ready', resolve)
-      })
-      rootStore.load()
-      await readyPromise
-      if (!rootStore.iterator({ limit: -1 }).collect().length) {
-        await new Promise((resolve, reject) => {
-          rootStore.events.on('replicate.progress', (_x, _y, _z, num, max) => {
-            if (num === max) {
-              rootStore.events.on('replicated', resolve)
-            }
-          })
-        })
-      }
-      const profileEntry = rootStore
-        .iterator({ limit: -1 })
-        .collect()
-        .find(entry => {
-          return entry.payload.value.odbAddress.split('.')[1] === 'public'
-        })
-      await publicStore._load(profileEntry.payload.value.odbAddress)
-      await publicStore._sync()
-      const profile = publicStore.all()
-      const closeAll = async () => {
-        await rootStore.close()
-        await publicStore.close()
-        // if (!usingGlobalOrbitDB) await orbitdb.stop()
-        if (!usingGlobalIPFS) {} // await ipfs.stop()
-      }
-      // close but don't wait for it
-      closeAll()
-      return profile
-    } else {
-      return null
-    }
+    // Removed this code since it's completely outdated.
+    // TODO - implement using the replicator module
+    throw new Error('Not implemented yet')
   }
 
   /**
@@ -449,7 +274,7 @@ class Box {
    */
   async openSpace (name, opts = {}) {
     if (!this.spaces[name]) {
-      this.spaces[name] = new Space(name, this._3id, this._orbitdb, this._rootStore, this._ensurePinningNodeConnected.bind(this))
+      this.spaces[name] = new Space(name, this.replicator, this._3id)
       try {
         opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
@@ -470,19 +295,18 @@ class Box {
   }
 
   /**
-   * Sets the callback function that will be called once when the db is fully synced.
+   * Sets the callback function that will be called once when the box is fully synced.
    *
    * @param     {Function}      syncDone        The function that will be called
+   * @return    {Promise}                       A promise that is fulfilled when the box is syned
    */
-  onSyncDone (syncDone) {
-    this._onSyncDoneCB = syncDone
-    if (this._boxSynced) {
-      this._onSyncDoneCB()
-    }
+  async onSyncDone (syncDone) {
+    await this.syncDone
+    syncDone()
   }
 
   async _publishRootStore (rootStoreAddress) {
-    // Sign rootStoreAddress
+    // Sign rootstoreAddress
     const addressToken = await this._3id.signJWT({ rootStoreAddress })
     // Store odbAddress on 3box-address-server
     try {
@@ -497,6 +321,18 @@ class Box {
       }
     }
     return true
+  }
+
+  async _getRootstore (ethereumAddress) {
+    try {
+      const { rootStoreAddress } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
+      return rootStoreAddress
+    } catch (err) {
+      if (err.message === 'root store address not found') {
+        return null
+      }
+      throw new Error('Error while getting rootstore', err)
+    }
   }
 
   /**
@@ -623,30 +459,37 @@ class Box {
 
       await this._writeAddressLink(linkData)
     }
-
     // Ensure we self-published our did
     if (!(await this.public.get('proof_did'))) {
       // we can just sign an empty JWT as a proof that we own this DID
       await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
     }
-
-    // Send consentSignature to 3box-address-server to link profile with ethereum address
-    utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
+    if (!this.hasPublishedLink[linkData.signature]) {
+      // Don't want to publish on every call to _linkProfile
+      this.hasPublishedLink[linkData.signature] = true
+      try {
+        // Send consentSignature to 3box-address-server to link profile with ethereum address
+        await utils.fetchJson(this._serverUrl + '/link', linkData)
+      } catch (err) {
+        throw new Error('An error occured while publishing link:', err)
+      }
+    }
   }
 
   async _writeAddressLink (proof) {
     const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
+    await this._ipfs.pin.add(data)
     const linkExist = await this._linkCIDExists(data)
     if (linkExist) return
     const link = {
       type: 'address-link',
       data
     }
-    await this._rootStore.add(link)
+    await this.replicator.rootstore.add(link)
   }
 
   async _linkCIDExists (cid) {
-    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
+    const entries = await this.replicator.rootstore.iterator({ limit: -1 }).collect()
     const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
     return linkEntries.find(entry => entry.data === cid)
   }
@@ -655,22 +498,17 @@ class Box {
     address = address.toLowerCase()
     const link = await this._readAddressLink(address)
     if (!link) throw new Error('_deleteAddressLink: link for given address does not exist')
-    return this._rootStore.remove(link.entry.hash)
+    return this.replicator.rootstore.remove(link.entry.hash)
   }
 
   async _readAddressLinks () {
-    const entries = await this._rootStore.iterator({ limit: -1 }).collect()
-    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
-    const resolveLinks = linkEntries.map(async (entry) => {
-      // TODO handle missing ipfs obj??, timeouts?
-      const obj = (await this._ipfs.dag.get(entry.payload.value.data)).value
-      if (!obj.address) {
-        obj.address = await utils.recoverPersonalSign(obj.message, obj.signature)
+    const links = await this.replicator.getAddressLinks()
+    return Promise.all(links.map(async linkObj => {
+      if (linkObj.address) {
+        linkObj.address = await utils.recoverPersonalSign(linkObj.message, linkObj.signature)
       }
-      obj.entry = entry
-      return obj
-    })
-    return Promise.all(resolveLinks)
+      return linkObj
+    }))
   }
 
   async _readAddressLink (address) {
@@ -679,23 +517,8 @@ class Box {
     return links.find(link => link.address.toLowerCase() === address)
   }
 
-  async _ensurePinningNodeConnected (odbAddress, isThread) {
-    const roomPeers = await this._ipfs.pubsub.peers(odbAddress)
-    if (!roomPeers.find(p => p === this.pinningNode.split('/').pop())) {
-      this._ipfs.swarm.connect(this.pinningNode, () => {})
-      const rootStoreAddress = this._rootStore.address.toString()
-      if (isThread) {
-        this._pubsub.publish(PINNING_ROOM, { type: 'SYNC_DB', odbAddress, thread: true })
-      } else {
-        this._pubsub.publish(PINNING_ROOM, { type: 'PIN_DB', odbAddress: rootStoreAddress })
-      }
-    }
-  }
-
   async close () {
-    await this._orbitdb.stop()
-    await this._pubsub.disconnect()
-    globalOrbitDB = null
+    await this.replicator.stop()
   }
 
   /**

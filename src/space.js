@@ -10,14 +10,12 @@ class Space {
   /**
    * Please use **box.openSpace** to get the instance of this class
    */
-  constructor (name, threeId, orbitdb, rootStore, ensureConnected) {
+  constructor (name, replicator, threeId) {
     this._name = name
     this._3id = threeId
-    this._ensureConnected = ensureConnected
-    this._store = new KeyValueStore(orbitdb, nameToSpaceName(this._name), this._ensureConnected, this._3id)
-    this._orbitdb = orbitdb
+    this._replicator = replicator
+    this._store = new KeyValueStore(nameToSpaceName(this._name), this._replicator, this._3id)
     this._activeThreads = {}
-    this._rootStore = rootStore
     /**
      * @property {KeyValueStore} public         access the profile store of the space
      */
@@ -26,6 +24,10 @@ class Space {
      * @property {KeyValueStore} private        access the private store of the space
      */
     this.private = null
+    /**
+     * @property {Promise}       syncDone       A promise that is resolved when the box is synced
+     */
+    this.syncDone = null
   }
 
   /**
@@ -43,23 +45,13 @@ class Space {
         await this._3id.authenticate([this._name])
       }
       if (opts.consentCallback) opts.consentCallback(!authenticated, this._name)
-      const spaceAddress = await this._store._load()
+      await this._store._load()
 
-      const entries = await this._rootStore.iterator({ limit: -1 }).collect()
-      const entry = entries.find(entry => entry.payload.value.odbAddress && entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)
-      if (!entry) {
-        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
-      } else if (!entry.payload.value.type) {
-        await this._rootStore.del(entry.hash)
-        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
-      }
-      const hasNumEntries = opts.numEntriesMessages && opts.numEntriesMessages[spaceAddress]
-      const numEntries = hasNumEntries ? opts.numEntriesMessages[spaceAddress].numEntries : undefined
       const syncSpace = async () => {
-        await this._store._sync(numEntries)
+        await this._store._sync()
         if (opts.onSyncDone) opts.onSyncDone()
       }
-      this._syncSpacePromise = syncSpace()
+      this.syncDone = syncSpace()
       this.public = publicStoreReducer(this._store)
       this.private = privateStoreReducer(this._store, this._3id, this._name)
     }
@@ -79,7 +71,7 @@ class Space {
   async joinThread (name, opts = {}) {
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
     if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    const thread = new Thread(namesTothreadName(this._name, name), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
     const address = await thread._getThreadAddress()
     if (this._activeThreads[address]) return this._activeThreads[address]
     await thread._load()
@@ -103,7 +95,7 @@ class Space {
     if (threadSpace !== this._name) throw new Error('joinThreadByAddress: attempting to open thread from different space, must open within same space')
     if (this._activeThreads[address]) return this._activeThreads[address]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, threadName), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
     await thread._load(address)
     this._activeThreads[address] = thread
     return thread
@@ -121,7 +113,7 @@ class Space {
   async subscribeThread (address, config = {}) {
     if (!OrbitDBAddress.isValid(address)) throw new Error('subscribeThread: must subscribe to valid thread/orbitdb address')
     const threadKey = `thread-${address}`
-    await this._syncSpacePromise
+    await this.syncDone
     if (!(await this.public.get(threadKey))) {
       await this.public.set(threadKey, Object.assign({}, config, { address }))
     }

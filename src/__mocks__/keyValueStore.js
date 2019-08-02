@@ -3,10 +3,9 @@ import { throwIfNotEqualLenArrays } from '../utils'
 const generateTimestamp = () => 1558954408 // don't really need a real timestamp here.
 
 class KeyValueStore {
-  constructor (orbitdb, name, ensureConnected, threeId) {
-    this._orbitdb = orbitdb
+  constructor (name, replicator, threeId) {
     this._name = name
-    this._ensureConnected = ensureConnected
+    this._replicator = replicator
     this._3id = threeId
     this._store = {}
   }
