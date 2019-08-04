@@ -164,14 +164,14 @@ describe('KeyValueStore', () => {
     })
 
     it('should return array of ALL entries ({op: .., key: .., value: .., timeStamp: ..}) of log underlying store ', async () => {
-      const log = keyValueStore.log
+      const log = await keyValueStore.log()
       expect(log.length).toEqual(3)
       const entry = log[0]
       expect(Object.keys(entry).sort()).toEqual(['key', 'op', 'timeStamp', 'value'])
     })
 
     it('should be time ordered', async () => {
-      const log = keyValueStore.log
+      const log = await keyValueStore.log()
       expect(log[0].key).toEqual('key1')
       expect(log[1].key).toEqual('key2')
       expect(log[2].key).toEqual('key3')
@@ -180,7 +180,7 @@ describe('KeyValueStore', () => {
     it('should including ALL entries, including OPS on same keys', async () => {
       // write over existing key
       await keyValueStore.set('key3', '6789')
-      const log = keyValueStore.log
+      const log = await keyValueStore.log()
       expect(log[2].key).toEqual('key3')
       expect(log[3].key).toEqual('key3')
       expect(log[2].value).toEqual('12345')
@@ -189,7 +189,7 @@ describe('KeyValueStore', () => {
 
     it('should including ALL entries, including DEL ops', async () => {
       await keyValueStore.remove('key1')
-      const log = keyValueStore.log
+      const log = await keyValueStore.log()
       expect(log.length).toEqual(4)
       const lastEntry = log.pop()
       expect(lastEntry.key).toEqual('key1')

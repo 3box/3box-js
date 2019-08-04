@@ -30,12 +30,8 @@ const threeIDMockFactory = (did) => {
     })
   }
 
-  const getKeyringBySpaceName = () => {
-    return {
-      getPublicKeys: () => {
-        return { signingKey: pubKey }
-      }
-    }
+  const getPublicKeys = () => {
+    return { signingKey: pubKey }
   }
 
   const getSubDID = () => did
@@ -43,7 +39,7 @@ const threeIDMockFactory = (did) => {
   const getOdbId = () => {
     return Identities.createIdentity({
       type: '3ID',
-      threeId: {signJWT, getKeyringBySpaceName, DID: did, getSubDID},
+      threeId: {signJWT, DID: did, getSubDID},
       identityKeysPath: `./tmp/${did}`
     })
   }
@@ -51,7 +47,7 @@ const threeIDMockFactory = (did) => {
   return {
     DID: did,
     signJWT,
-    getKeyringBySpaceName,
+    getPublicKeys,
     getOdbId,
     getSubDID
   }

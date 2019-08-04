@@ -100,7 +100,7 @@ class Box {
     }) // , { cache })
     globalOrbitDB = this._orbitdb
 
-    const key = this._3id.getKeyringBySpaceName(rootStoreName).getPublicKeys(true).signingKey
+    const key = (await this._3id.getPublicKeys(null, true)).signingKey
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
       ...ORBITDB_OPTS,
       format: 'dag-pb',
@@ -208,6 +208,7 @@ class Box {
         .filter(entry => entry.payload.value.type === 'address-link')
         .map(entry => {
           this._ipfs.dag.get(entry.payload.value.data)
+          // TODO - actually pin entires
         })
     }
     pinAddressLinks()
@@ -598,7 +599,7 @@ class Box {
   }
 
   async _linkProfile () {
-    const address = this._3id.managementAddress
+    const address = await this._3id.getAddress()
     let linkData = await this._readAddressLink(address)
 
     if (!linkData) {
@@ -705,7 +706,7 @@ class Box {
   async logout () {
     await this.close()
     this._3id.logout()
-    const address = this._3id.managementAddress
+    const address = await this._3id.getAddress()
     localstorage.remove('linkConsent_' + address)
   }
 

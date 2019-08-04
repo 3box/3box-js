@@ -67,8 +67,8 @@ class Keyring {
     let signingKey = this.signingKey.publicKey.slice(2)
     let ethereumKey = this.ethereumKey.publicKey.slice(2)
     if (uncompressed) {
-      signingKey = ec.keyFromPublic(Buffer.from(signingKey, 'hex')).getPublic(false, 'hex')
-      ethereumKey = ec.keyFromPublic(Buffer.from(ethereumKey, 'hex')).getPublic(false, 'hex')
+      signingKey = Keyring.uncompress(signingKey)
+      ethereumKey = Keyring.uncompress(ethereumKey)
     }
     return {
       signingKey,
@@ -79,6 +79,10 @@ class Keyring {
 
   serialize () {
     return this._seed
+  }
+
+  static uncompress (key) {
+    return ec.keyFromPublic(Buffer.from(key, 'hex')).getPublic(false, 'hex')
   }
 }
 

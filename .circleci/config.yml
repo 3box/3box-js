@@ -16,7 +16,7 @@ jobs:
           name: install dependencies
           command: |
             sudo npm i -g codecov node-gyp
-            npm i
+            npm ci
 
       - run:
           name: test

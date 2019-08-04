@@ -668,34 +668,19 @@ Check if the given address is logged in
 
 * [KeyValueStore](#KeyValueStore)
     * [new KeyValueStore()](#new_KeyValueStore_new)
-    * [.log](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
     * [.get(key, opts)](#KeyValueStore+get) ⇒ <code>String</code> \| <code>Object</code>
     * [.getMetadata(key)](#KeyValueStore+getMetadata) ⇒ <code>Metadata</code>
     * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
     * [.setMultiple(keys, values)](#KeyValueStore+setMultiple) ⇒ <code>Boolean</code>
     * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
     * [.all(opts)](#KeyValueStore+all) ⇒ <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code>
+    * [.log()](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
 
 <a name="new_KeyValueStore_new"></a>
 
 #### new KeyValueStore()
 Please use **box.public** or **box.private** to get the instance of this class
 
-<a name="KeyValueStore+log"></a>
-
-#### keyValueStore.log ⇒ <code>Array.&lt;Object&gt;</code>
-Returns array of underlying log entries. In linearized order according to their Lamport clocks.
-Useful for generating a complete history of all operations on store.
-
-**Kind**: instance property of [<code>KeyValueStore</code>](#KeyValueStore)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - Array of ordered log entry objects  
-**Example**  
-```js
-const log = store.log
- const entry = log[0]
- console.log(entry)
- // { op: 'PUT', key: 'Name', value: 'Botbot', timeStamp: '1538575416068' }
-```
 <a name="KeyValueStore+get"></a>
 
 #### keyValueStore.get(key, opts) ⇒ <code>String</code> \| <code>Object</code>
@@ -773,6 +758,21 @@ Get all values and optionally metadata
 | opts | <code>Object</code> | optional parameters |
 | opts.metadata | <code>Boolean</code> | return both values and metadata |
 
+<a name="KeyValueStore+log"></a>
+
+#### keyValueStore.log() ⇒ <code>Array.&lt;Object&gt;</code>
+Returns array of underlying log entries. In linearized order according to their Lamport clocks.
+Useful for generating a complete history of all operations on store.
+
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - Array of ordered log entry objects  
+**Example**  
+```js
+const log = store.log
+ const entry = log[0]
+ console.log(entry)
+ // { op: 'PUT', key: 'Name', value: 'Botbot', timeStamp: '1538575416068' }
+```
 <a name="Space"></a>
 
 ### Space
