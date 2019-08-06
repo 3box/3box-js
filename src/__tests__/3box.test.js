@@ -214,7 +214,6 @@ describe('3Box', () => {
       iframeStore: false,
       pinningNode: ipfsMultiAddr
     }
-
   })
 
   beforeEach(async () => {
@@ -417,7 +416,7 @@ describe('3Box', () => {
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
     expect(box._3id.authenticate).toHaveBeenCalledWith(null, { authData: [] })
     expect(box.replicator.start).toHaveBeenCalledTimes(1)
-    expect(box.replicator.start).toHaveBeenCalledWith('/orbitdb/asdf/rootstore-address', { profiles: true })
+    expect(box.replicator.start).toHaveBeenCalledWith('/orbitdb/asdf/rootstore-address', { profile: true })
     expect(box.replicator.new).toHaveBeenCalledTimes(0)
     expect(box.public._load).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledWith()

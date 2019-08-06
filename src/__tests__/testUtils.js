@@ -126,7 +126,41 @@ const CONF_7 = {
     Bootstrap: []
   }
 }
-const CONFS = [CONF_1, CONF_2, CONF_3, CONF_4, CONF_5, CONF_6, CONF_7]
+const CONF_8 = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  repo: './tmp/ipfs8/',
+  config: {
+    Addresses: {
+      Swarm: [
+        '/ip4/127.0.0.1/tcp/4021',
+        '/ip4/127.0.0.1/tcp/4022/ws'
+      ],
+      API: '/ip4/127.0.0.1/tcp/5021',
+      Gateway: '/ip4/127.0.0.1/tcp/9098'
+    },
+    Bootstrap: []
+  }
+}
+const CONF_9 = {
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  repo: './tmp/ipfs9/',
+  config: {
+    Addresses: {
+      Swarm: [
+        '/ip4/127.0.0.1/tcp/4023',
+        '/ip4/127.0.0.1/tcp/4024/ws'
+      ],
+      API: '/ip4/127.0.0.1/tcp/5022',
+      Gateway: '/ip4/127.0.0.1/tcp/9099'
+    },
+    Bootstrap: []
+  }
+}
+const CONFS = [CONF_1, CONF_2, CONF_3, CONF_4, CONF_5, CONF_6, CONF_7, CONF_8, CONF_9]
 
 module.exports = {
   initIPFS: async (useAltConf) => {
@@ -141,5 +175,6 @@ module.exports = {
     const apiFilePath = CONFS[useAltConf].repo + 'api'
     fs.closeSync(fs.openSync(apiFilePath, 'w'))
     await ipfs.stop()
-  }
+  },
+  delay: millisecs => new Promise((resolve, reject) => { setTimeout(resolve, millisecs) })
 }

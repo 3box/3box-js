@@ -1,5 +1,6 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
+const registerResolver = require('3id-resolver')
 
 const ThreeId = require('./3id')
 const Replicator = require('./replicator')
@@ -47,6 +48,7 @@ class Box {
     this._3id = threeId
     this._web3provider = ethereumProvider
     this._ipfs = ipfs
+    registerResolver(this._ipfs, { pin: true })
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     /**
      * @property {KeyValueStore} public         access the profile store of the users 3Box
@@ -80,7 +82,7 @@ class Box {
     const address = await this._3id.getAddress()
     const rootstoreAddress = address ? await this._getRootstore(address) : null
     if (rootstoreAddress) {
-      this.replicator.start(rootstoreAddress, { profiles: true })
+      this.replicator.start(rootstoreAddress, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = this.replicator.getAuthData()
       await this._3id.authenticate(null, { authData })
