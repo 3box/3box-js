@@ -142,7 +142,7 @@ class ThreeId {
   }
 
   async _initMuport () {
-    const keys = this.getPublicKeys(null, true)
+    const keys = await this.getPublicKeys(null)
     const doc = createMuportDocument(keys.signingKey, keys.managementKey, keys.asymEncryptionKey)
     let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
     this._muportDID = 'did:muport:' + docHash
