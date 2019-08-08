@@ -45,8 +45,6 @@ Array [
 ]
 `;
 
-exports[`Replicator creates replicator correctly 2`] = `"/ip4/127.0.0.1/tcp/4023"`;
-
 exports[`Replicator ensureConnected works as expected for store 1`] = `
 Object {
   "odbAddress": "/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root",

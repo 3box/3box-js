@@ -153,7 +153,7 @@ jest.mock('../utils/index', () => {
           } else if (addressMap[linkmap[lastPart]]) {
             return { status: 'success', data: { rootStoreAddress: addressMap[linkmap[lastPart]] } }
           } else {
-            throw {"status": "error", "message": "root store address not found"}
+            throw {"statusCode": 404, "message": "root store address not found"}
           }
       }
     }),

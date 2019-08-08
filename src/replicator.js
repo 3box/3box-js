@@ -45,6 +45,7 @@ class Replicator {
     this._pinningNode = opts.pinningNode || PINNING_NODE
     this.ipfs.swarm.connect(this._pinningNode, () => {})
     this._stores = {}
+    this._storePromises = {}
     // TODO - this should only be done in 3box-js. For use in
     // 3box-pinning-node the below code should be disabled
     this._hasPubsubMsgs = {}
@@ -74,10 +75,10 @@ class Replicator {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
     this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath })
     this._pubsub.subscribe(PINNING_ROOM, (topic, data) => {
-      console.log('message', topic, data)
+      // console.log('message', topic, data)
       this.events.emit('pinning-room-message', topic, data)
     }, (topic, peer) => {
-      console.log('peer', topic, peer)
+      // console.log('peer', topic, peer)
       this.events.emit('pinning-room-peer', topic, peer)
     })
   }
@@ -93,8 +94,8 @@ class Replicator {
 
     this.rootstore = await this._orbitdb.feed(rootstoreAddress, ODB_STORE_OPTS)
     await this.rootstore.load()
+    this.rootstoreSyncDone = this.syncDB(this.rootstore)
     const waitForSync = async () => {
-      this.rootstoreSyncDone = this.syncDB(this.rootstore)
       await this.rootstoreSyncDone
       const addressLinkPinPromise = this.getAddressLinks()
       const authDataPinPromise = this.getAuthData()
@@ -171,9 +172,15 @@ class Replicator {
   }
 
   async _loadKeyValueStore (odbAddress) {
-    const store = await this._orbitdb.keyvalue(odbAddress, ODB_STORE_OPTS)
-    await store.load()
-    this._stores[odbAddress] = store
+    if (!this._storePromises[odbAddress]) {
+      this._storePromises[odbAddress] = new Promise((resolve, reject) => {
+        this._orbitdb.keyvalue(odbAddress, ODB_STORE_OPTS).then(store => {
+          store.load().then(() => { resolve(store) })
+        })
+      })
+    }
+    this._stores[odbAddress] = await this._storePromises[odbAddress]
+    return this._stores[odbAddress]
   }
 
   async getStore (odbAddress) {
@@ -185,7 +192,7 @@ class Replicator {
   }
 
   _listStoreEntries () {
-    const entries = this.rootstore.iterator({ limit: -1 }).collect().filter(e => OrbitDB.isValidAddress(e.payload.value.odbAddress))
+    const entries = this.rootstore.iterator({ limit: -1 }).collect().filter(e => OrbitDB.isValidAddress(e.payload.value.odbAddress || ''))
     const uniqueEntries = entries.filter((e1, i, a) => {
       return a.findIndex(e2 => e2.payload.value.odbAddress === e1.payload.value.odbAddress) === i
     })
@@ -220,10 +227,14 @@ class Replicator {
     return Promise.all(resolveLinks)
   }
 
+  get _pinningNodePeerId () {
+    return this._pinningNode.split('/').pop()
+  }
+
   async ensureConnected (odbAddress) {
     const isThread = odbAddress.includes('thread')
     const roomPeers = await this.ipfs.pubsub.peers(odbAddress)
-    if (!roomPeers.find(p => p === this._pinningNode.split('/').pop())) {
+    if (!roomPeers.find(p => p === this._pinningNodePeerId)) {
       this.ipfs.swarm.connect(this._pinningNode, () => {})
       odbAddress = isThread ? odbAddress : this.rootstore.address.toString()
       this._publishDB({ odbAddress, isThread })
@@ -235,12 +246,12 @@ class Replicator {
     // make sure that the pinning node is in the pubsub room before publishing
     const pinningNodeJoined = new Promise((resolve, reject) => {
       this.events.on('pinning-room-peer', (topic, peer) => {
-        if (peer === this._pinningNode.split('/').pop()) {
+        if (peer === this._pinningNodePeerId) {
           resolve()
         }
       })
     })
-    if (!(await this.ipfs.pubsub.peers(PINNING_ROOM)).includes(this._pinningNode)) {
+    if (!(await this.ipfs.pubsub.peers(PINNING_ROOM)).includes(this._pinningNodePeerId)) {
       await pinningNodeJoined
     }
     this._pubsub.publish(PINNING_ROOM, {

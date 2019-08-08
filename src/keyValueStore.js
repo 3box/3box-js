@@ -146,7 +146,7 @@ class KeyValueStore {
       this._db = await this._replicator.getStore(odbAddress)
     } else {
       const key = (await this._3id.getPublicKeys(this._space, true)).signingKey
-      this._db = await this._replicator.addKVStore(this._name, key, Boolean(this._space), this.DID)
+      this._db = await this._replicator.addKVStore(this._name, key, Boolean(this._space), this._3id.getSubDID(this._space))
     }
     // when this._space is undefined it will use the root identity
     const odbIdentity = await this._3id.getOdbId(this._space)

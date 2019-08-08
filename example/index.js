@@ -206,12 +206,13 @@ profileGraphQL.addEventListener('click', () => {
 })
 
 function updateProfileData(box) {
-  profileData.innerHTML = ''
   box.public.all().then(profile => {
     console.log(profile)
+    let tmpData = ''
     Object.entries(profile).map(kv => {
-      profileData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
+      tmpData += kv[0] + ': ' + kv[1] + '<br />'
     })
+    profileData.innerHTML = tmpData
   })
   updateGithubUser(box)
 }

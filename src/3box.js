@@ -82,7 +82,7 @@ class Box {
     const address = await this._3id.getAddress()
     const rootstoreAddress = address ? await this._getRootstore(address) : null
     if (rootstoreAddress) {
-      this.replicator.start(rootstoreAddress, { profile: true })
+      await this.replicator.start(rootstoreAddress, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = this.replicator.getAuthData()
       await this._3id.authenticate(null, { authData })
@@ -330,7 +330,7 @@ class Box {
       const { rootStoreAddress } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
       return rootStoreAddress
     } catch (err) {
-      if (err.message === 'root store address not found') {
+      if (err.statusCode === 404) {
         return null
       }
       throw new Error('Error while getting rootstore', err)
@@ -506,7 +506,7 @@ class Box {
   async _readAddressLinks () {
     const links = await this.replicator.getAddressLinks()
     return Promise.all(links.map(async linkObj => {
-      if (linkObj.address) {
+      if (!linkObj.address) {
         linkObj.address = await utils.recoverPersonalSign(linkObj.message, linkObj.signature)
       }
       return linkObj

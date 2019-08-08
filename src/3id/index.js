@@ -162,7 +162,8 @@ class ThreeId {
     }
   }
 
-  async authenticate (spaces = [], opts = {}) {
+  async authenticate (spaces, opts = {}) {
+    spaces = spaces || []
     if (this.idWallet) {
       const pubkeys = await this.idWallet.authenticate(spaces, opts)
       this._pubkeys.main = pubkeys.main

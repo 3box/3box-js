@@ -18,17 +18,17 @@ describe('Replicator', () => {
     ipfs2 = await testUtils.initIPFS(8)
     ipfs1MultiAddr = (await ipfs1.id()).addresses[0]
     ipfs2MultiAddr = (await ipfs2.id()).addresses[0]
-    //pubsub1 = new Pubsub(ipfs1, (await ipfs1.id()).id)
+    // pubsub1 = new Pubsub(ipfs1, (await ipfs1.id()).id)
     pubsub2 = new Pubsub(ipfs2, (await ipfs2.id()).id)
     threeId = threeIDMockFactory(testDID)
   })
 
   afterAll(async () => {
-    await testUtils.stopIPFS(ipfs1, 7)
-    await testUtils.stopIPFS(ipfs2, 8)
     await replicator1.close()
     await replicator2.close()
     await pubsub2.disconnect()
+    await testUtils.stopIPFS(ipfs1, 7)
+    await testUtils.stopIPFS(ipfs2, 8)
   })
 
   it('creates replicator correctly', async () => {
@@ -39,7 +39,7 @@ describe('Replicator', () => {
     replicator1 = await Replicator.create(ipfs1, opts)
 
     expect(await replicator1.ipfs.pubsub.ls()).toMatchSnapshot()
-    expect((await replicator1.ipfs.swarm.peers())[0].addr.toString()).toMatchSnapshot()
+    expect((await replicator1.ipfs.swarm.peers()).map(p => p.peer._idB58String)).toContain(ipfs2MultiAddr.split('/').pop())
     registerMethod('3', didResolverMock)
   })
 
@@ -59,8 +59,8 @@ describe('Replicator', () => {
     await replicator1.syncDone
     expect(replicator1.rootstore.address.toString()).toMatchSnapshot()
     await publishPromise
+    await pubsub2.unsubscribe(PINNING_ROOM)
   })
-
 
   it('adds profile KVStore correctly', async () => {
     const storeName = 'profile.public'
@@ -85,52 +85,6 @@ describe('Replicator', () => {
     expect(replicator1.listStoreAddresses()).toMatchSnapshot()
   })
 
-  it('pinningRoomFilter works as expected', async () => {
-    replicator1._pinningRoomFilter = null
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 1'})
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 2'})
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 3'})
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 4'})
-    await testUtils.delay(200)
-    replicator1._pinningRoomFilter = ['fake address 6', 'fake address 7']
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 5'})
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 6'})
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 7'})
-    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 8'})
-    await testUtils.delay(200)
-    expect(Object.keys(replicator1._hasPubsubMsgs).length).toEqual(6)
-    pubsub2.unsubscribe(PINNING_ROOM)
-    replicator1._pinningRoomFilter = []
-  })
-
-  it('ensureConnected works as expected for store', async () => {
-    const publishPromise = new Promise((resolve, reject) => {
-      pubsub2.subscribe(PINNING_ROOM, (topic, data) => {
-        expect(data).toMatchSnapshot()
-        resolve()
-      }, () => {})
-    })
-    let peer = (await ipfs2.swarm.addrs())[0]
-    await ipfs2.swarm.disconnect(peer)
-    await replicator1.ensureConnected('fake address store')
-    await publishPromise
-    pubsub2.unsubscribe(PINNING_ROOM)
-  })
-
-  it('ensureConnected works as expected for thread', async () => {
-    const publishPromise = new Promise((resolve, reject) => {
-      pubsub2.subscribe(PINNING_ROOM, (topic, data) => {
-        expect(data).toMatchSnapshot()
-        resolve()
-      }, () => {})
-    })
-    let peer = (await ipfs2.swarm.addrs())[0]
-    await ipfs2.swarm.disconnect(peer)
-    await replicator1.ensureConnected('fake address thread')
-    await publishPromise
-    pubsub2.unsubscribe(PINNING_ROOM)
-  })
-
   it('replicates 3box on start, without stores', async () => {
     const opts = {
       pinningNode: ipfs1MultiAddr,
@@ -141,10 +95,7 @@ describe('Replicator', () => {
     const rootstoreAddress = replicator1.rootstore.address.toString()
     const rootstoreNumEntries = replicator1.rootstore._oplog._length
     await replicator2.start(rootstoreAddress)
-    replicator1.events.on('pinning-room-message', (topic, data) => {
-      replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
-      replicator1.events.removeAllListeners('pinning-room-message')
-    })
+    replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
     await replicator2.rootstoreSyncDone
     await replicator2.syncDone
     expect(replicator2.listStoreAddresses()).toEqual(replicator1.listStoreAddresses())
@@ -172,11 +123,8 @@ describe('Replicator', () => {
     await addProfilePromise
     const pubStoreNumEntries = replicator1._stores[pubStoreAddr]._oplog._length
     await replicator2.start(rootstoreAddress, { profile: true })
-    replicator1.events.on('pinning-room-message', (topic, data) => {
-      replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
-      replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: pubStoreAddr, numEntries: pubStoreNumEntries })
-      replicator1.events.removeAllListeners('pinning-room-message')
-    })
+    replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
+    replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: pubStoreAddr, numEntries: pubStoreNumEntries })
     await replicator2.rootstoreSyncDone
     await replicator2.syncDone
     expect(replicator2._stores[pubStoreAddr]).toBeDefined()
@@ -216,5 +164,52 @@ describe('Replicator', () => {
     const pinnedCIDs = (await ipfs1.pin.ls()).map(pin => pin.hash)
     expect(pinnedCIDs.includes(cid1)).toBeTruthy()
     expect(pinnedCIDs.includes(cid2)).toBeTruthy()
+  })
+
+  it('pinningRoomFilter works as expected', async () => {
+    await new Promise((resolve, reject) => pubsub2.subscribe(PINNING_ROOM, () => {}, resolve))
+    replicator1._pinningRoomFilter = null
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 1'})
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 2'})
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 3'})
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 4'})
+    await testUtils.delay(200)
+    replicator1._pinningRoomFilter = ['fake address 6', 'fake address 7']
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 5'})
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 6'})
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 7'})
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 8'})
+    await testUtils.delay(200)
+    expect(Object.keys(replicator1._hasPubsubMsgs).length).toEqual(6)
+    await pubsub2.unsubscribe(PINNING_ROOM)
+    replicator1._pinningRoomFilter = []
+  })
+
+  it('ensureConnected works as expected for store', async () => {
+    let peer = (await ipfs2.swarm.addrs())[0]
+    await ipfs2.swarm.disconnect(peer)
+    await testUtils.delay(1000)
+    await replicator1.ensureConnected('fake address store')
+    await new Promise((resolve, reject) => {
+      pubsub2.subscribe(PINNING_ROOM, (topic, data) => {
+        expect(data).toMatchSnapshot()
+        resolve()
+      }, () => {})
+    })
+    pubsub2.unsubscribe(PINNING_ROOM)
+  })
+
+  it('ensureConnected works as expected for thread', async () => {
+    let peer = (await ipfs2.swarm.addrs())[0]
+    await ipfs2.swarm.disconnect(peer)
+    await testUtils.delay(1000)
+    await replicator1.ensureConnected('fake address thread')
+    await new Promise((resolve, reject) => {
+      pubsub2.subscribe(PINNING_ROOM, (topic, data) => {
+        expect(data).toMatchSnapshot()
+        resolve()
+      }, () => {})
+    })
+    pubsub2.unsubscribe(PINNING_ROOM)
   })
 })

@@ -175,6 +175,12 @@ module.exports = {
     const apiFilePath = CONFS[useAltConf].repo + 'api'
     fs.closeSync(fs.openSync(apiFilePath, 'w'))
     await ipfs.stop()
+    //return new Promise((resolve, reject) => {
+      //ipfs.stop(err => {
+        //console.log('e', err)
+        //resolve()
+      //})
+    //})
   },
   delay: millisecs => new Promise((resolve, reject) => { setTimeout(resolve, millisecs) })
 }
