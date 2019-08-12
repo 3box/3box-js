@@ -102,7 +102,12 @@ jest.mock('../replicator', () => {
         new: jest.fn(),
         stop: jest.fn()
       }
-    })
+    }),
+    entryTypes: {
+      SPACE: 'space',
+      ADDRESS_LINK: 'address-link',
+      AUTH_DATA: 'auth-data'
+    }
   }
 })
 

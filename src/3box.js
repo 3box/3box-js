@@ -98,6 +98,12 @@ class Box {
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
     this.syncDone = this.replicator.syncDone
 
+    if (this._3id.idWallet) {
+      this._3id.idWallet.events.on('new-auth-method', authData => {
+        this._writeRootstoreEntry(Replicator.entryTypes.AUTH_DATA, authData)
+      })
+    }
+
     this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
     await Promise.all([
@@ -247,8 +253,8 @@ class Box {
   /**
    * Opens the 3Box associated with the given address
    *
-   * @param     {String}            address                 An ethereum address
-   * @param     {ethereumProvider}  ethereumProvider        An ethereum provider
+   * @param     {String | IdentityWallet}   addrOrIdW           An ethereum address, or [IdentityWallet](https://github.com/3box/identity-wallet-js/) instance
+   * @param     {ethereumProvider}          ethereumProvider    An ethereum provider
    * @param     {Object}            opts                    Optional parameters
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
@@ -257,10 +263,15 @@ class Box {
    * @param     {String}            opts.contentSignature   A signature, provided by a client of 3box using the private keys associated with the given address, of the 3box consent message
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts = {}) {
+  static async openBox (addrOrIdW, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
     const ipfs = await Box.getIPFS(opts)
-    const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, ipfs, opts)
+    let _3id
+    if (typeof addrOrIdW === 'string') {
+      _3id = await ThreeId.getIdFromEthAddress(addrOrIdW, ethereumProvider, ipfs, opts)
+    } else {
+      _3id = await ThreeId.getIdFromIdentityWallet(addrOrIdW, ipfs, opts)
+    }
     const box = new Box(_3id, ethereumProvider, ipfs, opts)
     await box._load(opts)
     return box
@@ -354,7 +365,7 @@ class Box {
    */
   async linkAddress (link = {}) {
     if (link.proof) {
-      await this._writeAddressLink(link.proof)
+      await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, link.proof)
       return
     }
     if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
@@ -461,7 +472,7 @@ class Box {
       }
 
       try {
-        await this._writeAddressLink(linkData)
+        await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, linkData)
       } catch (err) {
         throw new Error('An error occured while publishing link:', err)
       }
@@ -486,23 +497,23 @@ class Box {
     }
   }
 
-  async _writeAddressLink (proof) {
-    const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
-    await this._ipfs.pin.add(data)
-    const linkExist = await this._linkCIDExists(data)
+  async _writeRootstoreEntry (type, payload) {
+    const cid = (await this._ipfs.dag.put(payload)).toBaseEncodedString()
+    await this._ipfs.pin.add(cid)
+    const linkExist = await this._typeCIDExists(type, cid)
     if (linkExist) return
     const link = {
-      type: 'address-link',
-      data
+      type,
+      data: cid
     }
     await this.replicator.rootstore.add(link)
     await utils.fetchJson(this._serverUrl + '/link', proof)
   }
 
-  async _linkCIDExists (cid) {
+  async _typeCIDExists (type, cid) {
     const entries = await this.replicator.rootstore.iterator({ limit: -1 }).collect()
-    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
-    return linkEntries.find(entry => entry.data === cid)
+    const typeEntries = entries.filter(e => e.payload.value.type === type)
+    return Boolean(typeEntries.find(entry => entry.data === cid))
   }
 
   async _deleteAddressLink (address) {
