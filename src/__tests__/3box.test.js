@@ -12,6 +12,7 @@ AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessCo
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
 registerMethod('3', didResolverMock)
+registerMethod('muport', didResolverMock)
 
 const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
 const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
@@ -35,18 +36,19 @@ jest.mock('../3id', () => {
     const instance = threeIDMockFactory(did)
     const extend = {
       muportDID: did.replace('3', 'muport'),
-      getAddress: async () => managementKey,
+      getAddress: jest.fn(async () => managementKey),
       logout: logoutFn,
       // muportFingerprint: managementKey === '0x12345' ? 'b932fe7ab' : 'ab8c73d8f',
       muportFingerprint: randomStr(),
+      authenticate: jest.fn(),
       getDidDocument: () => { return { managementKey } },
     }
     return Object.assign(instance, extend)
   }
   return {
     getIdFromEthAddress: jest.fn((address, ethProv, ipfs, { consentCallback }) => {
-      // const did = address === '0x12345' ? DID1 : DID2
-      const did = `did:3:${randomStr()}`
+      const did = address === '0x12345' ? DID1 : DID2
+      //const did = `did:3:${randomStr()}`
       return instance(did, address)
     }),
     logoutFn,
@@ -81,12 +83,35 @@ jest.mock('../space', () => {
     }
   })
 })
+jest.mock('../replicator', () => {
+  return {
+    create: jest.fn(async () => {
+      return {
+        start: jest.fn(),
+        rootstoreSyncDone: Promise.resolve(),
+        syncDone: Promise.resolve(),
+        getAuthData: jest.fn(() => []),
+        getAddressLinks: jest.fn(() => []),
+        rootstore: {
+          setIdentity: jest.fn(),
+          add: jest.fn(),
+          iterator: () => { return { collect: () => [] } },
+          address: { toString: () => '/orbitdb/asdf/rootstore-address' },
+          remove: jest.fn()
+        },
+        new: jest.fn(),
+        stop: jest.fn()
+      }
+    })
+  }
+})
 
 
 jest.mock('../utils/verifier')
 jest.mock('../utils/index', () => {
   const actualUtils = jest.requireActual('../utils/index')
   const sha256 = require('js-sha256').sha256
+  const { verifyJWT } = require('did-jwt')
   let addressMap = {}
   let linkmap = {}
   let linkNum = 0
@@ -100,11 +125,11 @@ jest.mock('../utils/index', () => {
       let x, hash, did
       switch (lastPart) {
         case 'odbAddress': // put odbAddress
-          [x, hash, did] = body.address_token.split(',')
-          addressMap[did] = hash
-          return { status: 'success', data: { hash } }
+          const payload = (await verifyJWT(body.address_token)).payload
+          addressMap[payload.iss] = payload.rootStoreAddress
+          return { status: 'success', data: {} }
         case 'link': // make a link
-          if (linkNum < 3) {
+          if (linkNum < 2) {
             linkNum += 1
             return Promise.reject('{ status: "error", message: "an error" }')
           } else {
@@ -128,7 +153,7 @@ jest.mock('../utils/index', () => {
           } else if (addressMap[linkmap[lastPart]]) {
             return { status: 'success', data: { rootStoreAddress: addressMap[linkmap[lastPart]] } }
           } else {
-            throw '{"status": "error", "message": "root store address not found"}'
+            throw {"statusCode": 404, "message": "root store address not found"}
           }
       }
     }),
@@ -189,7 +214,6 @@ describe('3Box', () => {
       iframeStore: false,
       pinningNode: ipfsMultiAddr
     }
-
   })
 
   beforeEach(async () => {
@@ -203,40 +227,31 @@ describe('3Box', () => {
     await testUtils.stopIPFS(ipfsBox, 1)
   })
 
-  it('should openBox correctly', async () => {
+  it('should openBox correctly with normal auth flow, for new accounts', async () => {
     const addr = '0x12345'
     const prov = 'web3prov'
     const consentCallback = jest.fn()
     const opts = { ...boxOpts, consentCallback }
     const box = await Box.openBox(addr, prov, opts)
 
-    const publishPromise = new Promise((resolve, reject) => {
-      pubsub.subscribe('3box-pinning', (topic, data) => {
-        expect(data.odbAddress).toEqual(box._rootStore.address.toString())
-        resolve()
-      }, () => {})
-    })
-
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
+    expect(box.replicator).toBeDefined()
+    expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
+    expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
+    expect(box.replicator.start).toHaveBeenCalledTimes(0)
+    expect(box.replicator.new).toHaveBeenCalledTimes(1)
+    expect(box.replicator.rootstore.setIdentity).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledWith()
     expect(box.private._load).toHaveBeenCalledTimes(1)
     expect(box.private._load).toHaveBeenCalledWith()
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
-    await publishPromise
-
-    const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
-    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
-    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
-    const rootStoreAddress = box._rootStore.address.toString()
-    pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: rootStoreAddress, numEntries: 0 })
-    await syncPromise
-    await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress')
-    expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[0][1].address_token).payload.rootStoreAddress).toEqual(rootStoreAddress)
-
-    pubsub.unsubscribe('3box-pinning')
+    await box.syncDone
+    //await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
+    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
+    expect(mockedUtils.fetchJson.mock.calls[1][0]).toEqual('address-server/odbAddress')
+    expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[1][1].address_token).payload.rootStoreAddress).toEqual('/orbitdb/asdf/rootstore-address')
     await box.close()
   })
 
@@ -295,71 +310,24 @@ describe('3Box', () => {
   //   await box2.close()
   // })
 
-  it('should open spaces correctly', async () => {
-    const box = await Box.openBox('0x12345','web3prov', boxOpts)
-
-    clearMocks()
-
-    global.console.error = jest.fn()
-    let space1 = await box.openSpace('name1', {})
-    expect(space1._name).toEqual('name1')
-    expect(space1.open).toHaveBeenCalledWith(expect.any(Object))
-    let opts = { onSyncDone: jest.fn() }
-    let space2 = await box.openSpace('name1', opts)
-    expect(space1).toEqual(space2)
-    expect(opts.onSyncDone).toHaveBeenCalledTimes(1)
-    // TODO why opening two spaces causes problem????
-    // let space3 = await box.openSpace('name2', 'myOpts')
-    // expect(box.spaces).toEqual({
-    //   name1: space1,
-    //   name2: space3
-    // })
-
-    await box.close()
-  })
-
-  it.skip('ensurePinningNodeConnected should not do anything if already connected to given pubsub room', async () => {
-    // TODO - can't get this test to work. Not sure what changed.
-    // Anyway the 3box client thinks it's connected to the ipfs node
-    // in the test, while the test thinks it's not connected to the client
-    const publishPromise = new Promise((resolve, reject) => {
-      pubsub.subscribe('3box-pinning', (topic, data) => {
-        expect(data.odbAddress).toEqual('/orbitdb/QmdmiLpbTca1bbYaTHkfdomVNUNK4Yvn4U1nTCYfJwy6Pn/b932fe7ab.root')
-        resolve()
-      }, () => {})
-    })
-    const peers = (await ipfs.swarm.peers())// [0].addr
-    await Promise.all(peers.map(async peer => {
-      await ipfs.swarm.disconnect(peer.addr)
-    }))
-    expect((await ipfs.swarm.peers()).length).toEqual(0)
-    await box._ensurePinningNodeConnected('non existant pubsub room')
-    await publishPromise
-    expect((await ipfs.swarm.peers()).length).toEqual(1)
-    pubsub.unsubscribe('3box-pinning')
-  })
-
   it('should handle error and not link profile on first call to _linkProfile', async () => {
     const box = await Box.openBox('0x12345','web3prov', boxOpts)
     const didMuPort = box._3id.muportDID
-    const did = box._3id.DID
     clearMocks()
 
     // first two calls in our mock will throw an error
     box.public.get = jest.fn()
-    global.console.error = jest.fn()
+    //global.console.error = jest.fn()
     box.public.set.mockClear()
-    await box._linkProfile()
+    await expect(box._linkProfile()).rejects.toMatchSnapshot()
 
     expect(box.public.set).toHaveBeenCalledTimes(1) //  proof
+    expect(box.replicator.rootstore.add).toHaveBeenCalledTimes(1) //  proof
 
     // It will check the self-signed did
     expect(box.public.get).toHaveBeenNthCalledWith(1, 'proof_did')
-    // expect(box.public.set).toHaveBeenNthCalledWith(1, 'proof_did', 'veryJWT,did:muport:Qmsdfp98yw4t7', { noLink: true })
     expect(box.public.set.mock.calls[0][0]).toEqual('proof_did')
-    expect(didJWT.decodeJWT(box.public.set.mock.calls[0][1]).payload.iss).toEqual(did)
-    await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
-    expect(global.console.error).toHaveBeenCalledTimes(1)
+    expect(didJWT.decodeJWT(box.public.set.mock.calls[0][1]).payload.iss).toEqual(didMuPort)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
       message: `I agree to stuff,${didMuPort}`,
@@ -369,12 +337,11 @@ describe('3Box', () => {
       version: 1,
     })
     expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
-
     await box.close()
   })
 
   it('should not call getLinkConsent if ethereum_proof in rootStore on call to _linkProfile', async () => {
-    const boxWithLinks = await Box.openBox('0xabcdef', 'web3prov', boxOpts)
+    const boxWithLinks = await Box.openBox('0x12345', 'web3prov', boxOpts)
     clearMocks()
 
     boxWithLinks.public.get = jest.fn((key) => {
@@ -395,10 +362,7 @@ describe('3Box', () => {
     // first two calls in our mock will throw an error
     boxWithLinks.public.set.mockClear()
 
-    global.console.error = jest.fn()
-    await boxWithLinks._linkProfile()
-    await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
-    expect(global.console.error).toHaveBeenCalledTimes(1)
+    await expect(boxWithLinks._linkProfile()).rejects.toMatchSnapshot()
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     // TODO now hwy this second clal as expected??
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
@@ -413,7 +377,6 @@ describe('3Box', () => {
 
     await boxWithLinks.close()
   })
-
 
   it('should link profile on call to _linkProfile', async () => {
     const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
@@ -437,96 +400,70 @@ describe('3Box', () => {
     await box.close()
   })
 
-  it('should not recompute link data for profile on second call to _linkProfile', async () => {
-    const boxWithLinks = await Box.openBox('0xabcde', 'web3prov', boxOpts)
+  it('should openBox correctly with normal auth flow, for existing accounts', async () => {
+    const addr = '0x12345'
+    const prov = 'web3prov'
+    const consentCallback = jest.fn()
+    const opts = { ...boxOpts, consentCallback }
+    const box = await Box.openBox(addr, prov, opts)
 
-    const didMuPort = boxWithLinks._3id.muportDID
-    clearMocks()
-
-    boxWithLinks.public.get = jest.fn((key) => {
-      if (key === 'proof_did') return 'proof-did'
-      return null
-    })
-
-    boxWithLinks._readAddressLink = jest.fn(() => {
-      return {
-        message: `I agree to stuff,${didMuPort}`,
-        signature: "0xSuchRealSig,0x12345",
-        timestamp: 111,
-        type: "ethereum-eoa",
-        version: 1,
-      }
-    })
-
-    boxWithLinks.public.set.mockClear()
-    boxWithLinks.public.get
-      .mockImplementationOnce(x => {
-        if (x === 'proof_did') {
-          return Promise.resolve('thisissomeproof')
-        } else {
-          throw new Error('Mock invalid')
-        }
-      })
-
-    await boxWithLinks._linkProfile()
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(0) // do not recompute
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1) // do re-link the profile
-    expect(boxWithLinks.public.set).toHaveBeenCalledTimes(0) // do no update data we already know
-
-    await boxWithLinks.close()
-  })
-
-  it('should handle a second address/account correctly', async () => {
-    const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
-    await box.close()
-    clearMocks()
-
-    const box2 = await Box.openBox('0xabcde', 'web3prov', boxOpts)
-    const didMuPort2 = box2._3id.muportDID
-
-    const publishPromise = new Promise((resolve, reject) => {
-      pubsub.subscribe('3box-pinning', (topic, data) => {
-        expect(data.odbAddress).toEqual(box2._rootStore.address.toString())
-        resolve()
-      }, () => {})
-    })
-
-    expect(box2.public._load).toHaveBeenCalledTimes(1)
-    expect(box2.public._load).toHaveBeenCalledWith()
-    expect(box2.private._load).toHaveBeenCalledTimes(1)
-    expect(box2.private._load).toHaveBeenCalledWith()
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith('0xabcde', 'web3prov', boxOpts.ipfs, boxOpts)
-
-    await box2._linkProfile()
-    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/link', {
-      message: `I agree to stuff,${didMuPort2}`,
-      signature: "0xSuchRealSig,0xabcde",
-      timestamp: 111,
-      type: "ethereum-eoa",
-      version: 1,
-    })
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
-    await publishPromise
-    pubsub.unsubscribe('3box-pinning')
-    box2.close()
-  })
-
-  it.skip('should getProfile correctly (when profile API is not used)', async () => {
-    // Disabled this for now. I don't think the way we get profiles
-    // though orbitdb right now makes sense anyway. In the future
-    // we propbably want to have a stateful api for getting and following
-    // other users.
-    await box._rootStore.drop()
-    // awaitbox2._ruotStore.drop()
-    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
-    expect(profile).toEqual({
-      name: 'oed',
-      image: 'an awesome selfie'
-    })
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
+    expect(box.replicator).toBeDefined()
+    expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress/0x12345')
+    expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
+    expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
+    expect(box._3id.authenticate).toHaveBeenCalledWith(null, { authData: [] })
+    expect(box.replicator.start).toHaveBeenCalledTimes(1)
+    expect(box.replicator.start).toHaveBeenCalledWith('/orbitdb/asdf/rootstore-address', { profile: true })
+    expect(box.replicator.new).toHaveBeenCalledTimes(0)
+    expect(box.public._load).toHaveBeenCalledTimes(1)
+    expect(box.public._load).toHaveBeenCalledWith()
+    expect(box.private._load).toHaveBeenCalledTimes(1)
+    expect(box.private._load).toHaveBeenCalledWith()
+    await box.syncDone
+    await box.close()
   })
+
+  it('should open spaces correctly', async () => {
+    const box = await Box.openBox('0x12345','web3prov', boxOpts)
+
+    clearMocks()
+
+    global.console.error = jest.fn()
+    let space1 = await box.openSpace('name1', {})
+    expect(space1._name).toEqual('name1')
+    expect(space1.open).toHaveBeenCalledWith(expect.any(Object))
+    let opts = { onSyncDone: jest.fn() }
+    let space2 = await box.openSpace('name1', opts)
+    expect(space1).toEqual(space2)
+    expect(opts.onSyncDone).toHaveBeenCalledTimes(1)
+    // TODO why opening two spaces causes problem????
+     let space3 = await box.openSpace('name2', 'myOpts')
+     expect(box.spaces).toEqual({
+       name1: space1,
+       name2: space3
+     })
+
+    await box.close()
+  })
+
+  //it.skip('should getProfile correctly (when profile API is not used)', async () => {
+    //// Disabled this for now. I don't think the way we get profiles
+    //// though orbitdb right now makes sense anyway. In the future
+    //// we propbably want to have a stateful api for getting and following
+    //// other users.
+    //await box._rootStore.drop()
+    //// awaitbox2._ruotStore.drop()
+    //const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
+    //expect(profile).toEqual({
+      //name: 'oed',
+      //image: 'an awesome selfie'
+    //})
+    //expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
+    //expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress/0x12345')
+  //})
 
   it('should get profile (when API is used)', async () => {
     delete boxOpts.useCacheService
@@ -568,15 +505,6 @@ describe('3Box', () => {
     await box.close()
   })
 
-  it.skip('should getProfile correctly when profile API is not used and box is not open', async () => {
-    const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
-    expect(profile).toEqual({
-      name: 'oed',
-      image: 'an awesome selfie'
-    })
-    expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress/0x12345')
-  })
-
   it('should verify profiles correctly', async () => {
     const profile = {
       proof_did: 'some proof',
@@ -608,6 +536,10 @@ describe('3Box', () => {
 
   describe('verify eth', () => {
     let verifier = jest.requireActual('../utils/verifier')
+    // re register mock resolvers, as the real ones are registered in verifier module
+    registerMethod('3', didResolverMock)
+    registerMethod('muport', didResolverMock)
+
 
     const ethProof = {
       consent_msg: 'Create a new 3Box profile\n\n- \nYour unique profile ID is did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr',

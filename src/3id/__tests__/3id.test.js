@@ -20,6 +20,7 @@ jest.mock('../../utils/index', () => {
     unpad: x => x
   }
 })
+jest.mock('ipfs-mini')
 
 const STORAGE_KEY = 'serialized3id_'
 const clearLocalStorage3id = (address) => {

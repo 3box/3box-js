@@ -1,0 +1,95 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Replicator adds profile KVStore correctly 1`] = `
+Array [
+  "/orbitdb/Qmc9TAZsvErKmn2CnMFjcDeyeTyK3uJwXYGs5ZdNuE5u4k/profile.public",
+]
+`;
+
+exports[`Replicator adds profile KVStore correctly 2`] = `
+Array [
+  "/orbitdb/Qmc9TAZsvErKmn2CnMFjcDeyeTyK3uJwXYGs5ZdNuE5u4k/profile.public",
+]
+`;
+
+exports[`Replicator adds profile KVStore correctly 3`] = `
+Array [
+  "/orbitdb/Qmc9TAZsvErKmn2CnMFjcDeyeTyK3uJwXYGs5ZdNuE5u4k/profile.public",
+]
+`;
+
+exports[`Replicator adds space KVStore correctly 1`] = `
+Array [
+  "/orbitdb/Qmc9TAZsvErKmn2CnMFjcDeyeTyK3uJwXYGs5ZdNuE5u4k/profile.public",
+  "/orbitdb/QmVjm9hL6xjcFHcZ9cHt4tcoKLJLyPEHB7WM5CEsJET3GN/3box.space.namey.keyvalue",
+]
+`;
+
+exports[`Replicator adds space KVStore correctly 2`] = `
+Array [
+  "/orbitdb/Qmc9TAZsvErKmn2CnMFjcDeyeTyK3uJwXYGs5ZdNuE5u4k/profile.public",
+  "/orbitdb/QmVjm9hL6xjcFHcZ9cHt4tcoKLJLyPEHB7WM5CEsJET3GN/3box.space.namey.keyvalue",
+]
+`;
+
+exports[`Replicator adds space KVStore correctly 3`] = `
+Array [
+  "/orbitdb/Qmc9TAZsvErKmn2CnMFjcDeyeTyK3uJwXYGs5ZdNuE5u4k/profile.public",
+  "/orbitdb/QmVjm9hL6xjcFHcZ9cHt4tcoKLJLyPEHB7WM5CEsJET3GN/3box.space.namey.keyvalue",
+]
+`;
+
+exports[`Replicator creates replicator correctly 1`] = `
+Array [
+  "3box-pinning",
+]
+`;
+
+exports[`Replicator ensureConnected works as expected for store 1`] = `
+Object {
+  "odbAddress": "/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root",
+  "thread": false,
+  "type": "PIN_DB",
+}
+`;
+
+exports[`Replicator ensureConnected works as expected for thread 1`] = `
+Object {
+  "odbAddress": "fake address thread",
+  "thread": true,
+  "type": "SYNC_DB",
+}
+`;
+
+exports[`Replicator getAddressLinks returns correct entries and pins data 1`] = `
+Array [
+  Object {
+    "much": "data",
+  },
+  Object {
+    "more": "bits",
+  },
+]
+`;
+
+exports[`Replicator getAuthData 1`] = `
+Array [
+  Object {
+    "ciphertext": "onezero",
+  },
+  Object {
+    "ciphertext": "bits",
+  },
+]
+`;
+
+exports[`Replicator new rootstore created 1`] = `"/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root"`;
+
+exports[`Replicator new rootstore created 2`] = `"/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root"`;
+
+exports[`Replicator replicates 3box on start, with profile 1`] = `
+Object {
+  "emoji": ";P",
+  "name": "asdfasdf",
+}
+`;

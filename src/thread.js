@@ -16,13 +16,12 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (orbitdb, name, threeId, members, firstModerator, subscribe, ensureConnected) {
-    this._orbitdb = orbitdb
+  constructor (name, replicator, threeId, members, firstModerator, subscribe) {
     this._name = name
+    this._replicator = replicator
     this._spaceName = name.split('.')[2]
     this._3id = threeId
     this._subscribe = subscribe
-    this._ensureConnected = ensureConnected
     this._queuedNewPosts = []
     this._members = Boolean(members)
     this._firstModerator = firstModerator || this._3id.getSubDID(this._spaceName)
@@ -37,7 +36,7 @@ class Thread {
   async post (message) {
     this._requireLoad()
     this._subscribe(this._address, { firstModerator: this._firstModerator, members: this._members, name: this._name })
-    this._ensureConnected(this._address, true)
+    this._replicator.ensureConnected(this._address, true)
     const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
     return this._db.add({
       message,
@@ -51,7 +50,7 @@ class Thread {
 
   async _getThreadAddress () {
     await this._initConfigs()
-    const address = (await this._orbitdb._determineAddress(this._name, 'feed', {
+    const address = (await this._replicator._orbitdb._determineAddress(this._name, 'feed', {
       accessController: this._accessController
     }, false)).toString()
     this._address = address
@@ -183,14 +182,14 @@ class Thread {
   async _load (odbAddress) {
     await this._initConfigs()
     const identity = this._identity
-    this._db = await this._orbitdb.feed(odbAddress || this._name, {
+    this._db = await this._replicator._orbitdb.feed(odbAddress || this._name, {
       ...ORBITDB_OPTS,
       identity,
       accessController: this._accessController
     })
     await this._db.load()
     this._address = this._db.address.toString()
-    this._ensureConnected(this._address, true)
+    this._replicator.ensureConnected(this._address, true)
     return this._address
   }
 

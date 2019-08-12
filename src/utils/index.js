@@ -107,7 +107,7 @@ module.exports = {
     if (r.ok) {
       return r.json()
     } else {
-      throw HTTPError(r.status, `Invalid response (${r.status}) for query at ${url}`)
+      throw HTTPError(r.status, (await r.json()).message)
     }
   },
 

@@ -13,13 +13,15 @@ const STORE_NAME = '09ab7cd93f9e.public'
 const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
 const THREEID_MOCK = threeIDMockFactory(DID1)
 
-registerMethod('3', didResolverMock)
+const config = require('../config')
+const ORBITDB_OPTS = config.orbitdb_options
 
-const ensureConnected = jest.fn()
+registerMethod('3', didResolverMock)
 
 describe('KeyValueStore', () => {
   let ipfs
   let orbitdb
+  let replicatorMock
   let keyValueStore
   let storeAddr
   jest.setTimeout(20000)
@@ -34,11 +36,40 @@ describe('KeyValueStore', () => {
         identityKeysPath: './tmp/odbIdentityKeys'
       })
     })
-    keyValueStore = new KeyValueStore(orbitdb, STORE_NAME, ensureConnected, THREEID_MOCK)
+    const kvstores = []
+    let store
+    replicatorMock = {
+      ensureConnected: jest.fn(),
+      syncDB: jest.fn(),
+      listStoreAddresses: jest.fn(() => {
+        return kvstores
+      }),
+      getStore: jest.fn(async odbAddress => {
+        return store
+      }),
+      addKVStore: jest.fn(async (name, key, isSpace, did) => {
+        const opts = {
+          ...ORBITDB_OPTS,
+          format: 'dag-pb',
+          accessController: {
+            write: [key],
+            type: 'legacy-ipfs-3box',
+            skipManifest: true
+          }
+        }
+        store = await orbitdb.keyvalue(name, opts)
+        kvstores.push(store.address.toString())
+        return store
+      })
+    }
+    keyValueStore = new KeyValueStore(STORE_NAME, replicatorMock, THREEID_MOCK)
   })
 
   beforeEach(() => {
-    ensureConnected.mockClear()
+    replicatorMock.ensureConnected.mockClear()
+    replicatorMock.listStoreAddresses.mockClear()
+    replicatorMock.getStore.mockClear()
+    replicatorMock.addKVStore.mockClear()
   })
 
   it('should throw if not synced', async () => {
@@ -52,27 +83,40 @@ describe('KeyValueStore', () => {
     storeAddr = await keyValueStore._load()
     expect(storeAddr.split('/')[3]).toEqual(STORE_NAME)
     expect(keyValueStore._db.all).toEqual({})
+    expect(replicatorMock.listStoreAddresses).toHaveBeenCalledTimes(1)
+    expect(replicatorMock.addKVStore).toHaveBeenCalledTimes(1)
+    expect(replicatorMock.getStore).toHaveBeenCalledTimes(0)
+  })
+
+  it('should start with existing db if in replicator on load', async () => {
+    storeAddr = await keyValueStore._load()
+    expect(storeAddr.split('/')[3]).toEqual(STORE_NAME)
+    expect(keyValueStore._db.all).toEqual({})
+    expect(replicatorMock.listStoreAddresses).toHaveBeenCalledTimes(1)
+    expect(replicatorMock.addKVStore).toHaveBeenCalledTimes(0)
+    expect(replicatorMock.getStore).toHaveBeenCalledTimes(1)
+    expect(replicatorMock.getStore).toHaveBeenCalledWith(keyValueStore._db.address.toString())
   })
 
   it('should set and get values correctly', async () => {
     await keyValueStore.set('key1', 'value1')
     expect(await keyValueStore.get('key1')).toEqual('value1')
-    expect(ensureConnected).toHaveBeenCalledTimes(1)
+    expect(replicatorMock.ensureConnected).toHaveBeenCalledTimes(1)
 
     await keyValueStore.set('key2', 'lalalla')
     expect(await keyValueStore.get('key2')).toEqual('lalalla')
-    expect(ensureConnected).toHaveBeenCalledTimes(2)
+    expect(replicatorMock.ensureConnected).toHaveBeenCalledTimes(2)
 
     await keyValueStore.set('key3', '12345')
     expect(await keyValueStore.get('key3')).toEqual('12345')
-    expect(ensureConnected).toHaveBeenCalledTimes(3)
+    expect(replicatorMock.ensureConnected).toHaveBeenCalledTimes(3)
   })
 
   it('should set and get multiple values correctly', async () => {
     await keyValueStore.setMultiple(['key4', 'key5'], ['yoyo', 'ma'])
     expect(await keyValueStore.get('key4')).toEqual('yoyo')
     expect(await keyValueStore.get('key5')).toEqual('ma')
-    expect(ensureConnected).toHaveBeenCalledTimes(1)
+    expect(replicatorMock.ensureConnected).toHaveBeenCalledTimes(1)
   })
 
   it('should set and get with metadata correctly', async () => {
@@ -102,10 +146,10 @@ describe('KeyValueStore', () => {
   it('should remove values correctly', async () => {
     await keyValueStore.remove('key3')
     expect(await keyValueStore.get('key3')).toBeUndefined()
-    expect(ensureConnected).toHaveBeenCalledTimes(1)
+    expect(replicatorMock.ensureConnected).toHaveBeenCalledTimes(1)
     await keyValueStore.remove('key2')
     expect(await keyValueStore.get('key2')).toBeUndefined()
-    expect(ensureConnected).toHaveBeenCalledTimes(2)
+    expect(replicatorMock.ensureConnected).toHaveBeenCalledTimes(2)
   })
 
   it('should throw if key not given', async () => {
@@ -118,7 +162,7 @@ describe('KeyValueStore', () => {
     let orbitdb2 = await OrbitDB.createInstance(ipfs2, {
       directory:'./tmp/orbitdb2',
     })
-    let keyValueStore2 = new KeyValueStore(orbitdb2, STORE_NAME, null, THREEID_MOCK)
+    let keyValueStore2 = new KeyValueStore(STORE_NAME, replicatorMock, THREEID_MOCK)
     let newAddr = await keyValueStore2._load()
     expect(newAddr).toEqual(storeAddr)
 
@@ -156,7 +200,7 @@ describe('KeyValueStore', () => {
     let storeNum = 0
 
     beforeEach(async () => {
-      keyValueStore = new KeyValueStore(orbitdb, 'store num' + storeNum++, () => {}, THREEID_MOCK)
+      keyValueStore = new KeyValueStore('store num' + storeNum++, replicatorMock, THREEID_MOCK)
       storeAddr = await keyValueStore._load()
       await keyValueStore.set('key1', 'value1')
       await keyValueStore.set('key2', 'lalalla')

@@ -2,7 +2,7 @@ const utils = require('./testUtils')
 const PrivateStore = require('../privateStore')
 
 const STORE_NAME = '09ab7cd93f9e.private'
-const emptyEnsureConn = () => {}
+const replicatorMock = {}
 
 jest.mock('../keyValueStore')
 
@@ -22,7 +22,7 @@ describe('PrivateStore', () => {
   }
 
   beforeAll(async () => {
-    privateStore = new PrivateStore('orbitdb instance', STORE_NAME, emptyEnsureConn, threeIdMock)
+    privateStore = new PrivateStore(STORE_NAME, replicatorMock, threeIdMock)
   })
 
   it('should encrypt and decrypt correctly', async () => {
@@ -113,7 +113,7 @@ describe('PrivateStore', () => {
   describe('log', () => {
 
     beforeEach(async () => {
-      privateStore = new PrivateStore('orbitdb instance', STORE_NAME, emptyEnsureConn, threeIdMock)
+      privateStore = new PrivateStore(STORE_NAME, replicatorMock, threeIdMock)
       const storeAddr = await privateStore._load()
       await privateStore.set('key1', 'value1')
     })
