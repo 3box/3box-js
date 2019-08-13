@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.10.6 - 2019-08-13
+* fix: Correctly encode DIDs on api calls
+
 ## v1.10.5 - 2019-08-02
 * fix: made onSyncDone logic more robust
 
