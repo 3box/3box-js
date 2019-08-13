@@ -1,7 +1,7 @@
 const graphQLRequest = require('graphql-request').request
 const utils = require('./utils/index')
 const verifier = require('./utils/verifier')
-const { isMuportDID } = require('./utils/id')
+const { isSupportedDID } = require('./utils/id')
 const config = require('./config.js')
 
 const GRAPHQL_SERVER_URL = config.graphql_server_url
@@ -17,8 +17,8 @@ async function getRootStoreAddress (identifier, serverUrl = ADDRESS_SERVER_URL) 
 async function listSpaces (address, serverUrl = PROFILE_SERVER_URL) {
   try {
     // we await explicitly here to make sure the error is catch'd in the correct scope
-    if (isMuportDID(address)) {
-      return await utils.fetchJson(serverUrl + '/list-spaces?did=' + encodeURIComponent(address))
+    if (isSupportedDID(address)) {
+      return await utils.fetchJson(serverUrl + '/list-spaces?did=' + address)
     } else {
       return await utils.fetchJson(serverUrl + '/list-spaces?address=' + encodeURIComponent(address))
     }
@@ -33,8 +33,8 @@ async function getSpace (address, name, serverUrl = PROFILE_SERVER_URL, { metada
 
   try {
     // Add first parameter: address or did
-    if (isMuportDID(address)) {
-      url = `${url}?did=${encodeURIComponent(address)}`
+    if (isSupportedDID(address)) {
+      url = `${url}?did=${address}`
     } else {
       url = `${url}?address=${encodeURIComponent(address.toLowerCase())}`
     }
@@ -100,8 +100,8 @@ async function getProfile (address, serverUrl = PROFILE_SERVER_URL, { metadata, 
 
   try {
     // Add first parameter: address or did
-    if (isMuportDID(address)) {
-      url = `${url}?did=${encodeURIComponent(address)}`
+    if (isSupportedDID(address)) {
+      url = `${url}?did=${address}`
     } else {
       url = `${url}?address=${encodeURIComponent(address.toLowerCase())}`
     }
@@ -125,7 +125,7 @@ async function getProfiles (addressArray, opts = {}) {
 
   // Split addresses on ethereum / dids
   addressArray.forEach(address => {
-    if (isMuportDID(address)) {
+    if (isSupportedDID(address)) {
       req.didList.push(address)
     } else {
       req.addressList.push(address)

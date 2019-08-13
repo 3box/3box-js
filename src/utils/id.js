@@ -6,16 +6,19 @@
  */
 const didJWT = require('did-jwt')
 const DID_MUPORT_PREFIX = 'did:muport:'
+const DID_3_PREFIX = 'did:3:'
 
 module.exports = {
   /**
    * Check whether a string is a muport did or not
    *
    * @memberOf Box.idUtils
-   * @param   {String}     address  A string containing a user profile address
-   * @return  {*|boolean}           Whether the address is a muport did or not
+   * @param   {String}     did  A string containing a user did
+   * @return  {*|boolean}           Whether the did is a supported did or not
    */
-  isMuportDID: (address) => address.startsWith(DID_MUPORT_PREFIX),
+  isSupportedDID: did => did.startsWith(DID_MUPORT_PREFIX) || did.startsWith(DID_3_PREFIX),
+  // for backwards compatibility
+  isMuportDID: did => did.startsWith(DID_MUPORT_PREFIX),
 
   /**
    * Check whether a string is a valid claim or not
