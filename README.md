@@ -295,7 +295,7 @@ idUtils.verifyClaim(claim)
     * _static_
         * [.idUtils](#Box.idUtils)
             * [.verifyClaim](#Box.idUtils.verifyClaim) ⇒ <code>Object</code>
-            * [.isMuportDID(address)](#Box.idUtils.isMuportDID) ⇒ <code>\*</code> \| <code>boolean</code>
+            * [.isSupportedDID(did)](#Box.idUtils.isSupportedDID) ⇒ <code>\*</code> \| <code>boolean</code>
             * [.isClaim(claim, opts)](#Box.idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
         * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
         * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
@@ -451,7 +451,7 @@ A module to verify & validate claims
 
 * [.idUtils](#Box.idUtils)
     * [.verifyClaim](#Box.idUtils.verifyClaim) ⇒ <code>Object</code>
-    * [.isMuportDID(address)](#Box.idUtils.isMuportDID) ⇒ <code>\*</code> \| <code>boolean</code>
+    * [.isSupportedDID(did)](#Box.idUtils.isSupportedDID) ⇒ <code>\*</code> \| <code>boolean</code>
     * [.isClaim(claim, opts)](#Box.idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
 
 <a name="Box.idUtils.verifyClaim"></a>
@@ -469,17 +469,17 @@ See https://github.com/uport-project/did-jwt/ for more details.
 | opts | <code>Object</code> | Optional parameters |
 | opts.audience | <code>string</code> | The DID of the JWT's audience |
 
-<a name="Box.idUtils.isMuportDID"></a>
+<a name="Box.idUtils.isSupportedDID"></a>
 
-##### idUtils.isMuportDID(address) ⇒ <code>\*</code> \| <code>boolean</code>
+##### idUtils.isSupportedDID(did) ⇒ <code>\*</code> \| <code>boolean</code>
 Check whether a string is a muport did or not
 
 **Kind**: static method of [<code>idUtils</code>](#Box.idUtils)  
-**Returns**: <code>\*</code> \| <code>boolean</code> - Whether the address is a muport did or not  
+**Returns**: <code>\*</code> \| <code>boolean</code> - Whether the did is a supported did or not  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | A string containing a user profile address |
+| did | <code>String</code> | A string containing a user did |
 
 <a name="Box.idUtils.isClaim"></a>
 
