@@ -1,4 +1,4 @@
-const { isMuportDID, isClaim, verifyClaim } = require('../utils/id')
+const { isSupportedDID, isClaim, verifyClaim } = require('../utils/id')
 
 const CLAIM_1 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOjE1NTQ5NzI2MDksImV4cCI6MTk1NzQ2MzQyMSwibmFtZSI6InVQb3J0IERldmVsb3BlciIsImlzcyI6ImRpZDp1cG9ydDoyb3NuZko0V3k3TEJBbTJuUEJYaXJlMVdmUW43NVJyVjZUcyJ9.e9H1ngK7Kto_Am3N9NAJWm8kj7NetGPbOoQtKw8y-C21ytj1zjDr99w63AtlFCytYkLRcHnTHSl0eByaZww5dg'
 const INVALID_CLAIM_FORMAT = '%eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOjE1NTQ5NzI2MDksImV4cCI6MTk1NzQ2MzQyMSwibmFtZSI6InVQb3J0IERldmVsb3BlciIsImlzcyI6ImRpZDp1cG9ydDoyb3NuZko0V3k3TEJBbTJuUEJYaXJlMVdmUW43NVJyVjZUcyJ9.e9H1ngK7Kto_Am3N9NAJWm8kj7NetGPbOoQtKw8y-C21ytj1zjDr99w63AtlFCytYkLRcHnTHSl0eByaZww5dg'
@@ -6,10 +6,11 @@ const EXPIRED_CLAIM = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOjE1NTQ5Nz
 
 describe('basic utils tests', () => {
   test('is muport did', () => {
-    expect(isMuportDID('abc')).toEqual(false)
-    expect(isMuportDID('did:example')).toEqual(false)
-    expect(isMuportDID('did:muport')).toEqual(false)
-    expect(isMuportDID('did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr')).toEqual(true)
+    expect(isSupportedDID('abc')).toEqual(false)
+    expect(isSupportedDID('did:example')).toEqual(false)
+    expect(isSupportedDID('did:muport')).toEqual(false)
+    expect(isSupportedDID('did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr')).toEqual(true)
+    expect(isSupportedDID('did:3:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr')).toEqual(true)
   })
 
   test('isClaim', async () => {
