@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.10.7 - 2019-08-17
+* fix: listAddressLinks now returns all links correctly
+* fix: linkAddress now sends link to address-server
+
 ## v1.10.6 - 2019-08-13
 * fix: Correctly encode DIDs on api calls
 

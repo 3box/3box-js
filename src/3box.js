@@ -633,7 +633,6 @@ class Box {
       // we can just sign an empty JWT as a proof that we own this DID
       await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
     }
-
   }
 
   async _writeAddressLink (proof) {
