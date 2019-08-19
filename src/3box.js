@@ -593,7 +593,8 @@ class Box {
       const item = Object.assign({}, entry)
       item.linkId = item.entry.hash
       delete item.entry
-      return item
+      list.push(item)
+      return list
     }, [])
   }
 
@@ -621,6 +622,10 @@ class Box {
       }
 
       await this._writeAddressLink(linkData)
+    } else {
+      // Send consentSignature to 3box-address-server to link profile with ethereum address
+      // _writeAddressLink already does this if the other conditional is called
+      utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
     }
 
     // Ensure we self-published our did
@@ -628,13 +633,11 @@ class Box {
       // we can just sign an empty JWT as a proof that we own this DID
       await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
     }
-
-    // Send consentSignature to 3box-address-server to link profile with ethereum address
-    utils.fetchJson(this._serverUrl + '/link', linkData).catch(console.error)
   }
 
   async _writeAddressLink (proof) {
     const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
+    utils.fetchJson(this._serverUrl + '/link', proof).catch(console.error)
     const linkExist = await this._linkCIDExists(data)
     if (linkExist) return
     const link = {
