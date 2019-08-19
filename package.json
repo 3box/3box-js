@@ -50,7 +50,7 @@
     "ethers": "^4.0.28",
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
-    "https-did-resolver": "^0.1.0",
+    "https-did-resolver": "^1.0.0",
     "identity-wallet": "0.1.0-beta.8",
     "ipfs": "^0.36.3",
     "ipfs-did-document": "^1.2.3",
