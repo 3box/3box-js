@@ -316,18 +316,11 @@ describe('3Box', () => {
     clearMocks()
 
     // first two calls in our mock will throw an error
-    box.public.get = jest.fn()
-    //global.console.error = jest.fn()
-    box.public.set.mockClear()
     await expect(box._linkProfile()).rejects.toMatchSnapshot()
 
-    expect(box.public.set).toHaveBeenCalledTimes(1) //  proof
     expect(box.replicator.rootstore.add).toHaveBeenCalledTimes(1) //  proof
 
     // It will check the self-signed did
-    expect(box.public.get).toHaveBeenNthCalledWith(1, 'proof_did')
-    expect(box.public.set.mock.calls[0][0]).toEqual('proof_did')
-    expect(didJWT.decodeJWT(box.public.set.mock.calls[0][1]).payload.iss).toEqual(didMuPort)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
       message: `I agree to stuff,${didMuPort}`,
