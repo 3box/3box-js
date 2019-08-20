@@ -5,14 +5,14 @@ const Room = require('ipfs-pubsub-room')
 class GhostChat extends EventEmitter {
 
   // TODO:
-  // - constructor
+  // - constructor x
   // - join logic x
   // - leave logic x
   // - message sending logic x
   // - jwt signing/decoding logic x
   // - listener logic x
-  // - backlog logic x
-  // - filter logic x
+  // - backlog logic 
+  // - filter logic
 
   /**
    * Please use **space.joinChat** to get the instance of this class
@@ -24,9 +24,8 @@ class GhostChat extends EventEmitter {
     this._room = Room(replicator.ipfs, name) // TODO: find ipfs
 
     this._backlog = new Set() // set of past messages
-    this._filter = (payload) => true
 
-    this.broadcast({ type: 'join', threeId.signJWT() }) // Announce entry in chat and share our 3id and peerID
+    this.broadcast({ this._3id.signJWT() }) // Announce entry in chat and share our 3id and peerID
     // signing an empty jwt should suffice for this
     this._room.on('message', this._funnelMessage) // funnels message to either onJoin, onLeave or onMessage
     this._room.on('peer left', this._userLeft)
@@ -47,29 +46,19 @@ class GhostChat extends EventEmitter {
    * @return    {Array<Object>}      users online
    */
   get onlineUsers () {
-    return Object.values(this._usersOnline)
-  }
-
-  /**
-   * Get backlog of past messages
-   *
-   * @return    {Array<Object>}      users online
-   */
-  get backlog () {
-    return this._backlog
+    return Object.entries(this._usersOnline)
   }
 
   /**
    * Post a message to the thread
    *
    * @param     {Object}    message                 The message
+   * @param     {String}    to                      PeerID to send the message to
    * @return    {String}                            The postId of the new post
    */
-  post (message) {
-    this.broadcast({
-      type: 'chat',
-      ...message
-    })
+  post (message, to = null) {
+    !to ? this.broadcast({ type: 'chat', ...message })
+    : this.sendDirect(to, { type: 'chat', ...message })
   }
 
 
@@ -98,31 +87,8 @@ class GhostChat extends EventEmitter {
    * @param     {Object}    message             The message
    */
   sendDirect (peerID, message) {
-    const jwt = this._3id.signJWT({ type: 'chat', ...message })
+    const jwt = this._3id.signJWT(message)
     this._room.sendTo(peerID, jwt)
-  }
-
-  /**
-   * Request backlog of past messages
-   *
-   * @return     {Array<Object>}    backlog          Past messages
-   */
-  requestBacklog () {
-    // TODO: write this
-    this.broadcast({ type:'request_backlog' })
-  }
-
-  addFilter (filter) {
-    this._filter = filter
-  }
-
-  /**
-   * Checks if a payload passes our filter
-   *
-   * @return     {Array<Object>}    backlog          Past messages
-   */
-  valid (payload) {
-    return this.filter(payload)
   }
 
   /**
@@ -130,44 +96,43 @@ class GhostChat extends EventEmitter {
    *
    * @param     {Object}    message              The message
    */
-  _funnelMessage (message) {
+  _funnelMessage ({ from, data }) {
     // reads payload type and determines whether it's a join, leave or chat message
-    // message {
-    //   from: PeerID
-    //   data: jwt
-    // }
-    const { from, data } = message
     const jwt = data.toString()
-    let { payload, issuer, signer } = await idUtils.verifyJWT(jwt)
+    const { payload, issuer, signer } = await idUtils.verifyJWT(jwt)
     if (issuer != signer.id) throw new Error('jwt is invalid')
     if (payload.iss != signer.id) throw new Error('jwt is invalid') // TODO: which one is it?
-    if (!this.valid(payload)) payload = null // TODO: what to do with filters?
-    switch (payload.type) {
-      case 'join':
-        this._userJoined(issuer, from)
-      break
-      case 'request_backlog':
-        let response = this._3id.signJWT({ type: 'response', backlog: this.backlog })
-        this._room.sendTo(from, response) // TODO: does it look good?
-      break
-      case 'reponse':
-        this._backlog.add(payload.backlog) // TODO: does it look good?
-      break
-      case 'chat':
-        this._messageReceived(payload)
-      break
-    }
+
+    if (!this.onlineUsers.hasOwnProperty(from)) this._userJoined(from, issuer)
+    this._messageReceived(payload)
+
+    // switch (payload.type) {
+    //   case 'join':
+    //     this._userJoined(issuer, from)
+    //   break
+    //   case 'request_backlog':
+    //     let response = this._3id.signJWT({ type: 'response', backlog: this.backlog })
+    //     this.sendDirect(from, { type: 'response', backlog: this.backlog }) // TODO: does it look good?
+    //   break
+    //   case 'reponse':
+    //     this._backlog.add(payload.backlog) // TODO: does it look good?
+    //   break
+    //   case 'chat':
+    //     this._messageReceived(payload)
+    //   break
+    // }
+
   }
 
-  _userJoined(did, peerID) {
-    this._usersOnline[peerID] = { did, peerID }
-    this.emit('user-joined', did, peerID)
+  _userJoined(peerID, did) {
+    this._usersOnline[peerID] = did
+    this.emit('user-joined', { did, peerID })
   }
 
   _userLeft(peerID) {
     const did = this._usersOnline[peerID]
     delete this._usersOnline[peerID]
-    this.emit('user-left', did, peerID)
+    this.emit('user-left', { did, peerID })
   }
 
   _messageReceived(message) {
