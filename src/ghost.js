@@ -4,30 +4,20 @@ const Room = require('ipfs-pubsub-room')
 
 class GhostChat extends EventEmitter {
 
-  // TODO:
-  // - constructor x
-  // - join logic x
-  // - leave logic x
-  // - message sending logic x
-  // - jwt signing/decoding logic x
-  // - listener logic x
-  // - backlog logic 
-  // - filter logic
-
-  /**
+/**
    * Please use **space.joinChat** to get the instance of this class
    */
   constructor (name, replicator, threeId) {
     this._name = name
     this._spaceName = name.split('.')[2]
     this._3id = threeId
-    this._room = Room(replicator.ipfs, name) // TODO: find ipfs
+    this._room = Room(replicator.ipfs, name) // instance of ipfs pubsub room
 
+    this._usersOnline = new Set() // set of users online in DID and PeerID pairs
     this._backlog = new Set() // set of past messages
 
-    this.broadcast({ this._3id.signJWT() }) // Announce entry in chat and share our 3id and peerID
-    // signing an empty jwt should suffice for this
-    this._room.on('message', this._funnelMessage) // funnels message to either onJoin, onLeave or onMessage
+    this.broadcast({}) // Announce entry in chat and share our 3id and peerID, empty jwt suffices
+    this._room.on('message', this._funnelMessage) // funnels message to either onJoin or onMessage
     this._room.on('peer left', this._userLeft)
   }
 
@@ -43,10 +33,19 @@ class GhostChat extends EventEmitter {
   /**
    * Get all users online
    *
-   * @return    {Array<Object>}      users online
+   * @return    {Array<String>}      users online
    */
   get onlineUsers () {
-    return Object.entries(this._usersOnline)
+    return [...this._usersOnline]
+  }
+
+  /**
+   * Get backlog of all past messages
+   *
+   * @return    {Array<Object>}      users online
+   */
+  get backlog () {
+    return [...this._backlog]
   }
 
   /**
@@ -59,6 +58,14 @@ class GhostChat extends EventEmitter {
   post (message, to = null) {
     !to ? this.broadcast({ type: 'chat', ...message })
     : this.sendDirect(to, { type: 'chat', ...message })
+  }
+
+  /**
+   * Request a backlog of past messages from peers in the chat
+   *
+   */
+  requestBacklog () {
+    this.broadcast({ type: 'request_backlog' })
   }
 
 
@@ -100,43 +107,25 @@ class GhostChat extends EventEmitter {
     // reads payload type and determines whether it's a join, leave or chat message
     const jwt = data.toString()
     const { payload, issuer, signer } = await idUtils.verifyJWT(jwt)
-    if (issuer != signer.id) throw new Error('jwt is invalid')
-    if (payload.iss != signer.id) throw new Error('jwt is invalid') // TODO: which one is it?
 
-    if (!this.onlineUsers.hasOwnProperty(from)) this._userJoined(from, issuer)
-    this._messageReceived(payload)
-
-    // switch (payload.type) {
-    //   case 'join':
-    //     this._userJoined(issuer, from)
-    //   break
-    //   case 'request_backlog':
-    //     let response = this._3id.signJWT({ type: 'response', backlog: this.backlog })
-    //     this.sendDirect(from, { type: 'response', backlog: this.backlog }) // TODO: does it look good?
-    //   break
-    //   case 'reponse':
-    //     this._backlog.add(payload.backlog) // TODO: does it look good?
-    //   break
-    //   case 'chat':
-    //     this._messageReceived(payload)
-    //   break
-    // }
-
+    !this._usersOnline.has([issuer, from]) ? this._userJoined(issuer, from) // not in users online? emit join event
+    : payload.type.includes('backlog') ? this.sendDirect(from, this.backlog) // payload is a backlog request? send backlog
+    : this._messageReceived(payload) // ...or receive payload as message
   }
 
-  _userJoined(peerID, did) {
-    this._usersOnline[peerID] = did
+  _userJoined(did, peerID) {
+    this._usersOnline.add([did, peerID])
     this.emit('user-joined', { did, peerID })
   }
 
   _userLeft(peerID) {
-    const did = this._usersOnline[peerID]
-    delete this._usersOnline[peerID]
+    const [did, ...] = this.onlineUsers.find(user => user.includes(peerID))
+    this._usersOnline.delete([did, peerID])
     this.emit('user-left', { did, peerID })
   }
 
   _messageReceived(message) {
-    this._backlog.push(message)
+    this._backlog.add(message)
     this.emit('message', message)
   }
 
