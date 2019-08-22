@@ -23,6 +23,8 @@ const utils = require('./utils/index')
 const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
+const IPFSRepo = require('ipfs-repo')
+const LevelStore = require('datastore-level/src/index.js')
 
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum',
@@ -723,6 +725,25 @@ class Box {
   }
 }
 
+function initIPFSRepo () {
+  const sessionID = utils.randInt(10000)
+  const ipfsRootPath = '/ipfs/root/' + sessionID
+
+  const levelInstance = new LevelStore(ipfsRootPath)
+  function randLevelStore () { return levelInstance }
+
+  const repo = new IPFSRepo('/ipfs', {
+    storageBackends: {
+      root: randLevelStore
+    }
+  })
+
+  return {
+    repo,
+    rootPath: ipfsRootPath
+  }
+}
+
 async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   // if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
   if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
@@ -731,13 +752,23 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   } else {
     // await iframeLoadedPromise
     // return ipfsProxy
+    let ipfsRepo
+    if (!ipfsOptions) {
+      ipfsRepo = initIPFSRepo()
+      ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
+    }
     return new Promise((resolve, reject) => {
-      ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
+      ipfs = new IPFS(ipfsOptions)
       ipfs.on('error', error => {
         console.error(error)
         reject(error)
       })
-      ipfs.on('ready', () => resolve(ipfs))
+      ipfs.on('ready', () => {
+        resolve(ipfs)
+        if (ipfsRepo && window && window.indexedDB) {
+          window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
+        }
+      })
     })
   }
 }
