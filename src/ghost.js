@@ -1,8 +1,5 @@
 const EventEmitter = require('events').EventEmitter
-const idUtils = require('./utils/id')
-const registerResolver = require('3id-resolver')
 const { decodeJWT, verifyJWT } = require('did-jwt')
-const { didResolverMock } = require('./__mocks__/3ID')
 const Room = require('ipfs-pubsub-room')
 
 class GhostChat extends EventEmitter {
@@ -27,6 +24,7 @@ class GhostChat extends EventEmitter {
 
     this._room.on('message', async ({ from, data }) => {
       const { payload, issuer } = await this._verifyData(data)
+      // TODO: there's a problem here with decoding our jwt
       if (payload) {
         switch (payload.type) {
           case 'join':
@@ -40,7 +38,8 @@ class GhostChat extends EventEmitter {
         }
       }
     })
-    this._room.on('peer joined', (peer) => this.announce(peer))
+    // this._room.on('peer joined', (peer) => this.announce(peer))
+    this._room.on('peer joined', (peer) => console.log(`NEW PEER, NEW PEER: ${peer}`))
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }
 
@@ -130,7 +129,7 @@ class GhostChat extends EventEmitter {
    * @param     {Object}    message                 The message
    */
   async broadcast (message) {
-    const jwt = await this._3id.signJWT(message, { use3ID: true })
+    const jwt = await this._3id.signJWT(message)
     this._room.broadcast(jwt)
   }
 
@@ -141,7 +140,7 @@ class GhostChat extends EventEmitter {
    * @param     {Object}    message             The message
    */
   async sendDirect (to, message) {
-    const jwt = await this._3id.signJWT(message, { use3ID: true })
+    const jwt = await this._3id.signJWT(message)
     to.startsWith('Qm') ? this._room.sendTo(to, jwt)
     : this._room.sendTo(this.threeIdToPeerId(to), jwt)
   }
@@ -173,7 +172,7 @@ class GhostChat extends EventEmitter {
     try {
       return await verifyJWT(jwt)
     } catch (e) {
-      console.error(e)
+      console.log(e)
     }
   }
 

@@ -115,6 +115,32 @@
             <button id="postThread" type="button" class="btn btn btn-primary">Post</button>
           </div>
 
+          <!-- GhostChat Start -->
+          <h3> Ghost Chat: </h3>
+          <button id="joinChatBtn" type="button" class="btn btn btn-primary" >Join chat</button>  </br></br>
+          <button id="leaveChatBtn" type="button" class="btn btn btn-primary" style="display: none;">Leave chat</button>  </br></br>
+
+          <div id="chatMembers" style="display: none;">
+            <h5> Members: </h5>
+            <p>
+              <span id="chatMemberList"></span>
+            </p>
+          </div></br>
+
+          <p>
+            <span id="chatACError"></span>
+          </p>
+
+          <div id="messages" style="display: none;">
+            <h4> Messages: </h4>
+            <p>
+              <span id="chatData"></span>
+            </p>
+            <input type="text" id="messageField" placeholder="Type your message">
+            <button id="postChatBtn" type="button" class="btn btn btn-primary">Post</button>
+          </div>
+          <!-- GhostChat End -->
+
         </div>
       </div>
 

@@ -167,6 +167,57 @@ bopen.addEventListener('click', event => {
         window.currentThread.post(postMsg.value).catch(updateThreadError)
       })
 
+      // Ghost Chat Start
+
+      const updateChatCapabilities = (user) => {
+        chatMemberList.innerHTML += user  +  '<br />'
+      }
+
+      const updateChatData = (data) => {
+        chatData.innerHTML += data  +  '<br />'
+      }
+
+      joinChatBtn.addEventListener('click', async () => {
+        console.log('joined chat')
+        const name = 'example 3box dapp'
+        const threeId = box._3id
+        const ipfs = box._ipfs
+        ipfs.swarm.connect('/ip4/127.0.0.1/tcp/4015/ws/ipfs/QmXGbAwcGmCFsMNMA5NHjz8r16WP9DHPLBf6RNEtN1kNji', console.log)
+        // ipfs.swarm.peers(console.log)
+        const chat = box.spaces[window.currentSpace].joinChat()
+        window.currenChat = chat
+        console.log(window.currenChat)
+
+        messages.style.display = 'block'
+        chatMembers.style.display = 'block'
+        leaveChatBtn.style.display = 'block'
+        chatMemberList.innerHTML = ''
+        chatData.innerHTML = '';
+
+        chat.on('user-joined', (did, peerID) => console.log(`${did} has joined the chat`))
+        console.log('join event set');
+        chat.on('user-left', (did, peerID) => console.log(`${did} has left the chat`))
+        console.log('left event set');
+        chat.on('message', ({ type, from, message }) => console.log(`${from} said: ${message}`))
+        console.log('message event set');
+
+
+      })
+
+      // leaveChatBtn.addEventListener('click', async () => {
+      //   await window.currenChat.leaveChat()
+      //   messages.style.display = 'none'
+      //   chatMembers.style.display = 'none'
+      //   leaveChatBtn.style.display = 'none'
+      //   chatMemberList.innerHTML = ''
+      //   chatData.innerHTML = '';
+      // })
+
+      postChatBtn.addEventListener('click', async () => {
+        await window.currenChat.post(messageField.value)
+      })
+      // Ghost Chat End
+
       bclose.addEventListener('click', () => {
         logout(box)
       })

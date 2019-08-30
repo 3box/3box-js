@@ -1,5 +1,6 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
+const GhostChat = require('./ghost')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
@@ -77,6 +78,11 @@ class Space {
     await thread._load()
     this._activeThreads[address] = thread
     return thread
+  }
+
+  joinChat () {
+    const chat = new GhostChat('3box.chat.somespace.name1', this._replicator, this._3id)
+    return chat
   }
 
   /**
