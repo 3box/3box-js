@@ -38,8 +38,8 @@ class GhostChat extends EventEmitter {
         }
       }
     })
-    // this._room.on('peer joined', (peer) => this.announce(peer))
-    this._room.on('peer joined', (peer) => console.log(`NEW PEER, NEW PEER: ${peer}`))
+    this._room.on('peer joined', (peer) => this.announce(peer))
+    // this._room.on('peer joined', (peer) => console.log(`NEW PEER, NEW PEER: ${peer}`))
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }
 
@@ -129,7 +129,8 @@ class GhostChat extends EventEmitter {
    * @param     {Object}    message                 The message
    */
   async broadcast (message) {
-    const jwt = await this._3id.signJWT(message)
+    const jwt = await this._3id.signJWT(message, { use3ID: true })
+    console.log(jwt);
     this._room.broadcast(jwt)
   }
 
@@ -140,7 +141,7 @@ class GhostChat extends EventEmitter {
    * @param     {Object}    message             The message
    */
   async sendDirect (to, message) {
-    const jwt = await this._3id.signJWT(message)
+    const jwt = await this._3id.signJWT(message, { use3ID: true })
     to.startsWith('Qm') ? this._room.sendTo(to, jwt)
     : this._room.sendTo(this.threeIdToPeerId(to), jwt)
   }
@@ -169,6 +170,7 @@ class GhostChat extends EventEmitter {
 
   async _verifyData (data) {
     const jwt = data.toString()
+    console.log(jwt);
     try {
       return await verifyJWT(jwt)
     } catch (e) {
