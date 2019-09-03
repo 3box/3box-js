@@ -260,61 +260,6 @@ describe('3Box', () => {
     await box.close()
   })
 
-  // it('should sync db updates to/from remote pinning server', async () => {
-  //   const addr = '0x12345'
-  //   const prov = 'web3prov'
-  //   const consentCallback = jest.fn()
-  //   const opts = { ...boxOpts, consentCallback }
-  //   const box = await Box.openBox(addr, prov, opts)
-  //
-  //
-  //   const orbitdb = await OrbitDB.createInstance(ipfs, {
-  //     directory:'./tmp/orbitdb3',
-  //   })
-  //   const rootStoreAddress = box._rootStore.address.toString()
-  //   const store = await orbitdb.open(rootStoreAddress, {
-  //     accessController: {
-  //       type: 'legacy-ipfs-3box',
-  //       skipManifest: true
-  //     }
-  //   })
-  //   await new Promise((resolve, reject) => {
-  //     store.events.on('replicate.progress', (_x, _y, _z, num, max) => {
-  //       if (num === max) resolve()
-  //     })
-  //   })
-  //
-  //   await box._rootStore.drop()
-  //   await box.close()
-  //   const publishPromise = new Promise((resolve, reject) => {
-  //     pubsub.subscribe('3box-pinning', (topic, data) => {
-  //       // expect(data.odbAddress).toMatchSnapshot()
-  //       resolve()
-  //     }, (topic, peer) => {
-  //       pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmasdf/08a7.public', numEntries: 4 })
-  //       pubsub.publish('3box-pinning', { type: 'HAS_ENTRIES', odbAddress: '/orbitdb/Qmfdsa/08a7.private', numEntries: 5 })
-  //     })
-  //   })
-  //
-  //   const box2 = await Box.openBox('0x12345', 'web3prov', boxOpts)
-  //
-  //   box2.public.get.mockImplementationOnce(() => 'did proof JWT')
-  //   const syncPromise = new Promise((resolve, reject) => { box.onSyncDone(resolve) })
-  //   await syncPromise
-  //   expect(box2.public.set).toHaveBeenCalledTimes(0)
-  //
-  //   expect(box2.public._sync).toHaveBeenCalledTimes(1)
-  //   expect(box2.public._sync).toHaveBeenCalledWith(4)
-  //   expect(box2.private._sync).toHaveBeenCalledTimes(1)
-  //   expect(box2.private._sync).toHaveBeenCalledWith(5)
-  //   expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-  //   await publishPromise
-  //   pubsub.unsubscribe('3box-pinning')
-  //   await orbitdb.stop()
-  //   // await box.close()
-  //   await box2.close()
-  // })
-
   it('should handle error and not link profile on first call to _linkProfile', async () => {
     const box = await Box.openBox('0x12345','web3prov', boxOpts)
     const didMuPort = box._3id.muportDID

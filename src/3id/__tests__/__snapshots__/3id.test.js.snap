@@ -486,9 +486,9 @@ Object {
 }
 `;
 
-exports[`3id getIdFromIdentityWallet keyring logic should hashDBKey correctly 1`] = `undefined`;
+exports[`3id getIdFromIdentityWallet keyring logic should hashDBKey correctly 1`] = `"124036393264373332313662353537376162613765613432343131656139396163366333316666373132323462656564323963393663623366346637356132646661"`;
 
-exports[`3id getIdFromIdentityWallet keyring logic should hashDBKey correctly 2`] = `undefined`;
+exports[`3id getIdFromIdentityWallet keyring logic should hashDBKey correctly 2`] = `"124037663937366435316639316361363564656365653362383161666332643933646239626330666339343236366161613166303061316464353933396265393064"`;
 
 exports[`3id getIdFromIdentityWallet keyring logic should init space keyrings correctly 1`] = `"did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi"`;
 

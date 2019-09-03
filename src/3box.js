@@ -20,6 +20,7 @@ const ACCOUNT_TYPES = {
   ethereumEOA: 'ethereum-eoa'
 }
 
+const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 
@@ -86,7 +87,7 @@ class Box {
     if (rootstoreAddress) {
       await this.replicator.start(rootstoreAddress, { profile: true })
       await this.replicator.rootstoreSyncDone
-      const authData = this.replicator.getAuthData()
+      const authData = await this.replicator.getAuthData()
       await this._3id.authenticate(null, { authData })
     } else {
       await this._3id.authenticate()
@@ -106,10 +107,8 @@ class Box {
 
     this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
-    await Promise.all([
-      this.public._load(),
-      this.private._load()
-    ])
+    await this.public._load()
+    await this.private._load()
   }
 
   /**
@@ -507,7 +506,9 @@ class Box {
       data: cid
     }
     await this.replicator.rootstore.add(link)
-    await utils.fetchJson(this._serverUrl + '/link', proof)
+    if (type === Replicator.entryTypes.ADDRESS_LINK) {
+      await utils.fetchJson(this._serverUrl + '/link', payload)
+    }
   }
 
   async _typeCIDExists (type, cid) {
