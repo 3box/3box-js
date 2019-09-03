@@ -23,23 +23,23 @@ class GhostChat extends EventEmitter {
     this._backlog = new Set() // set of past messages
 
     this._room.on('message', async ({ from, data }) => {
-      const { payload, issuer } = await this._verifyData(data)
-      // TODO: there's a problem here with decoding our jwt
+      // const { payload, issuer } = await this._verifyData(data)
+      // TODO: solve jwt verification problem
+      const { payload } = this.decode(data)
       if (payload) {
         switch (payload.type) {
           case 'join':
-            this._userJoined(issuer, from)
+            this._userJoined(payload.iss, from)
           break;
           case 'request_backlog':
             this.sendDirect(from, { type: 'backlog', message: this.backlog })
           break;
           default:
-            this._messageReceived(issuer, payload)
+            this._messageReceived(payload.iss, payload)
         }
       }
     })
     this._room.on('peer joined', (peer) => this.announce(peer))
-    // this._room.on('peer joined', (peer) => console.log(`NEW PEER, NEW PEER: ${peer}`))
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }
 
@@ -130,7 +130,6 @@ class GhostChat extends EventEmitter {
    */
   async broadcast (message) {
     const jwt = await this._3id.signJWT(message, { use3ID: true })
-    console.log(jwt);
     this._room.broadcast(jwt)
   }
 
@@ -170,12 +169,16 @@ class GhostChat extends EventEmitter {
 
   async _verifyData (data) {
     const jwt = data.toString()
-    console.log(jwt);
     try {
       return await verifyJWT(jwt)
     } catch (e) {
       console.log(e)
     }
+  }
+
+  decode (data) {
+    const jwt = data.toString()
+    return decodeJWT(jwt)
   }
 
 }

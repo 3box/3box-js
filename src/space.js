@@ -6,6 +6,7 @@ const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
+const namesToChatName = spaceName => `3box.chat.${spaceName}`
 
 class Space {
   /**
