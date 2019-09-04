@@ -205,7 +205,10 @@ class Thread {
 
   async _initConfigs () {
     if (this._identity) return
-    this._identity = await this._3id.getOdbId(this._spaceName)
+    this._identity = await this._3id.getOdbId(this._spaceName, {
+      keystore: this._orbitdb.keystore,
+      signingKeystore: this._orbitdb.keystore,
+    })
     if (this._firstModerator.startsWith('0x')) {
       this._firstModerator = await API.getSpaceDID(this._firstModerator, this._spaceName)
     }

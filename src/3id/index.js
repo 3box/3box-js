@@ -55,15 +55,11 @@ class ThreeId {
   }
 
   async getOdbId (space) {
-    if(this._dids[this.DID]) return this._dids[this.DID]
-    
-    this._dids[this.DID] = Identities.createIdentity({
+    return Identities.createIdentity({
       type: '3ID',
       threeId: this,
       space
     })
-
-    return this._dids[this.DID]
   }
 
   serializeState () {

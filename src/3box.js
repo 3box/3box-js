@@ -695,9 +695,10 @@ class Box {
   }
 
   async close () {
-    await this._orbitdb.stop()
+    await this._rootStore.close()
+    // await this._orbitdb.stop()
     await this._pubsub.disconnect()
-    globalOrbitDB = null
+    // globalOrbitDB = null
   }
 
   /**

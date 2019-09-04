@@ -7,7 +7,8 @@ const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 const { registerMethod } = require('did-resolver')
 const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
-OrbitDB.AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+const AccessControllers = require('orbit-db-access-controllers')
+AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
 registerMethod('3', didResolverMock)
@@ -197,6 +198,7 @@ describe('3Box', () => {
 
   afterAll(async () => {
     await pubsub.disconnect()
+    // await box._orbitdb.close()
     await box.close()
     await testUtils.stopIPFS(ipfs, 0)
     await testUtils.stopIPFS(ipfsBox, 1)
