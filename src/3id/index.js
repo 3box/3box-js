@@ -20,6 +20,7 @@ class ThreeId {
     this._ethereum = ethereum
     this._ipfs = ipfs
     this._keyrings = {}
+    this._dids = {}
     this._initKeys(serializeState, opts)
     registerResolver(ipfs)
     localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
@@ -54,11 +55,15 @@ class ThreeId {
   }
 
   async getOdbId (space) {
-    return Identities.createIdentity({
+    if(this._dids[this.DID]) return this._dids[this.DID]
+    
+    this._dids[this.DID] = Identities.createIdentity({
       type: '3ID',
       threeId: this,
       space
     })
+
+    return this._dids[this.DID]
   }
 
   serializeState () {

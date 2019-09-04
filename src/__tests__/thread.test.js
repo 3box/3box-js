@@ -9,10 +9,9 @@ const {
 } = require('3box-orbitdb-plugins')
 // const Identities = require('orbit-db-identity-provider')
 // Identities.addIdentityProvider(OdbIdentityProvider)
-const AccessControllers = require('orbit-db-access-controllers')
-AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
-AccessControllers.addAccessController({ AccessController: ThreadAccessController })
-AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
+OrbitDB.AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+OrbitDB.AccessControllers.addAccessController({ AccessController: ThreadAccessController })
+OrbitDB.AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 const { registerMethod } = require('did-resolver')
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 

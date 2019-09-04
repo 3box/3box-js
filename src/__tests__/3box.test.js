@@ -6,9 +6,8 @@ const didJWT = require('did-jwt')
 const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 const { registerMethod } = require('did-resolver')
-const AccessControllers = require('orbit-db-access-controllers')
 const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
-AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+OrbitDB.AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
 registerMethod('3', didResolverMock)

@@ -23,6 +23,8 @@ const didResolverMock = async (did) => {
 }
 
 const threeIDMockFactory = (did) => {
+  let dids = {}
+
   const signJWT = payload => {
     return didJWT.createJWT(payload, {
       signer: didJWT.SimpleSigner(privKey),
@@ -41,11 +43,15 @@ const threeIDMockFactory = (did) => {
   const getSubDID = () => did
 
   const getOdbId = () => {
-    return Identities.createIdentity({
+    if(dids[did]) return dids[did]
+
+    dids[did] = Identities.createIdentity({
       type: '3ID',
       threeId: {signJWT, getKeyringBySpaceName, DID: did, getSubDID},
       identityKeysPath: `./tmp/${did}`
     })
+
+    return dids[did]
   }
 
   return {

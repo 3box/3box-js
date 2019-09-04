@@ -1,10 +1,11 @@
 const utils = require('./testUtils')
 const KeyValueStore = require('../keyValueStore')
 const OrbitDB = require('orbit-db')
+const Identities = OrbitDB.Identities
+const AccessControllers = OrbitDB.AccessControllers
+
 const { OdbIdentityProvider, LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
-const Identities = require('orbit-db-identity-provider')
 Identities.addIdentityProvider(OdbIdentityProvider)
-const AccessControllers = require('orbit-db-access-controllers')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 const { registerMethod } = require('did-resolver')
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
@@ -128,7 +129,7 @@ describe('KeyValueStore', () => {
     expect(await keyValueStore2.get('key1')).toEqual('value1')
     expect(await keyValueStore2.get('key2')).toBeUndefined()
     expect(await keyValueStore2.get('key3')).toBeUndefined()
-    await orbitdb2.stop()
+    // await orbitdb2.stop()
     await utils.stopIPFS(ipfs2, 3)
   })
 
