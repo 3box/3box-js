@@ -69,7 +69,7 @@ class KeyValueStore {
   async set (key, value) {
     throwIfUndefined(key, 'key')
     this._requireLoad()
-    this._ensureConnected()
+    this._ensureConnected(this._db.address.toString())
     const timeStamp = new Date().getTime()
     await this._db.put(key, { value, timeStamp })
     return true
@@ -85,7 +85,7 @@ class KeyValueStore {
   async setMultiple (keys, values) {
     throwIfNotEqualLenArrays(keys, values)
     this._requireLoad()
-    this._ensureConnected()
+    this._ensureConnected(this._db.address.toString())
     try {
       await keys.reduce(async (previousPromise, nextKey, index) => {
         await previousPromise
@@ -108,7 +108,7 @@ class KeyValueStore {
   async remove (key) {
     throwIfUndefined(key, 'key')
     this._requireLoad()
-    this._ensureConnected()
+    this._ensureConnected(this._db.address.toString())
     await this._db.del(key)
     return true
   }

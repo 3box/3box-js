@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.10.7 - 2019-08-22
+* fix: ensureConnected consume db adddress, reconnect
+
 ## v1.10.7 - 2019-08-17
 * fix: listAddressLinks now returns all links correctly
 * fix: linkAddress now sends link to address-server
