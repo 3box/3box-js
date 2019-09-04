@@ -726,17 +726,18 @@ class Box {
 }
 
 function initIPFSRepo () {
-  const sessionID = utils.randInt(10000)
-  const ipfsRootPath = '/ipfs/root/' + sessionID
+  let repoOpts = {}
+  let ipfsRootPath
 
-  const levelInstance = new LevelStore(ipfsRootPath)
-  function randLevelStore () { return levelInstance }
+  // if in browser, create unique root storage, and ipfs id on each instance
+  if (window && window.indexedDB) {
+    const sessionID = utils.randInt(10000)
+    ipfsRootPath = 'ipfs/root/' + sessionID
+    const levelInstance = new LevelStore(ipfsRootPath)
+    repoOpts = { storageBackends: { root: () => levelInstance } }
+  }
 
-  const repo = new IPFSRepo('/ipfs', {
-    storageBackends: {
-      root: randLevelStore
-    }
-  })
+  const repo = new IPFSRepo('ipfs', repoOpts)
 
   return {
     repo,
@@ -766,6 +767,7 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
       ipfs.on('ready', () => {
         resolve(ipfs)
         if (ipfsRepo && window && window.indexedDB) {
+          // deletes once db is closed again
           window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
         }
       })
