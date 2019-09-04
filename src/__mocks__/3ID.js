@@ -42,16 +42,13 @@ const threeIDMockFactory = (did) => {
 
   const getSubDID = () => did
 
-  const getOdbId = () => {
-    if(dids[did]) return dids[did]
-
-    dids[did] = Identities.createIdentity({
+  const getOdbId = (space, opts) => {
+    return Identities.createIdentity({
       type: '3ID',
       threeId: {signJWT, getKeyringBySpaceName, DID: did, getSubDID},
-      identityKeysPath: `./tmp/${did}`
+      identityKeysPath: `./tmp/${did}`,
+      ...opts
     })
-
-    return dids[did]
   }
 
   return {

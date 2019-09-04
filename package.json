@@ -44,6 +44,9 @@
   },
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
+    "ipfs-log": "4.4.0-rc1",
+    "orbit-db-identity-provider": "0.2.0-rc3",
+    "3box-orbitdb-plugins": "^1.0.5",
     "3id-resolver": "^0.0.5",
     "@babel/runtime": "^7.4.5",
     "did-jwt": "^0.2.0",
