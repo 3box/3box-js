@@ -94,11 +94,15 @@ class Box {
     this.pinningNode = opts.pinningNode || PINNING_NODE
     this._ipfs.swarm.connect(this.pinningNode, () => {})
 
-    this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
-      directory: opts.orbitPath,
-      identity: await this._3id.getOdbId()
-    }) // , { cache })
-    globalOrbitDB = this._orbitdb
+    if(!globalOrbitDB) {
+      this._orbitdb = await OrbitDB.createInstance(this._ipfs, {
+        directory: opts.orbitPath,
+        identity: await this._3id.getOdbId()
+      }) // , { cache })
+      globalOrbitDB = this._orbitdb
+    } else {
+      this._orbitdb = globalOrbitDB
+    }
 
     const key = this._3id.getKeyringBySpaceName(rootStoreName).getPublicKeys(true).signingKey
     this._rootStore = await this._orbitdb.feed(rootStoreName, {
@@ -696,9 +700,7 @@ class Box {
 
   async close () {
     await this._rootStore.close()
-    // await this._orbitdb.stop()
     await this._pubsub.disconnect()
-    // globalOrbitDB = null
   }
 
   /**

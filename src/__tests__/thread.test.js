@@ -1,15 +1,15 @@
 const utils = require('./testUtils')
 const Thread = require('../thread')
 const OrbitDB = require('orbit-db')
+const AccessControllers = require('orbit-db-access-controllers')
 const {
   OdbIdentityProvider,
   LegacyIPFS3BoxAccessController,
   ThreadAccessController,
   ModeratorAccessController
 } = require('3box-orbitdb-plugins')
-const Identities = require('orbit-db-identity-provider')
-Identities.addIdentityProvider(OdbIdentityProvider)
-const AccessControllers = require('orbit-db-access-controllers')
+// const Identities = require('orbit-db-identity-provider')
+// Identities.addIdentityProvider(OdbIdentityProvider)
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })

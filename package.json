@@ -44,9 +44,7 @@
   },
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
-    "ipfs-log": "4.4.0-rc1",
-    "orbit-db-identity-provider": "0.2.0-rc3",
-    "3box-orbitdb-plugins": "^1.0.5",
+    "3box-orbitdb-plugins": "aphelionz/3box-orbitdb-plugins#master",
     "3id-resolver": "^0.0.5",
     "@babel/runtime": "^7.4.5",
     "did-jwt": "^0.2.0",
@@ -62,7 +60,7 @@
     "muport-did-resolver": "^0.3.0",
     "node-fetch": "^2.6.0",
     "orbit-db": "orbitdb/orbit-db#fix/createInstance",
-    "orbit-db-cache-postmsg-proxy": "^0.1.1",
+    "orbit-db-cache-postmsg-proxy": "aphelionz/orbit-db-cache-postmsg-proxy#master",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0"

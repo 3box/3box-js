@@ -1,5 +1,6 @@
 const testUtils = require('./testUtils')
 const OrbitDB = require('orbit-db')
+const AccessControllers = require('orbit-db-access-controllers')
 const Pubsub = require('orbit-db-pubsub')
 const jsdom = require('jsdom')
 const didJWT = require('did-jwt')
@@ -7,7 +8,6 @@ const Box = require('../3box')
 global.window = new jsdom.JSDOM().window
 const { registerMethod } = require('did-resolver')
 const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
-const AccessControllers = require('orbit-db-access-controllers')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 

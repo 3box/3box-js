@@ -1,8 +1,8 @@
 const utils = require('./testUtils')
 const KeyValueStore = require('../keyValueStore')
 const OrbitDB = require('orbit-db')
-const AccessControllers = require('orbit-db-access-controllers')
 const Identities = require('orbit-db-identity-provider')
+const AccessControllers = require('orbit-db-access-controllers')
 
 const { OdbIdentityProvider, LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
 OrbitDB.Identities.addIdentityProvider(OdbIdentityProvider)
