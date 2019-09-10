@@ -1,6 +1,9 @@
 # Release Notes
 
-## v1.10.7 - 2019-08-22
+## v1.10.9 - 2019-09-10
+* fix: allow multiple tab connections (support)
+
+## v1.10.8 - 2019-08-22
 * fix: ensureConnected consume db adddress, reconnect
 
 ## v1.10.7 - 2019-08-17
