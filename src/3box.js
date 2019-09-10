@@ -24,7 +24,7 @@ const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
 const IPFSRepo = require('ipfs-repo')
-const LevelStore = require('datastore-level/src/index.js')
+const LevelStore = require('datastore-level')
 
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum',
