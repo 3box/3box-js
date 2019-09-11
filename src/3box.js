@@ -723,6 +723,12 @@ class Box {
   static isLoggedIn (address) {
     return ThreeId.isLoggedIn(address)
   }
+
+  static async getIPFS (opts = {}) {
+    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    globalIPFS = ipfs
+    return globalIPFS
+  }
 }
 
 function initIPFSRepo () {
