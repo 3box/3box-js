@@ -431,8 +431,7 @@ class Box {
    */
   static async openBox (address, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
-    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
-    globalIPFS = ipfs
+    const ipfs = await Box.getIPFS(opts)
     const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, ipfs, opts)
     const box = new Box(_3id, ethereumProvider, ipfs, opts)
     await box._load(opts)
@@ -722,6 +721,19 @@ class Box {
    */
   static isLoggedIn (address) {
     return ThreeId.isLoggedIn(address)
+  }
+
+  /**
+   * Instanciate ipfs used by 3Box without calling openBox.
+   *
+   * @return    {IPFS}                           the ipfs instance
+   */
+  static async getIPFS (opts = {}) {
+    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    globalIPFS = ipfs
+    const pinningNode = opts.pinningNode || PINNING_NODE
+    ipfs.swarm.connect(pinningNode, () => {})
+    return ipfs
   }
 }
 
