@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.10.10 - 2019-09-12
+* feat: add method to get ipfs instance without openBox
+
 ## v1.10.9 - 2019-09-10
 * fix: allow multiple tab connections (support)
 
