@@ -12,6 +12,8 @@ const utils = require('./utils/index')
 const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
+const IPFSRepo = require('ipfs-repo')
+const LevelStore = require('datastore-level')
 
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum',
@@ -257,8 +259,7 @@ class Box {
    */
   static async openBox (address, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
-    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
-    globalIPFS = ipfs
+    const ipfs = await Box.getIPFS(opts)
     const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, ipfs, opts)
     const box = new Box(_3id, ethereumProvider, ipfs, opts)
     await box._load(opts)
@@ -552,6 +553,39 @@ class Box {
   static isLoggedIn (address) {
     return ThreeId.isLoggedIn(address)
   }
+
+  /**
+   * Instanciate ipfs used by 3Box without calling openBox.
+   *
+   * @return    {IPFS}                           the ipfs instance
+   */
+  static async getIPFS (opts = {}) {
+    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    globalIPFS = ipfs
+    const pinningNode = opts.pinningNode || PINNING_NODE
+    ipfs.swarm.connect(pinningNode, () => {})
+    return ipfs
+  }
+}
+
+function initIPFSRepo () {
+  let repoOpts = {}
+  let ipfsRootPath
+
+  // if in browser, create unique root storage, and ipfs id on each instance
+  if (window && window.indexedDB) {
+    const sessionID = utils.randInt(10000)
+    ipfsRootPath = 'ipfs/root/' + sessionID
+    const levelInstance = new LevelStore(ipfsRootPath)
+    repoOpts = { storageBackends: { root: () => levelInstance } }
+  }
+
+  const repo = new IPFSRepo('ipfs', repoOpts)
+
+  return {
+    repo,
+    rootPath: ipfsRootPath
+  }
 }
 
 async function initIPFS (ipfs, iframeStore, ipfsOptions) {
@@ -562,13 +596,24 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   } else {
     // await iframeLoadedPromise
     // return ipfsProxy
+    let ipfsRepo
+    if (!ipfsOptions) {
+      ipfsRepo = initIPFSRepo()
+      ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
+    }
     return new Promise((resolve, reject) => {
-      ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
+      ipfs = new IPFS(ipfsOptions)
       ipfs.on('error', error => {
         console.error(error)
         reject(error)
       })
-      ipfs.on('ready', () => resolve(ipfs))
+      ipfs.on('ready', () => {
+        resolve(ipfs)
+        if (ipfsRepo && window && window.indexedDB) {
+          // deletes once db is closed again
+          window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
+        }
+      })
     })
   }
 }

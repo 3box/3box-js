@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.10.7",
+  "version": "1.10.10",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -52,7 +52,7 @@
     "graphql-request": "^1.8.2",
     "https-did-resolver": "^0.1.0",
     "identity-wallet": "0.1.0-beta.8",
-    "ipfs": "^0.36.3",
+    "ipfs": "^0.36.4",
     "ipfs-did-document": "^1.2.3",
     "ipfs-mini": "^1.1.5",
     "ipfs-postmsg-proxy": "^3.1.1",

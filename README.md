@@ -308,6 +308,7 @@ idUtils.verifyClaim(claim)
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
         * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
+        * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
 
 <a name="new_Box_new"></a>
 
@@ -661,6 +662,13 @@ Check if the given address is logged in
 | --- | --- | --- |
 | address | <code>String</code> | An ethereum address |
 
+<a name="Box.getIPFS"></a>
+
+#### Box.getIPFS() ⇒ <code>IPFS</code>
+Instanciate ipfs used by 3Box without calling openBox.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>IPFS</code> - the ipfs instance  
 <a name="KeyValueStore"></a>
 
 ### KeyValueStore
