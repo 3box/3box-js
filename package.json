@@ -51,7 +51,7 @@
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "^0.1.0",
-    "identity-wallet": "0.1.0-beta.8",
+    "identity-wallet": "0.1.0-beta.9",
     "ipfs": "^0.36.4",
     "ipfs-did-document": "^1.2.3",
     "ipfs-mini": "^1.1.5",
