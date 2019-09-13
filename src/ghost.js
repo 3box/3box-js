@@ -23,9 +23,7 @@ class GhostChat extends EventEmitter {
     this._backlog = new Set() // set of past messages
 
     this._room.on('message', async ({ from, data }) => {
-      // const { payload, issuer } = await this._verifyData(data)
-      // TODO: solve jwt verification problem
-      const { payload } = this.decode(data)
+      const { payload, issuer } = await this._verifyData(data)
       if (payload) {
         switch (payload.type) {
           case 'join':
@@ -174,11 +172,6 @@ class GhostChat extends EventEmitter {
     } catch (e) {
       console.log(e)
     }
-  }
-
-  decode (data) {
-    const jwt = data.toString()
-    return decodeJWT(jwt)
   }
 
 }

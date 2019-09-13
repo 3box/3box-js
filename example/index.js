@@ -183,11 +183,8 @@ bopen.addEventListener('click', event => {
         const name = 'example 3box dapp'
         const threeId = box._3id
         const ipfs = box._ipfs
-        ipfs.swarm.connect('/ip4/127.0.0.1/tcp/4015/ws/ipfs/QmXGbAwcGmCFsMNMA5NHjz8r16WP9DHPLBf6RNEtN1kNji', console.log)
-        // TODO: solve connection issue
         const chat = box.spaces[window.currentSpace].joinChat()
         window.currenChat = chat
-        console.log(window.currenChat)
 
         messages.style.display = 'block'
         chatMembers.style.display = 'block'
