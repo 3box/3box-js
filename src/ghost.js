@@ -1,12 +1,8 @@
 const EventEmitter = require('events').EventEmitter
-const { decodeJWT, verifyJWT } = require('did-jwt')
+const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
 class GhostChat extends EventEmitter {
-
-  // TODO: map did to peer id
-  // TODO: for online list, what do we do about late joiners who don't know who's online yet
-  // their might be some users we can't find since we joined late
 
   /**
    * Please use **space.joinChat** to get the instance of this class
@@ -42,29 +38,11 @@ class GhostChat extends EventEmitter {
   }
 
   /**
-   * Get name of the chat
-   *
-   * @return    {String}      chat name
-   */
-  get name () {
-    return this._name
-  }
-
-  /**
-   * Get name of the chat
-   *
-   * @return    {String}      chat name
-   */
-  get peerId () {
-    return this._peerId
-  }
-
-  /**
    * Get all users online
    *
    * @return    {Array<String>}      users online
    */
-  get onlineUsers () {
+  get listMembers () {
     return Object.keys(this._usersOnline).filter(id => !id.startsWith('Qm'))
   }
 
@@ -73,7 +51,7 @@ class GhostChat extends EventEmitter {
    *
    * @return    {String}      ipfs peer id
    */
-  threeIdToPeerId (did) {
+  _threeIdToPeerId (did) {
     return this._usersOnline[did]
   }
 
@@ -82,7 +60,7 @@ class GhostChat extends EventEmitter {
    *
    * @return    {Array<Object>}      users online
    */
-  get backlog () {
+  getPosts () {
     return [...this._backlog]
   }
 
@@ -101,7 +79,7 @@ class GhostChat extends EventEmitter {
    */
   async post (message, to) {
     !to ? await this.broadcast({ type: 'chat', message })
-    : await this.sendDirect(to, { type: 'chat', message })
+    : await this.sendDirect({ type: 'chat', message }, to)
   }
 
   /**
@@ -116,7 +94,7 @@ class GhostChat extends EventEmitter {
    * Leave the chat
    *
    */
-  async leaveChat () {
+  async close () {
     // await this.broadcast({ type: 'leave' })
     await this._room.leave()
   }
@@ -126,7 +104,7 @@ class GhostChat extends EventEmitter {
    *
    * @param     {Object}    message                 The message
    */
-  async broadcast (message) {
+  async _broadcast (message) {
     const jwt = await this._3id.signJWT(message, { use3ID: true })
     this._room.broadcast(jwt)
   }
@@ -137,10 +115,19 @@ class GhostChat extends EventEmitter {
    * @param     {String}    peerID              The PeerID of the receiver
    * @param     {Object}    message             The message
    */
-  async sendDirect (to, message) {
+  async _sendDirect (message, to) {
     const jwt = await this._3id.signJWT(message, { use3ID: true })
     to.startsWith('Qm') ? this._room.sendTo(to, jwt)
     : this._room.sendTo(this.threeIdToPeerId(to), jwt)
+  }
+
+  onUpdate (updateFn) {
+    this.on('message', updateFn)
+  }
+
+  onNewCapabilites (updateFn) {
+    this.on('user-joined', updateFn)
+    this.on('user-left', updateFn)
   }
 
   _userJoined (did, peerID) {
@@ -148,7 +135,7 @@ class GhostChat extends EventEmitter {
       this.announce(peerID) // announce our presence to peer
       this._usersOnline[did] = peerID
       this._usersOnline[peerID] = did
-      this.emit('user-joined', did, peerID)
+      this.emit('user-joined', 'joined', did, peerID)
     }
   }
 
@@ -156,7 +143,7 @@ class GhostChat extends EventEmitter {
     const did = this._usersOnline[peerID]
     delete this._usersOnline[did]
     delete this._usersOnline[peerID]
-    this.emit('user-left', did, peerID)
+    this.emit('user-left', 'left', did, peerID)
   }
 
   _messageReceived (issuer, payload) {
