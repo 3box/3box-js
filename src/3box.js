@@ -421,7 +421,7 @@ class Box {
     if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
-      const res = query.address ? link.address === query.address : true
+      const res = query.address ? link.address.toLowerCase() === query.address : true
       return query.type ? res && link.type === query.type : res
     })
     return Boolean(linksQuery)
