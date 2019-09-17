@@ -18,8 +18,11 @@ const HTTPError = (status, message) => {
   return e
 }
 
-const getMessageConsent = (did, timestamp) => {
-  let msg = 'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
+const getMessageConsent = (did, timestamp, contractAddress) => {
+  let msg = contractAddress
+    ? 'Link Smart Contract Account to your 3Box profile' + '\n\n' + '- \n' + 'Smart Contract address is ' + contractAddress
+    : 'Create a new 3Box profile'
+  msg += '\n\n' + '- \n' + 'Your unique profile ID is ' + did
   if (timestamp) msg += ' \n' + 'Timestamp: ' + timestamp
   return msg
 }
@@ -76,9 +79,9 @@ module.exports = {
     })
   },
 
-  getLinkConsent: async (fromAddress, toDID, ethereum) => {
+  getLinkConsent: async (fromAddress, toDID, ethereum, contractAddress) => {
     const timestamp = Math.floor(new Date().getTime() / 1000)
-    const text = getMessageConsent(toDID, timestamp)
+    const text = getMessageConsent(toDID, timestamp, contractAddress)
     const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     const params = [msg, fromAddress]
     const method = 'personal_sign'
@@ -95,6 +98,32 @@ module.exports = {
       sig,
       timestamp
     }
+  },
+
+  getChainId: async (ethereumProvider) => {
+    const method = 'eth_chainId'
+    const params = []
+
+    const chainIdHex = await safeEthSend(ethereumProvider, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params
+    })
+    return parseInt(chainIdHex, 16)
+  },
+
+  getCode: async (ethereumProvider, address) => {
+    const method = 'eth_getCode'
+    const params = [address, '0x2']
+
+    const code = await safeEthSend(ethereumProvider, {
+      jsonrpc: '2.0',
+      id: 1,
+      method,
+      params
+    })
+    return code
   },
 
   fetchJson: async (url, body) => {

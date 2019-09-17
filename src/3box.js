@@ -17,7 +17,8 @@ const LevelStore = require('datastore-level')
 
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum',
-  ethereumEOA: 'ethereum-eoa'
+  ethereumEOA: 'ethereum-eoa',
+  ethereumContract: 'ethereum-contract'
 }
 
 const PINNING_NODE = config.pinning_node
@@ -360,11 +361,16 @@ class Box {
    *
    * @param     {Object}    [link]                         Optional link object with type or proof
    * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
+   * @param     {String}    [link.address]                 Smart Contract based Wallet's address
    * @param     {Object}    [link.proof]                   Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md)
    */
   async linkAddress (link = {}) {
     if (link.proof) {
       await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, link.proof)
+      return
+    }
+    if (link.address) {
+      await this._linkProfile(link.address)
       return
     }
     if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
@@ -448,28 +454,50 @@ class Box {
     }, [])
   }
 
-  async _linkProfile () {
+  async _linkProfile (contractAddress) {
     const address = await this._3id.getAddress()
-    let linkData = await this._readAddressLink(address)
+
+    const addressType = contractAddress
+      ? await this._detectAddressType(contractAddress)
+      : ACCOUNT_TYPES.ethereumEOA
+    console.log({ contractAddress, addressType })
+    return
+    if (addressType !== ACCOUNT_TYPES.ethereumContract) {
+      contractAddress = null
+    }
+    const linkAddress = addressType === ACCOUNT_TYPES.ethereumContract ? contractAddress : address
+    let linkData = await this._readAddressLink(linkAddress)
 
     if (!linkData) {
       const did = this.DID
 
       let consent
       try {
-        consent = await utils.getLinkConsent(address, did, this._web3provider)
+        consent = await utils.getLinkConsent(address, did, this._web3provider, contractAddress)
       } catch (e) {
         throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
-      linkData = {
-        version: 1,
-        type: ACCOUNT_TYPES.ethereumEOA,
-        message: consent.msg,
-        signature: consent.sig,
-        timestamp: consent.timestamp
-      }
-
+      const chainId = await utils.getChainId(this._web3provider)
+      linkData = addressType === ACCOUNT_TYPES.ethereumContract
+        ? {
+          version: 1,
+          type: ACCOUNT_TYPES.ethereumContract,
+          chainId,
+          address: linkAddress,
+          message: consent.msg,
+          timestamp: consent.timestamp,
+          signature: consent.sig
+        }
+        : {
+          version: 1,
+          type: ACCOUNT_TYPES.ethereumEOA,
+          message: consent.msg,
+          signature: consent.sig,
+          timestamp: consent.timestamp
+        }
+      console.log({ linkData })
+      return
       try {
         await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, linkData)
       } catch (err) {
@@ -538,6 +566,15 @@ class Box {
     address = address.toLowerCase()
     const links = await this._readAddressLinks()
     return links.find(link => link.address.toLowerCase() === address)
+  }
+
+  async _detectAddressType (address) {
+    const bytecode = await utils.getCode(this._web3provider, address).catch(e => e)
+    console.log({ bytecode })
+    if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
+      return ACCOUNT_TYPES.ethereumContract
+    }
+    return ACCOUNT_TYPES.ethereumEOA
   }
 
   async close () {
