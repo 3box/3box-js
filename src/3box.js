@@ -460,11 +460,11 @@ class Box {
     const addressType = contractAddress
       ? await this._detectAddressType(contractAddress)
       : ACCOUNT_TYPES.ethereumEOA
-    console.log({ contractAddress, addressType })
-    return
+
     if (addressType !== ACCOUNT_TYPES.ethereumContract) {
       contractAddress = null
     }
+
     const linkAddress = addressType === ACCOUNT_TYPES.ethereumContract ? contractAddress : address
     let linkData = await this._readAddressLink(linkAddress)
 
@@ -569,12 +569,11 @@ class Box {
   }
 
   async _detectAddressType (address) {
-    const bytecode = await utils.getCode(this._web3provider, address).catch(e => e)
-    console.log({ bytecode })
+    const bytecode = await utils.getCode(this._web3provider, address).catch(() => null)
     if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
-      return ACCOUNT_TYPES.ethereumContract
+      return ACCOUNT_TYPES.ethereumEOA
     }
-    return ACCOUNT_TYPES.ethereumEOA
+    return ACCOUNT_TYPES.ethereumContract
   }
 
   async close () {

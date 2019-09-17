@@ -116,7 +116,7 @@ module.exports = {
 
   getCode: async (ethereumProvider, address) => {
     const method = 'eth_getCode'
-    const params = [address, '0x2']
+    const params = [address]
 
     const code = await safeEthSend(ethereumProvider, {
       jsonrpc: '2.0',
