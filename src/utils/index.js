@@ -84,6 +84,7 @@ module.exports = {
     const text = getMessageConsent(toDID, timestamp, contractAddress)
     const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     const params = [msg, fromAddress]
+    if (contractAddress) params.push(contractAddress)
     const method = 'personal_sign'
 
     const sig = await safeEthSend(ethereum, {
