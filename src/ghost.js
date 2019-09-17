@@ -26,14 +26,14 @@ class GhostChat extends EventEmitter {
             this._userJoined(payload.iss, from)
           break;
           case 'request_backlog':
-            this.sendDirect(from, { type: 'backlog', message: this.backlog })
+            this._sendDirect({ type: 'backlog', message: this.getPosts() }, from)
           break;
           default:
             this._messageReceived(payload.iss, payload)
         }
       }
     })
-    this._room.on('peer joined', (peer) => this.announce(peer))
+    this._room.on('peer joined', (peer) => this._announce(peer))
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }
 
@@ -65,9 +65,9 @@ class GhostChat extends EventEmitter {
   }
 
   // Announce entry in chat and share our 3id and peerID, empty jwt suffices
-  async announce (to) {
-    !to ? await this.broadcast({ type: 'join' })
-    : await this.sendDirect(to, { type: 'join' })
+  async _announce (to) {
+    !to ? await this._broadcast({ type: 'join' })
+    : await this._sendDirect({ type: 'join' }, to)
   }
 
   /**
@@ -78,8 +78,8 @@ class GhostChat extends EventEmitter {
    * @return    {String}                            The postId of the new post
    */
   async post (message, to) {
-    !to ? await this.broadcast({ type: 'chat', message })
-    : await this.sendDirect({ type: 'chat', message }, to)
+    !to ? await this._broadcast({ type: 'chat', message })
+    : await this._sendDirect({ type: 'chat', message }, to)
   }
 
   /**
@@ -87,7 +87,7 @@ class GhostChat extends EventEmitter {
    *
    */
   async requestBacklog () {
-    await this.broadcast({ type: 'request_backlog' })
+    await this._broadcast({ type: 'request_backlog' })
   }
 
   /**
@@ -95,7 +95,7 @@ class GhostChat extends EventEmitter {
    *
    */
   async close () {
-    // await this.broadcast({ type: 'leave' })
+    // await this._broadcast({ type: 'leave' })
     await this._room.leave()
   }
 
@@ -118,21 +118,17 @@ class GhostChat extends EventEmitter {
   async _sendDirect (message, to) {
     const jwt = await this._3id.signJWT(message, { use3ID: true })
     to.startsWith('Qm') ? this._room.sendTo(to, jwt)
-    : this._room.sendTo(this.threeIdToPeerId(to), jwt)
+    : this._room.sendTo(this._threeIdToPeerId(to), jwt)
   }
 
   onUpdate (updateFn) {
+    this.removeAllListeners('message')
     this.on('message', updateFn)
-  }
-
-  onNewCapabilites (updateFn) {
-    this.on('user-joined', updateFn)
-    this.on('user-left', updateFn)
   }
 
   _userJoined (did, peerID) {
     if (!this._usersOnline.hasOwnProperty(did) && this._3id.DID != did) {
-      this.announce(peerID) // announce our presence to peer
+      this._announce(peerID) // announce our presence to peer
       this._usersOnline[did] = peerID
       this._usersOnline[peerID] = did
       this.emit('user-joined', 'joined', did, peerID)
