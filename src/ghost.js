@@ -95,7 +95,6 @@ class GhostChat extends EventEmitter {
    *
    */
   async close () {
-    // await this._broadcast({ type: 'leave' })
     await this._room.leave()
   }
 
