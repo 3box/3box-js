@@ -361,7 +361,6 @@ class Box {
    *
    * @param     {Object}    [link]                         Optional link object with type or proof
    * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
-   * @param     {String}    [link.address]                 Smart Contract based Wallet's address
    * @param     {Object}    [link.proof]                   Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md)
    */
   async linkAddress (link = {}) {
@@ -560,7 +559,7 @@ class Box {
     if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
       return ACCOUNT_TYPES.ethereumEOA
     }
-    return ACCOUNT_TYPES.ethereumContract
+    return ACCOUNT_TYPES.erc1271
   }
 
   async close () {
