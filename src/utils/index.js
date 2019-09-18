@@ -18,11 +18,8 @@ const HTTPError = (status, message) => {
   return e
 }
 
-const getMessageConsent = (did, timestamp, contractAddress) => {
-  let msg = contractAddress
-    ? 'Link Smart Contract Account to your 3Box profile' + '\n\n' + '- \n' + 'Smart Contract address is ' + contractAddress
-    : 'Create a new 3Box profile'
-  msg += '\n\n' + '- \n' + 'Your unique profile ID is ' + did
+const getMessageConsent = (did, timestamp) => {
+  let msg = 'Create a new 3Box profile' + '\n\n' + '- \n' + 'Your unique profile ID is ' + did
   if (timestamp) msg += ' \n' + 'Timestamp: ' + timestamp
   return msg
 }
@@ -79,12 +76,11 @@ module.exports = {
     })
   },
 
-  getLinkConsent: async (fromAddress, toDID, ethereum, contractAddress) => {
+  getLinkConsent: async (fromAddress, toDID, ethereum) => {
     const timestamp = Math.floor(new Date().getTime() / 1000)
-    const text = getMessageConsent(toDID, timestamp, contractAddress)
+    const text = getMessageConsent(toDID, timestamp)
     const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     const params = [msg, fromAddress]
-    if (contractAddress) params.push(contractAddress)
     const method = 'personal_sign'
 
     const sig = await safeEthSend(ethereum, {
