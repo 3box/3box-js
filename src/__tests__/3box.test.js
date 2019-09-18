@@ -122,7 +122,7 @@ jest.mock('../utils/index', () => {
   let linkNum = 0
   return {
     getMessageConsent: actualUtils.getMessageConsent,
-    recoverPersonalSign: jest.fn(async () => () => '0x8726348762348723487238476238746827364872634876234876234'),
+    recoverPersonalSign: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
     fetchJson: jest.fn(async (url, body) => {
       const split = url.split('/')
