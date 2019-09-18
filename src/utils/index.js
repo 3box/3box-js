@@ -42,7 +42,7 @@ const safeEthSend = (ethereum, data, callback) => {
 module.exports = {
   getMessageConsent,
 
-  recoverPersonalSign: async (msg, personalSig) => {
+  recoverPersonalSign: (msg, personalSig) => {
     if (!msg || !personalSig) throw new Error('recoverPersonalSign: missing arguments, msg and/or personalSig')
     const msgParams = {
       data: msg,
