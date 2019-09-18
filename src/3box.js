@@ -451,7 +451,6 @@ class Box {
 
   async _linkProfile () {
     const address = await this._3id.getAddress()
-    const addressType = await this._detectAddressType(address)
     let linkData = await this._readAddressLink(address)
 
     if (!linkData) {
@@ -464,6 +463,7 @@ class Box {
         throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
+      const addressType = await this._detectAddressType(address)
       if (addressType === ACCOUNT_TYPES.erc1271) {
         const chainId = await utils.getChainId(this._web3provider)
         linkData = {
