@@ -465,8 +465,8 @@ class Box {
         throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
-      const chainId = await utils.getChainId(this._web3provider)
       if (addressType === ACCOUNT_TYPES.erc1271) {
+        const chainId = await utils.getChainId(this._web3provider)
         linkData = {
           version: 1,
           type: ACCOUNT_TYPES.erc1271,
