@@ -175,6 +175,9 @@ jest.mock('../utils/index', () => {
     getCode: jest.fn(async (web3prov, address) => {
       return '0x'
     }),
+    isValidSignature: jest.fn(async (linkObj, isErc1271, web3Provider) => {
+      return true
+    }),
     sha256Multihash: jest.fn(str => {
       if (str === 'did:muport:Qmsdsdf87g329') return 'ab8c73d8f'
       return 'b932fe7ab'

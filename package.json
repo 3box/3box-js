@@ -62,6 +62,7 @@
     "orbit-db": "^0.21.4",
     "orbit-db-cache-postmsg-proxy": "^0.1.1",
     "store": "^2.0.12",
+    "truffle-contract": "^4.0.31",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0"
   },

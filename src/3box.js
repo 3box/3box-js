@@ -540,12 +540,17 @@ class Box {
 
   async _readAddressLinks () {
     const links = await this.replicator.getAddressLinks()
-    return Promise.all(links.map(async linkObj => {
+    const allLinks = await Promise.all(links.map(async linkObj => {
       if (!linkObj.address) {
-        linkObj.address = await utils.recoverPersonalSign(linkObj.message, linkObj.signature)
+        linkObj.address = await utils.recoverPersonalSign(linkObj.message, linkObj.signature).catch(() => null)
+      }
+      const isErc1271 = linkObj.type === ACCOUNT_TYPES.erc1271
+      if (!(await utils.isValidSignature(linkObj, isErc1271, this._web3provider))) {
+        return null
       }
       return linkObj
     }))
+    return allLinks.filter(Boolean)
   }
 
   async _readAddressLink (address) {

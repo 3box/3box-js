@@ -2,8 +2,11 @@ const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
 const ethers = require('ethers')
+const truffleContract = require('truffle-contract')
+const IERC1271Artifact = require('../contracts/IERC1271.json')
 
 const ENC_BLOCK_SIZE = 24
+const MAGIC_ERC1271_VALUE = '0x20c13b0b'
 
 const pad = (val, blockSize = ENC_BLOCK_SIZE) => {
   const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
@@ -121,6 +124,19 @@ module.exports = {
       params
     })
     return code
+  },
+
+  isValidSignature: async (linkObj, isErc1271, web3Provider) => {
+    if (!linkObj.address) return false
+    if (!isErc1271) return true
+
+    const IERC1271 = truffleContract(IERC1271Artifact)
+    IERC1271.setProvider(web3Provider)
+
+    const contract = await IERC1271.at(linkObj.address)
+    const returnValue = await contract.isValidSignature(linkObj.message, linkObj.signature)
+
+    return returnValue === MAGIC_ERC1271_VALUE
   },
 
   fetchJson: async (url, body) => {
