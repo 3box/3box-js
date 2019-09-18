@@ -14,14 +14,8 @@ bopen.addEventListener('click', event => {
       updateProfileData(box)
       updateLinksData(box, addresses[0])
 
-      linkExternalAddress.addEventListener('click', () => {
+      linkAddress.addEventListener('click', () => {
         box.linkAddress().then(() => { updateLinksData(box, addresses[0]) })
-      })
-
-      linkSmartAccountAddress.addEventListener('click', () => {
-        const address = smartAccountAddress.value
-        if (!address) return
-        box.linkAddress({ address }).then(() => { updateLinksData(box, addresses[0]) })
       })
 
       setProfile.addEventListener('click', () => {
@@ -266,7 +260,7 @@ function updateLinksData (box, address) {
   })
 
   box.isAddressLinked({ address }).then(result => {
-    externalAddressLinked.innerHTML = result ? 'Yes' : 'No'
-    linkExternalAddress.style.display = result ? 'none' : 'block'
+    addressLinked.innerHTML = result ? 'Yes' : 'No'
+    linkAddress.style.display = result ? 'none' : 'block'
   })
 }
