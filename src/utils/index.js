@@ -2,8 +2,6 @@ const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
 const ethers = require('ethers')
-const truffleContract = require('truffle-contract')
-const IERC1271Artifact = require('../contracts/IERC1271.json')
 
 const ENC_BLOCK_SIZE = 24
 const MAGIC_ERC1271_VALUE = '0x20c13b0b'
@@ -130,10 +128,11 @@ module.exports = {
     if (!linkObj.address) return false
     if (!isErc1271) return true
 
-    const IERC1271 = truffleContract(IERC1271Artifact)
-    IERC1271.setProvider(web3Provider)
-
-    const contract = await IERC1271.at(linkObj.address)
+    const abi = [
+      'function isValidSignature(bytes memory _messageHash, bytes memory _signature) public view returns (bytes4 magicValue)'
+    ]
+    const ethersProvider = new ethers.providers.Web3Provider(web3Provider)
+    const contract = new ethers.Contract(linkObj.address, abi, ethersProvider)
     const returnValue = await contract.isValidSignature(linkObj.message, linkObj.signature)
 
     return returnValue === MAGIC_ERC1271_VALUE
