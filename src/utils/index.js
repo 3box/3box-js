@@ -129,11 +129,12 @@ module.exports = {
     if (!isErc1271) return true
 
     const abi = [
-      'function isValidSignature(bytes memory _messageHash, bytes memory _signature) public view returns (bytes4 magicValue)'
+      'function isValidSignature(bytes _messageHash, bytes _signature) public view returns (bytes4 magicValue)'
     ]
     const ethersProvider = new ethers.providers.Web3Provider(web3Provider)
     const contract = new ethers.Contract(linkObj.address, abi, ethersProvider)
-    const returnValue = await contract.isValidSignature(linkObj.message, linkObj.signature)
+    const message = '0x' + Buffer.from(linkObj.message, 'utf8').toString('hex')
+    const returnValue = await contract.isValidSignature(message, linkObj.signature)
 
     return returnValue === MAGIC_ERC1271_VALUE
   },
