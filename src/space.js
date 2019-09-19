@@ -6,7 +6,7 @@ const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
-const namesToChatName = spaceName => `3box.chat.${spaceName}`
+const namesToChatName = (spaceName, chatName) => `3box.ghost.${spaceName}.${chatName}`
 
 class Space {
   /**
@@ -67,23 +67,25 @@ class Space {
    * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
    * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
+   * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread (optional)
    *
-   * @return    {Thread}                            An instance of the thread class for the joined thread
+   * @return    {Thread/GhostChat}                  An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
-    const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
-    if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
-    const thread = new Thread(namesTothreadName(this._name, name), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
-    const address = await thread._getThreadAddress()
-    if (this._activeThreads[address]) return this._activeThreads[address]
-    await thread._load()
-    this._activeThreads[address] = thread
-    return thread
-  }
-
-  joinChat () {
-    const chat = new GhostChat('3box.chat.somespace.name1', this._replicator, this._3id)
-    return chat
+    if (opts.ghost) {
+      const chat = new GhostChat(namesToChatName(name), this._replicator, this._3id)
+      return chat
+    }
+    else {
+      const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
+      if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
+      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
+      const address = await thread._getThreadAddress()
+      if (this._activeThreads[address]) return this._activeThreads[address]
+      await thread._load()
+      this._activeThreads[address] = thread
+      return thread
+    }
   }
 
   /**

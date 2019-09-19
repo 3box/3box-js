@@ -33,12 +33,15 @@ class GhostChat extends EventEmitter {
         }
       }
     })
-    this._room.on('peer joined', (peer) => this._announce(peer))
+    this._room.on('peer joined', (peer) => {
+      this._announce(peer)
+      this._requestBacklog(peer)
+    })
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }
 
   /**
-   * Get all users online
+   * Get a list of users online
    *
    * @return    {Array<String>}      users online
    */
@@ -47,8 +50,9 @@ class GhostChat extends EventEmitter {
   }
 
   /**
+   * Get a peerId's corresponding 3ID
    *
-   *
+   * @param     {String}      did               The DID of the user
    * @return    {String}      ipfs peer id
    */
   _threeIdToPeerId (did) {
@@ -64,7 +68,11 @@ class GhostChat extends EventEmitter {
     return [...this._backlog]
   }
 
-  // Announce entry in chat and share our 3id and peerID, empty jwt suffices
+  /**
+   * Announce entry in chat and share our 3id and peerID
+   *
+   * @param     {String}      to              The PeerID of a user (optional)
+   */
   async _announce (to) {
     !to ? await this._broadcast({ type: 'join' })
     : await this._sendDirect({ type: 'join' }, to)
@@ -75,7 +83,6 @@ class GhostChat extends EventEmitter {
    *
    * @param     {Object}    message                 The message
    * @param     {String}    to                      PeerID to send the message to (optional)
-   * @return    {String}                            The postId of the new post
    */
   async post (message, to) {
     !to ? await this._broadcast({ type: 'chat', message })
@@ -85,9 +92,11 @@ class GhostChat extends EventEmitter {
   /**
    * Request a backlog of past messages from peers in the chat
    *
+   * @param     {String}      to              The PeerID of a user (optional)
    */
-  async requestBacklog () {
-    await this._broadcast({ type: 'request_backlog' })
+  async _requestBacklog (to) {
+    !to ? await this._broadcast({ type: 'request_backlog' })
+    : await this._sendDirect({ type: 'request_backlog' }, to)
   }
 
   /**
@@ -111,8 +120,8 @@ class GhostChat extends EventEmitter {
   /**
    * Send a direct message to a peer
    *
-   * @param     {String}    peerID              The PeerID of the receiver
    * @param     {Object}    message             The message
+   * @param     {String}    to                  The PeerID or 3ID of the receiver
    */
   async _sendDirect (message, to) {
     const jwt = await this._3id.signJWT(message, { use3ID: true })
@@ -120,11 +129,36 @@ class GhostChat extends EventEmitter {
     : this._room.sendTo(this._threeIdToPeerId(to), jwt)
   }
 
+  /**
+   * Register a function to be called after new updates
+   * have been received from the network or locally.
+   *
+   * @param     {Function}  updateFn               The function that will get called
+   */
   onUpdate (updateFn) {
     this.removeAllListeners('message')
     this.on('message', updateFn)
   }
 
+  /**
+   * Register a function to be called after new capabilities
+   * have been received from the network or locally.
+   *
+   * @param     {Function}  updateFn               The function that will get called
+   */
+  onNewCapabilites (updateFn) {
+    this.removeAllListeners('user-joined')
+    this.removeAllListeners('user-left')
+    this.on('user-joined', updateFn)
+    this.on('user-left', updateFn)
+  }
+
+  /**
+   * Handler function for users joining
+   *
+   * @param     {String}    did                The DID of the user
+   * @param     {Object}    peerID             The peerID of the user
+   */
   _userJoined (did, peerID) {
     if (!this._usersOnline.hasOwnProperty(did) && this._3id.DID != did) {
       this._announce(peerID) // announce our presence to peer
@@ -134,6 +168,11 @@ class GhostChat extends EventEmitter {
     }
   }
 
+  /**
+   * Handler function for users leaving
+   *
+   * @param     {String}    peerID              The peerID of the user
+   */
   async _userLeft (peerID) {
     const did = this._usersOnline[peerID]
     delete this._usersOnline[did]
@@ -141,12 +180,24 @@ class GhostChat extends EventEmitter {
     this.emit('user-left', 'left', did, peerID)
   }
 
+  /**
+   * Handler function for received messages
+   *
+   * @param     {String}    issuer              The issuer of the message
+   * @param     {Object}    payload             The payload of the message
+   */
   _messageReceived (issuer, payload) {
     const { type, message, iss: from } = payload
     this._backlog.add({ type, from, message })
     this.emit('message', { type, from, message })
   }
 
+  /**
+   * Verifies the data received
+   *
+   * @param     {Buffer}    data                A buffer of our jwt
+   * @return    {JWT}                           A verified JWT with our payload and issuer
+   */
   async _verifyData (data) {
     const jwt = data.toString()
     try {
