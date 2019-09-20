@@ -17,7 +17,8 @@ const LevelStore = require('datastore-level')
 
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum',
-  ethereumEOA: 'ethereum-eoa'
+  ethereumEOA: 'ethereum-eoa',
+  erc1271: 'erc1271'
 }
 
 const PINNING_NODE = config.pinning_node
@@ -421,7 +422,7 @@ class Box {
     if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
-      const res = query.address ? link.address === query.address : true
+      const res = query.address ? link.address.toLowerCase() === query.address : true
       return query.type ? res && link.type === query.type : res
     })
     return Boolean(linksQuery)
@@ -462,14 +463,27 @@ class Box {
         throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
-      linkData = {
-        version: 1,
-        type: ACCOUNT_TYPES.ethereumEOA,
-        message: consent.msg,
-        signature: consent.sig,
-        timestamp: consent.timestamp
+      const addressType = await this._detectAddressType(address)
+      if (addressType === ACCOUNT_TYPES.erc1271) {
+        const chainId = await utils.getChainId(this._web3provider)
+        linkData = {
+          version: 1,
+          type: ACCOUNT_TYPES.erc1271,
+          chainId,
+          address,
+          message: consent.msg,
+          timestamp: consent.timestamp,
+          signature: consent.sig
+        }
+      } else {
+        linkData = {
+          version: 1,
+          type: ACCOUNT_TYPES.ethereumEOA,
+          message: consent.msg,
+          signature: consent.sig,
+          timestamp: consent.timestamp
+        }
       }
-
       try {
         await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, linkData)
       } catch (err) {
@@ -526,18 +540,31 @@ class Box {
 
   async _readAddressLinks () {
     const links = await this.replicator.getAddressLinks()
-    return Promise.all(links.map(async linkObj => {
+    const allLinks = await Promise.all(links.map(async linkObj => {
       if (!linkObj.address) {
-        linkObj.address = await utils.recoverPersonalSign(linkObj.message, linkObj.signature)
+        linkObj.address = utils.recoverPersonalSign(linkObj.message, linkObj.signature)
+      }
+      const isErc1271 = linkObj.type === ACCOUNT_TYPES.erc1271
+      if (!(await utils.isValidSignature(linkObj, isErc1271, this._web3provider))) {
+        return null
       }
       return linkObj
     }))
+    return allLinks.filter(Boolean)
   }
 
   async _readAddressLink (address) {
     address = address.toLowerCase()
     const links = await this._readAddressLinks()
     return links.find(link => link.address.toLowerCase() === address)
+  }
+
+  async _detectAddressType (address) {
+    const bytecode = await utils.getCode(this._web3provider, address).catch(() => null)
+    if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
+      return ACCOUNT_TYPES.ethereumEOA
+    }
+    return ACCOUNT_TYPES.erc1271
   }
 
   async close () {

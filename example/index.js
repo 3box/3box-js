@@ -12,6 +12,11 @@ bopen.addEventListener('click', event => {
 
       controlls.style.display = 'block'
       updateProfileData(box)
+      updateLinksData(box, addresses[0])
+
+      linkAddress.addEventListener('click', () => {
+        box.linkAddress().then(() => { updateLinksData(box, addresses[0]) })
+      })
 
       setProfile.addEventListener('click', () => {
         box.public.set(prkey.value, prvalue.value).then(() => {
@@ -237,5 +242,25 @@ function updateGithubUser (box) {
     githubUser.innerHTML = res.username
   }).catch(error => {
     githubUser.innerHTML = error
+  })
+}
+
+function updateLinksData (box, address) {
+  didInfo.innerHTML = box.DID
+
+  addressLinks.innerHTML = ''
+  box.listAddressLinks().then(links => {
+    links.forEach((link, index) => {
+      addressLinks.innerHTML += `<b>${index + 1})</b> ${new Date(link.timestamp * 1000).toLocaleString()}
+      <br><b>LinkID: </b>${link.linkId}
+      <br><b>Address: </b>${link.address}
+      <br><b>Type: </b>${link.type}
+      <br><br>`
+    })
+  })
+
+  box.isAddressLinked({ address }).then(result => {
+    addressLinked.innerHTML = result ? 'Yes' : 'No'
+    linkAddress.style.display = result ? 'none' : 'block'
   })
 }
