@@ -69,12 +69,15 @@ class Space {
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread (optional)
    *
-   * @return    {Thread/GhostChat}                  An instance of the thread class for the joined thread
+   * @return    {Thread}                  An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
     if (opts.ghost) {
-      const chat = new GhostChat(namesToChatName(name), this._replicator, this._3id)
-      return chat
+      const ghostAddress = namesToChatName(this._name, name)
+      if (!this._activeThreads[ghostAddress]) {
+          this._activeThreads[ghostAddress] = new GhostChat(ghostAddress, this._replicator, this._3id)
+      }
+      return this._activeThreads[ghostAddress]
     }
     else {
       const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)

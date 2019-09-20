@@ -2,11 +2,8 @@ const EventEmitter = require('events').EventEmitter
 const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
-class GhostChat extends EventEmitter {
+class GhostThread extends EventEmitter {
 
-  /**
-   * Please use **space.joinChat** to get the instance of this class
-   */
   constructor (name, { ipfs }, threeId, _onUpdate = console.log) {
     super()
     this._name = name
@@ -23,13 +20,13 @@ class GhostChat extends EventEmitter {
       if (payload) {
         switch (payload.type) {
           case 'join':
-            this._userJoined(payload.iss, from)
+            this._userJoined(issuer, from)
           break;
           case 'request_backlog':
             this._sendDirect({ type: 'backlog', message: this.getPosts() }, from)
           break;
           default:
-            this._messageReceived(payload.iss, payload)
+            this._messageReceived(issuer, payload)
         }
       }
     })
@@ -195,7 +192,7 @@ class GhostChat extends EventEmitter {
   /**
    * Verifies the data received
    *
-   * @param     {Buffer}    data                A buffer of our jwt
+   * @param     {Buffer}    data                A buffer of the jwt
    * @return    {JWT}                           A verified JWT with our payload and issuer
    */
   async _verifyData (data) {
@@ -205,6 +202,22 @@ class GhostChat extends EventEmitter {
     } catch (e) {
       console.log(e)
     }
+  }
+
+  deletePost​ (hash) {
+    throw new Error('Not possible to delete post in Ghost Thread')
+  }
+
+​  addModerator (id) {
+    throw new Error('Not possible to add moderator in Ghost Thread')
+  }
+
+​  listModerators​ () {
+    throw new Error('Not possible to list moderators in Ghost Thread')
+  }
+
+​  addMember​ (id) {
+    throw new Error('Not possible to delete add member in Ghost Thread')
   }
 
 }
