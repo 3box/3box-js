@@ -5,3 +5,4 @@ coverage/
 tmp/
 .js-ipfs
 yarn.lock
+orbitdb

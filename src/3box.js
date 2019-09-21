@@ -12,12 +12,16 @@ const utils = require('./utils/index')
 const idUtils = require('./utils/id')
 const config = require('./config.js')
 const API = require('./api')
+const IPFSRepo = require('ipfs-repo')
+const LevelStore = require('datastore-level')
 
 const ACCOUNT_TYPES = {
   ethereum: 'ethereum',
-  ethereumEOA: 'ethereum-eoa'
+  ethereumEOA: 'ethereum-eoa',
+  erc1271: 'erc1271'
 }
 
+const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 
@@ -84,7 +88,7 @@ class Box {
     if (rootstoreAddress) {
       await this.replicator.start(rootstoreAddress, { profile: true })
       await this.replicator.rootstoreSyncDone
-      const authData = this.replicator.getAuthData()
+      const authData = await this.replicator.getAuthData()
       await this._3id.authenticate(null, { authData })
     } else {
       await this._3id.authenticate()
@@ -96,12 +100,16 @@ class Box {
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
     this.syncDone = this.replicator.syncDone
 
+    if (this._3id.idWallet) {
+      this._3id.idWallet.events.on('new-auth-method', authData => {
+        this._writeRootstoreEntry(Replicator.entryTypes.AUTH_DATA, authData)
+      })
+    }
+
     this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
-    await Promise.all([
-      this.public._load(),
-      this.private._load()
-    ])
+    await this.public._load()
+    await this.private._load()
   }
 
   /**
@@ -245,8 +253,8 @@ class Box {
   /**
    * Opens the 3Box associated with the given address
    *
-   * @param     {String}            address                 An ethereum address
-   * @param     {ethereumProvider}  ethereumProvider        An ethereum provider
+   * @param     {String | IdentityWallet}   addrOrIdW           An ethereum address, or [IdentityWallet](https://github.com/3box/identity-wallet-js/) instance
+   * @param     {ethereumProvider}          ethereumProvider    An ethereum provider
    * @param     {Object}            opts                    Optional parameters
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
@@ -255,11 +263,15 @@ class Box {
    * @param     {String}            opts.contentSignature   A signature, provided by a client of 3box using the private keys associated with the given address, of the 3box consent message
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (address, ethereumProvider, opts = {}) {
+  static async openBox (addrOrIdW, ethereumProvider, opts = {}) {
     // opts = Object.assign({ iframeStore: true }, opts)
-    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
-    globalIPFS = ipfs
-    const _3id = await ThreeId.getIdFromEthAddress(address, ethereumProvider, ipfs, opts)
+    const ipfs = await Box.getIPFS(opts)
+    let _3id
+    if (typeof addrOrIdW === 'string') {
+      _3id = await ThreeId.getIdFromEthAddress(addrOrIdW, ethereumProvider, ipfs, opts)
+    } else {
+      _3id = await ThreeId.getIdFromIdentityWallet(addrOrIdW, ipfs, opts)
+    }
     const box = new Box(_3id, ethereumProvider, ipfs, opts)
     await box._load(opts)
     return box
@@ -353,7 +365,7 @@ class Box {
    */
   async linkAddress (link = {}) {
     if (link.proof) {
-      await this._writeAddressLink(link.proof)
+      await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, link.proof)
       return
     }
     if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
@@ -410,7 +422,7 @@ class Box {
     if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
-      const res = query.address ? link.address === query.address : true
+      const res = query.address ? link.address.toLowerCase() === query.address : true
       return query.type ? res && link.type === query.type : res
     })
     return Boolean(linksQuery)
@@ -448,19 +460,35 @@ class Box {
       try {
         consent = await utils.getLinkConsent(address, did, this._web3provider)
       } catch (e) {
-        console.log(e)
         throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
-      linkData = {
-        version: 1,
-        type: ACCOUNT_TYPES.ethereumEOA,
-        message: consent.msg,
-        signature: consent.sig,
-        timestamp: consent.timestamp
+      const addressType = await this._detectAddressType(address)
+      if (addressType === ACCOUNT_TYPES.erc1271) {
+        const chainId = await utils.getChainId(this._web3provider)
+        linkData = {
+          version: 1,
+          type: ACCOUNT_TYPES.erc1271,
+          chainId,
+          address,
+          message: consent.msg,
+          timestamp: consent.timestamp,
+          signature: consent.sig
+        }
+      } else {
+        linkData = {
+          version: 1,
+          type: ACCOUNT_TYPES.ethereumEOA,
+          message: consent.msg,
+          signature: consent.sig,
+          timestamp: consent.timestamp
+        }
       }
-
-      await this._writeAddressLink(linkData)
+      try {
+        await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, linkData)
+      } catch (err) {
+        throw new Error('An error occured while publishing link:', err)
+      }
     } else {
       // Send consentSignature to 3box-address-server to link profile with ethereum address
       // _writeAddressLink already does this if the other conditional is called
@@ -482,23 +510,33 @@ class Box {
     }
   }
 
+<<<<<<< HEAD
   async _writeAddressLink (proof) {
     const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
     await this._ipfs.pin.add(data)
     utils.fetchJson(this._serverUrl + '/link', proof).catch(console.error)
     const linkExist = await this._linkCIDExists(data)
+=======
+  async _writeRootstoreEntry (type, payload) {
+    const cid = (await this._ipfs.dag.put(payload)).toBaseEncodedString()
+    await this._ipfs.pin.add(cid)
+    const linkExist = await this._typeCIDExists(type, cid)
+>>>>>>> 058dde8ba8b887d5d1839b216f55c6097a7ed01d
     if (linkExist) return
     const link = {
-      type: 'address-link',
-      data
+      type,
+      data: cid
     }
     await this.replicator.rootstore.add(link)
+    if (type === Replicator.entryTypes.ADDRESS_LINK) {
+      await utils.fetchJson(this._serverUrl + '/link', payload)
+    }
   }
 
-  async _linkCIDExists (cid) {
+  async _typeCIDExists (type, cid) {
     const entries = await this.replicator.rootstore.iterator({ limit: -1 }).collect()
-    const linkEntries = entries.filter(e => e.payload.value.type === 'address-link')
-    return linkEntries.find(entry => entry.data === cid)
+    const typeEntries = entries.filter(e => e.payload.value.type === type)
+    return Boolean(typeEntries.find(entry => entry.data === cid))
   }
 
   async _deleteAddressLink (address) {
@@ -510,18 +548,31 @@ class Box {
 
   async _readAddressLinks () {
     const links = await this.replicator.getAddressLinks()
-    return Promise.all(links.map(async linkObj => {
+    const allLinks = await Promise.all(links.map(async linkObj => {
       if (!linkObj.address) {
-        linkObj.address = await utils.recoverPersonalSign(linkObj.message, linkObj.signature)
+        linkObj.address = utils.recoverPersonalSign(linkObj.message, linkObj.signature)
+      }
+      const isErc1271 = linkObj.type === ACCOUNT_TYPES.erc1271
+      if (!(await utils.isValidSignature(linkObj, isErc1271, this._web3provider))) {
+        return null
       }
       return linkObj
     }))
+    return allLinks.filter(Boolean)
   }
 
   async _readAddressLink (address) {
     address = address.toLowerCase()
     const links = await this._readAddressLinks()
     return links.find(link => link.address.toLowerCase() === address)
+  }
+
+  async _detectAddressType (address) {
+    const bytecode = await utils.getCode(this._web3provider, address).catch(() => null)
+    if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
+      return ACCOUNT_TYPES.ethereumEOA
+    }
+    return ACCOUNT_TYPES.erc1271
   }
 
   async close () {
@@ -549,6 +600,39 @@ class Box {
   static isLoggedIn (address) {
     return ThreeId.isLoggedIn(address)
   }
+
+  /**
+   * Instanciate ipfs used by 3Box without calling openBox.
+   *
+   * @return    {IPFS}                           the ipfs instance
+   */
+  static async getIPFS (opts = {}) {
+    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    globalIPFS = ipfs
+    const pinningNode = opts.pinningNode || PINNING_NODE
+    ipfs.swarm.connect(pinningNode, () => {})
+    return ipfs
+  }
+}
+
+function initIPFSRepo () {
+  let repoOpts = {}
+  let ipfsRootPath
+
+  // if in browser, create unique root storage, and ipfs id on each instance
+  if (window && window.indexedDB) {
+    const sessionID = utils.randInt(10000)
+    ipfsRootPath = 'ipfs/root/' + sessionID
+    const levelInstance = new LevelStore(ipfsRootPath)
+    repoOpts = { storageBackends: { root: () => levelInstance } }
+  }
+
+  const repo = new IPFSRepo('ipfs', repoOpts)
+
+  return {
+    repo,
+    rootPath: ipfsRootPath
+  }
 }
 
 async function initIPFS (ipfs, iframeStore, ipfsOptions) {
@@ -559,13 +643,24 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   } else {
     // await iframeLoadedPromise
     // return ipfsProxy
+    let ipfsRepo
+    if (!ipfsOptions) {
+      ipfsRepo = initIPFSRepo()
+      ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
+    }
     return new Promise((resolve, reject) => {
-      ipfs = new IPFS(ipfsOptions || IPFS_OPTIONS)
+      ipfs = new IPFS(ipfsOptions)
       ipfs.on('error', error => {
         console.error(error)
         reject(error)
       })
-      ipfs.on('ready', () => resolve(ipfs))
+      ipfs.on('ready', () => {
+        resolve(ipfs)
+        if (ipfsRepo && window && window.indexedDB) {
+          // deletes once db is closed again
+          window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
+        }
+      })
     })
   }
 }

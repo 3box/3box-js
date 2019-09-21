@@ -4,6 +4,7 @@ const sha256 = require('js-sha256').sha256
 const ethers = require('ethers')
 
 const ENC_BLOCK_SIZE = 24
+const MAGIC_ERC1271_VALUE = '0x20c13b0b'
 
 const pad = (val, blockSize = ENC_BLOCK_SIZE) => {
   const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
@@ -39,7 +40,7 @@ const safeEthSend = (ethereum, data, callback) => {
 module.exports = {
   getMessageConsent,
 
-  recoverPersonalSign: async (msg, personalSig) => {
+  recoverPersonalSign: (msg, personalSig) => {
     if (!msg || !personalSig) throw new Error('recoverPersonalSign: missing arguments, msg and/or personalSig')
     const msgParams = {
       data: msg,
@@ -97,6 +98,47 @@ module.exports = {
     }
   },
 
+  getChainId: async (ethereumProvider) => {
+    const method = 'eth_chainId'
+    const params = []
+
+    const chainIdHex = await safeEthSend(ethereumProvider, {
+      jsonrpc: '2.0',
+      id: 0,
+      method,
+      params
+    })
+    return parseInt(chainIdHex, 16)
+  },
+
+  getCode: async (ethereumProvider, address) => {
+    const method = 'eth_getCode'
+    const params = [address]
+
+    const code = await safeEthSend(ethereumProvider, {
+      jsonrpc: '2.0',
+      id: 1,
+      method,
+      params
+    })
+    return code
+  },
+
+  isValidSignature: async (linkObj, isErc1271, web3Provider) => {
+    if (!linkObj.address) return false
+    if (!isErc1271) return true
+
+    const abi = [
+      'function isValidSignature(bytes _messageHash, bytes _signature) public view returns (bytes4 magicValue)'
+    ]
+    const ethersProvider = new ethers.providers.Web3Provider(web3Provider)
+    const contract = new ethers.Contract(linkObj.address, abi, ethersProvider)
+    const message = '0x' + Buffer.from(linkObj.message, 'utf8').toString('hex')
+    const returnValue = await contract.isValidSignature(message, linkObj.signature)
+
+    return returnValue === MAGIC_ERC1271_VALUE
+  },
+
   fetchJson: async (url, body) => {
     let opts
     if (body) {
@@ -141,6 +183,7 @@ module.exports = {
     const digest = Buffer.from(sha256.digest(str))
     return Multihash.encode(digest, 'sha2-256').toString('hex')
   },
+  randInt: max => Math.floor(Math.random() * max),
   sha256,
   pad,
   unpad

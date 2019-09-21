@@ -23,7 +23,7 @@ const ODB_STORE_OPTS = {
     skipManifest: true
   }
 }
-const rootEntryTypes = {
+const entryTypes = {
   SPACE: 'space',
   ADDRESS_LINK: 'address-link',
   AUTH_DATA: 'auth-data'
@@ -143,10 +143,10 @@ class Replicator {
     const entry = entries.find(entry => entry.payload.value.odbAddress === storeAddress)
     if (isSpace) {
       if (!entry) {
-        await this.rootstore.add({ type: rootEntryTypes.SPACE, DID: did, odbAddress: storeAddress })
+        await this.rootstore.add({ type: entryTypes.SPACE, DID: did, odbAddress: storeAddress })
       } else if (!entry.payload.value.type) {
         await this.rootstore.del(entry.hash)
-        await this.rootstore.add({ type: rootEntryTypes.SPACE, DID: did, odbAddress: storeAddress })
+        await this.rootstore.add({ type: entryTypes.SPACE, DID: did, odbAddress: storeAddress })
       }
     } else if (!entry) {
       await this.rootstore.add({ odbAddress: storeAddress })
@@ -158,12 +158,12 @@ class Replicator {
     const storeEntries = this._listStoreEntries()
     const loadPromises = storeEntries.map(entry => {
       const data = entry.payload.value
-      if (data.type === rootEntryTypes.SPACE && data.DID) {
+      if (data.type === entryTypes.SPACE && data.DID) {
         pinDID(data.DID)
       }
       if (profile && (data.odbAddress.includes('public') || data.odbAddress.includes('private'))) {
         return this._loadKeyValueStore(data.odbAddress)
-      } else if (data.odbAddress.includes(rootEntryTypes.SPACE) &&
+      } else if (data.odbAddress.includes(entryTypes.SPACE) &&
         (allSpaces || (spacesList && spacesList.includes(data.odbAddress.split('.')[2])))) {
         return this._loadKeyValueStore(data.odbAddress)
       }
@@ -201,7 +201,7 @@ class Replicator {
 
   async getAddressLinks () {
     const entries = await this.rootstore.iterator({ limit: -1 }).collect()
-    const linkEntries = entries.filter(e => e.payload.value.type === rootEntryTypes.ADDRESS_LINK)
+    const linkEntries = entries.filter(e => e.payload.value.type === entryTypes.ADDRESS_LINK)
     const resolveLinks = linkEntries.map(async entry => {
       const cid = entry.payload.value.data
       // TODO handle missing ipfs obj??, timeouts?
@@ -215,7 +215,7 @@ class Replicator {
 
   async getAuthData () {
     const entries = await this.rootstore.iterator({ limit: -1 }).collect()
-    const authEntries = entries.filter(e => e.payload.value.type === rootEntryTypes.AUTH_DATA)
+    const authEntries = entries.filter(e => e.payload.value.type === entryTypes.AUTH_DATA)
     const resolveLinks = authEntries.map(async entry => {
       const cid = entry.payload.value.data
       // TODO handle missing ipfs obj??, timeouts?
@@ -291,6 +291,10 @@ class Replicator {
         }
       })
     })
+  }
+
+  static get entryTypes () {
+    return entryTypes
   }
 }
 
