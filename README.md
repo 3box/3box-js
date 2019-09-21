@@ -284,9 +284,10 @@ idUtils.verifyClaim(claim)
         * [.private](#Box+private)
         * [.verified](#Box+verified)
         * [.spaces](#Box+spaces)
+        * [.syncDone](#Box+syncDone)
         * [.DID](#Box+DID)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
-        * [.onSyncDone(syncDone)](#Box+onSyncDone)
+        * [.onSyncDone(syncDone)](#Box+onSyncDone) ⇒ <code>Promise</code>
         * [.linkAddress([link])](#Box+linkAddress)
         * [.removeAddressLink(address)](#Box+removeAddressLink)
         * [.isAddressLinked([query])](#Box+isAddressLinked)
@@ -306,8 +307,9 @@ idUtils.verifyClaim(claim)
         * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
-        * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
+        * [.openBox(addrOrIdW, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
+        * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
 
 <a name="new_Box_new"></a>
 
@@ -354,6 +356,16 @@ Please use the **openBox** method to instantiate a 3Box
 | --- | --- | --- |
 | spaces | <code>Object</code> | an object containing all open spaces indexed by their name. |
 
+<a name="Box+syncDone"></a>
+
+#### box.syncDone
+**Kind**: instance property of [<code>Box</code>](#Box)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| syncDone | <code>Promise</code> | A promise that is resolved when the box is synced |
+
 <a name="Box+DID"></a>
 
 #### box.DID
@@ -381,10 +393,11 @@ Opens the space with the given name in the users 3Box
 
 <a name="Box+onSyncDone"></a>
 
-#### box.onSyncDone(syncDone)
-Sets the callback function that will be called once when the db is fully synced.
+#### box.onSyncDone(syncDone) ⇒ <code>Promise</code>
+Sets the callback function that will be called once when the box is fully synced.
 
 **Kind**: instance method of [<code>Box</code>](#Box)  
+**Returns**: <code>Promise</code> - A promise that is fulfilled when the box is syned  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -632,7 +645,7 @@ Verifies the proofs of social accounts that is present in the profile.
 
 <a name="Box.openBox"></a>
 
-#### Box.openBox(address, ethereumProvider, opts) ⇒ [<code>Box</code>](#Box)
+#### Box.openBox(addrOrIdW, ethereumProvider, opts) ⇒ [<code>Box</code>](#Box)
 Opens the 3Box associated with the given address
 
 **Kind**: static method of [<code>Box</code>](#Box)  
@@ -640,7 +653,7 @@ Opens the 3Box associated with the given address
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
+| addrOrIdW | <code>String</code> \| <code>IdentityWallet</code> | An ethereum address, or [IdentityWallet](https://github.com/3box/identity-wallet-js/) instance |
 | ethereumProvider | <code>ethereumProvider</code> | An ethereum provider |
 | opts | <code>Object</code> | Optional parameters |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
@@ -661,6 +674,13 @@ Check if the given address is logged in
 | --- | --- | --- |
 | address | <code>String</code> | An ethereum address |
 
+<a name="Box.getIPFS"></a>
+
+#### Box.getIPFS() ⇒ <code>IPFS</code>
+Instanciate ipfs used by 3Box without calling openBox.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>IPFS</code> - the ipfs instance  
 <a name="KeyValueStore"></a>
 
 ### KeyValueStore
@@ -782,6 +802,7 @@ const log = store.log
     * [new Space()](#new_Space_new)
     * [.public](#Space+public)
     * [.private](#Space+private)
+    * [.syncDone](#Space+syncDone)
     * [.DID](#Space+DID)
     * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
     * [.joinThreadByAddress(address, opts)](#Space+joinThreadByAddress) ⇒ [<code>Thread</code>](#Thread)
@@ -813,6 +834,16 @@ Please use **box.openSpace** to get the instance of this class
 | Name | Type | Description |
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the space |
+
+<a name="Space+syncDone"></a>
+
+#### space.syncDone
+**Kind**: instance property of [<code>Space</code>](#Space)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| syncDone | <code>Promise</code> | A promise that is resolved when the box is synced |
 
 <a name="Space+DID"></a>
 
