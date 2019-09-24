@@ -1,6 +1,6 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
-const GhostChat = require('./ghost')
+const GhostThread = require('./ghost')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
@@ -75,7 +75,7 @@ class Space {
     if (opts.ghost) {
       const ghostAddress = namesToChatName(this._name, name)
       if (!this._activeThreads[ghostAddress]) {
-          this._activeThreads[ghostAddress] = new GhostChat(ghostAddress, this._replicator, this._3id)
+          this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id)
       }
       return this._activeThreads[ghostAddress]
     }

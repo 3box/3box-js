@@ -86,6 +86,22 @@ class GhostThread extends EventEmitter {
     : await this._sendDirect({ type: 'chat', message }, to)
   }
 
+  async deletePost (hash) {
+    throw new Error('Not possible to delete post in Ghost Thread')
+  }
+
+  async addModerator (id) {
+    throw new Error('Not possible to add moderator in Ghost Thread')
+  }
+
+  async listModerators () {
+    throw new Error('Not possible to list moderators in Ghost Thread')
+  }
+
+  async addMember (id) {
+    throw new Error('Not possible to add member in Ghost Thread')
+  }
+
   /**
    * Request a backlog of past messages from peers in the chat
    *
@@ -204,22 +220,6 @@ class GhostThread extends EventEmitter {
     }
   }
 
-  deletePost​ (hash) {
-    throw new Error('Not possible to delete post in Ghost Thread')
-  }
-
-​  addModerator (id) {
-    throw new Error('Not possible to add moderator in Ghost Thread')
-  }
-
-​  listModerators​ () {
-    throw new Error('Not possible to list moderators in Ghost Thread')
-  }
-
-​  addMember​ (id) {
-    throw new Error('Not possible to delete add member in Ghost Thread')
-  }
-
 }
 
-module.exports = GhostChat
+module.exports = GhostThread

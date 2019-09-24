@@ -510,18 +510,10 @@ class Box {
     }
   }
 
-<<<<<<< HEAD
-  async _writeAddressLink (proof) {
-    const data = (await this._ipfs.dag.put(proof)).toBaseEncodedString()
-    await this._ipfs.pin.add(data)
-    utils.fetchJson(this._serverUrl + '/link', proof).catch(console.error)
-    const linkExist = await this._linkCIDExists(data)
-=======
   async _writeRootstoreEntry (type, payload) {
     const cid = (await this._ipfs.dag.put(payload)).toBaseEncodedString()
     await this._ipfs.pin.add(cid)
     const linkExist = await this._typeCIDExists(type, cid)
->>>>>>> 058dde8ba8b887d5d1839b216f55c6097a7ed01d
     if (linkExist) return
     const link = {
       type,
