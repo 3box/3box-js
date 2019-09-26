@@ -100,10 +100,15 @@ bopen.addEventListener('click', event => {
         const name = threadName.value
         const firstModerator = threadfirstModerator.value
         const membersBool = members.checked
+        const ghostBool = ghostCheck.checked
+        console.log('ghost?', ghostBool);
         posts.style.display = 'block'
         threadModeration.style.display = 'block'
         if (members.checked) threadMembers.style.display = 'block'
-        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members: membersBool}).then(thread => {
+        if (ghostCheck.checked) {
+          addThreadMod.disabled = true
+        }
+        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members: membersBool, ghost: ghostBool}).then(thread => {
           window.currentThread = thread
           thread.onUpdate(() => {
             updateThreadData()
@@ -111,8 +116,10 @@ bopen.addEventListener('click', event => {
           thread.onNewCapabilities(() => {
             updateThreadCapabilities()
           })
-          updateThreadData()
-          updateThreadCapabilities()
+          if (window.currentThread._room == undefined) {
+            updateThreadData()
+            updateThreadCapabilities()
+          }
         }).catch(updateThreadError)
       })
 
@@ -153,19 +160,28 @@ bopen.addEventListener('click', event => {
 
       const updateThreadCapabilities = () => {
         threadMemberList.innerHTML = ''
-        if (window.currentThread._members) {
+        // if else statement cause ghost thread can't list moderators
+        if (window.currentThread._peerId) {
           window.currentThread.listMembers().then(members => {
             members.map(member => {
                 threadMemberList.innerHTML += member + '<br />'
             })
           })
-        }
-        threadModeratorList.innerHTML = ''
-        window.currentThread.listModerators().then(moderators => {
-          moderators.map(moderator => {
-              threadModeratorList.innerHTML += moderator  +  '<br />'
+        } else {
+          if (window.currentThread._members) {
+            window.currentThread.listMembers().then(members => {
+              members.map(member => {
+                  threadMemberList.innerHTML += member + '<br />'
+              })
+            })
+          }
+          threadModeratorList.innerHTML = ''
+          window.currentThread.listModerators().then(moderators => {
+            moderators.map(moderator => {
+                threadModeratorList.innerHTML += moderator  +  '<br />'
+            })
           })
-        })
+        }
       }
 
       postThread.addEventListener('click', () => {
