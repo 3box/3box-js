@@ -400,7 +400,7 @@ class Box {
     if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
     const payload = {
       address,
-      type: `delete-address-link`
+      type: 'delete-address-link'
     }
     const oneHour = 60 * 60
     const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour })
