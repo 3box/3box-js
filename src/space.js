@@ -27,7 +27,7 @@ class Space {
      */
     this.private = null
     /**
-     * @property {Promise}       syncDone       A promise that is resolved when the box is synced
+     * @property {Promise}       syncDone       A promise that is resolved when the space data is synced
      */
     this.syncDone = null
   }
