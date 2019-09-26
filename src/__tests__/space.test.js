@@ -1,24 +1,22 @@
 jest.mock('../keyValueStore')
 jest.mock('../thread')
 const Thread = require('../thread')
-const ENSURE_CONNECTED = 'ensure connected function'
 const ORBITDB = 'orbitdb instance'
+let authenticated = false
 const threeIdMock = {
-  initKeyringByName: jest.fn(() => {
-    return false
+  isAuthenticated: jest.fn(() => {
+    return authenticated
   }),
-  getKeyringBySpaceName: jest.fn(() => {
-    return {
-      getDBSalt: jest.fn(),
-      symEncrypt: data => { return { ciphertext: 'wow, such encrypted/' + data, nonce: 123 } },
-      symDecrypt: data => data.split('/')[1]
-    }
-  }),
+  authenticate: jest.fn(),
+  hashDBKey: jest.fn(key => `${key}asdfasdfasdf`),
+  encrypt: data => { return { ciphertext: 'wow, such encrypted/' + data, nonce: 123 } },
+  decrypt: ({ciphertext, nonce}) => ciphertext.split('/')[1],
   signJWT: (payload, { space }) => {
     return `a fake jwt for ${space}`
   },
   getSubDID: (space) => `subdid-${space}`
 }
+const replicatorMock = 'replicator'
 let rootstoreMockData = []
 const rootstoreMock = {
   iterator: () => { return { collect: () => rootstoreMockData } },
@@ -37,17 +35,15 @@ describe('Space', () => {
 
   beforeEach(() => {
     rootstoreMock.add.mockClear()
-    threeIdMock.initKeyringByName.mockClear()
-    threeIdMock.getKeyringBySpaceName.mockClear()
+    threeIdMock.isAuthenticated.mockClear()
+    threeIdMock.authenticate.mockClear()
   })
 
   it('should be correctly constructed', async () => {
-    space = new Space(NAME1, threeIdMock, ORBITDB, rootstoreMock, ENSURE_CONNECTED)
+    space = new Space(NAME1, replicatorMock, threeIdMock)
     expect(space._name).toEqual(NAME1)
     expect(space._3id).toEqual(threeIdMock)
-    expect(space._rootStore).toEqual(rootstoreMock)
-    expect(space._store._orbitdb).toEqual(ORBITDB)
-    expect(space._store._ensureConnected).toEqual(ENSURE_CONNECTED)
+    expect(space._store._replicator).toEqual(replicatorMock)
     expect(space._store._name).toEqual('3box.space.' + NAME1 + '.keyvalue')
   })
 
@@ -59,10 +55,10 @@ describe('Space', () => {
       opts.onSyncDone = resolve
     })
     await space.open(opts)
-    expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME1)
-    expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
-    expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME1)
-    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME1 + '.keyvalue')
+    expect(opts.consentCallback).toHaveBeenCalledWith(true, NAME1)
+    //expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
+    expect(threeIdMock.isAuthenticated).toHaveBeenCalledWith([NAME1])
+    expect(threeIdMock.authenticate).toHaveBeenCalledWith([NAME1])
     await syncDonePromise
   })
 
@@ -72,41 +68,6 @@ describe('Space', () => {
     }
     await space.open(opts)
     expect(opts.consentCallback).toHaveBeenCalledTimes(0)
-  })
-
-  it('should open correctly and not add to rootStore if entry already present', async () => {
-    rootstoreMockData = [{ payload: { value: { type: 'space', odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } }]
-    let opts = {
-      consentCallback: jest.fn(),
-    }
-    const syncDonePromise = new Promise((resolve, reject) => {
-      opts.onSyncDone = resolve
-    })
-    space = new Space(NAME2, threeIdMock, ORBITDB, rootstoreMock, ENSURE_CONNECTED)
-    await space.open(opts)
-    expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME2)
-    expect(rootstoreMock.add).toHaveBeenCalledTimes(0)
-    expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME2)
-    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME2 + '.keyvalue')
-    await syncDonePromise
-  })
-
-  it('should open correctly and add to rootStore if old entry already present', async () => {
-    rootstoreMockData = [{ hash: 'a hash', payload: { value: { odbAddress: '/orbitdb/Qmasofgh/3box.space.' + NAME2 + '.keyvalue'} } }]
-    let opts = {
-      consentCallback: jest.fn(),
-    }
-    const syncDonePromise = new Promise((resolve, reject) => {
-      opts.onSyncDone = resolve
-    })
-    space = new Space(NAME2, threeIdMock, ORBITDB, rootstoreMock, ENSURE_CONNECTED)
-    await space.open(opts)
-    expect(opts.consentCallback).toHaveBeenCalledWith(false, NAME2)
-    expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME2), odbAddress:'/orbitdb/myodbaddr' })
-    expect(rootstoreMock.del).toHaveBeenCalledWith('a hash')
-    expect(threeIdMock.initKeyringByName).toHaveBeenCalledWith(NAME2)
-    expect(threeIdMock.getKeyringBySpaceName).toHaveBeenCalledWith('3box.space.' + NAME2 + '.keyvalue')
-    await syncDonePromise
   })
 
   describe('public store reducer', () => {
@@ -137,10 +98,10 @@ describe('Space', () => {
     })
 
     it('log should only return public values', async () => {
-      const log1 = space.public.log
+      const log1 = await space.public.log()
       expect(log1).toMatchSnapshot()
       space._store.set('key', 'value')
-      const log2 = space.public.log
+      const log2 = await space.public.log()
       expect(log2).toEqual(log1)
     })
 
@@ -184,10 +145,10 @@ describe('Space', () => {
 
     it('log should only return private values', async () => {
       const refLog = [{ key: 'k1', op: 'PUT', timeStamp: 123, value: 'sv1' }, { key: 'k3', op: 'PUT', timeStamp: 123, value: 'sv3' }, { key: 'k4', op: 'PUT', timeStamp: 123, value: 'sv4' }, { key: 'k5', op: 'PUT', timeStamp: 123, value: 'sv5' } ]
-      const log1 = space.private.log
+      const log1 = await space.private.log()
       expect(log1).toEqual(refLog)
       space._store.set('key', 'value')
-      const log2 = space.private.log
+      const log2 = await space.private.log()
       expect(log2).toEqual(log1)
     })
 
@@ -244,8 +205,8 @@ describe('Space', () => {
     it('joins thread correctly', async () => {
       const t1 = await space.joinThread('t2')
       expect(Thread).toHaveBeenCalledTimes(1)
-      expect(Thread.mock.calls[0][0]).toEqual(ORBITDB)
-      expect(Thread.mock.calls[0][1]).toEqual(`3box.thread.${NAME2}.t2`)
+      expect(Thread.mock.calls[0][0]).toEqual(`3box.thread.${NAME1}.t2`)
+      expect(Thread.mock.calls[0][1]).toEqual(replicatorMock)
       expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
       // function for autosubscribing works as intended
@@ -261,8 +222,8 @@ describe('Space', () => {
     it('joins thread correctly, no auto subscription', async () => {
       const t1 = await space.joinThread('t3', { noAutoSub: true })
       expect(Thread).toHaveBeenCalledTimes(1)
-      expect(Thread.mock.calls[0][0]).toEqual(ORBITDB)
-      expect(Thread.mock.calls[0][1]).toEqual(`3box.thread.${NAME2}.t3`)
+      expect(Thread.mock.calls[0][0]).toEqual(`3box.thread.${NAME1}.t3`)
+      expect(Thread.mock.calls[0][1]).toEqual(replicatorMock)
       expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
       // function for autosubscribing works as intended

@@ -1,9 +1,8 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
-const { sha256Multihash, throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
+const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 
-const ENC_BLOCK_SIZE = 24
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
 
@@ -11,14 +10,12 @@ class Space {
   /**
    * Please use **box.openSpace** to get the instance of this class
    */
-  constructor (name, threeId, orbitdb, rootStore, ensureConnected) {
+  constructor (name, replicator, threeId) {
     this._name = name
     this._3id = threeId
-    this._ensureConnected = ensureConnected
-    this._store = new KeyValueStore(orbitdb, nameToSpaceName(this._name), this._ensureConnected, this._3id)
-    this._orbitdb = orbitdb
+    this._replicator = replicator
+    this._store = new KeyValueStore(nameToSpaceName(this._name), this._replicator, this._3id)
     this._activeThreads = {}
-    this._rootStore = rootStore
     /**
      * @property {KeyValueStore} public         access the profile store of the space
      */
@@ -27,6 +24,10 @@ class Space {
      * @property {KeyValueStore} private        access the private store of the space
      */
     this.private = null
+    /**
+     * @property {Promise}       syncDone       A promise that is resolved when the box is synced
+     */
+    this.syncDone = null
   }
 
   /**
@@ -39,27 +40,20 @@ class Space {
   async open (opts = {}) {
     if (!this._store._db) {
       // store is not loaded opened yet
-      const consentNeeded = await this._3id.initKeyringByName(this._name)
-      if (opts.consentCallback) opts.consentCallback(consentNeeded, this._name)
-      const spaceAddress = await this._store._load()
-
-      const entries = await this._rootStore.iterator({ limit: -1 }).collect()
-      const entry = entries.find(entry => entry.payload.value.odbAddress && entry.payload.value.odbAddress.indexOf(nameToSpaceName(this._name)) !== -1)
-      if (!entry) {
-        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
-      } else if (!entry.payload.value.type) {
-        await this._rootStore.del(entry.hash)
-        await this._rootStore.add({ type: 'space', DID: this.DID, odbAddress: spaceAddress })
+      const authenticated = await this._3id.isAuthenticated([this._name])
+      if (!authenticated) {
+        await this._3id.authenticate([this._name])
       }
-      const hasNumEntries = opts.numEntriesMessages && opts.numEntriesMessages[spaceAddress]
-      const numEntries = hasNumEntries ? opts.numEntriesMessages[spaceAddress].numEntries : undefined
+      if (opts.consentCallback) opts.consentCallback(!authenticated, this._name)
+      await this._store._load()
+
       const syncSpace = async () => {
-        await this._store._sync(numEntries)
+        await this._store._sync()
         if (opts.onSyncDone) opts.onSyncDone()
       }
-      this._syncSpacePromise = syncSpace()
+      this.syncDone = syncSpace()
       this.public = publicStoreReducer(this._store)
-      this.private = privateStoreReducer(this._store, this._3id.getKeyringBySpaceName(nameToSpaceName(this._name)))
+      this.private = privateStoreReducer(this._store, this._3id, this._name)
     }
   }
 
@@ -77,7 +71,7 @@ class Space {
   async joinThread (name, opts = {}) {
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
     if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, name), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    const thread = new Thread(namesTothreadName(this._name, name), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
     const address = await thread._getThreadAddress()
     if (this._activeThreads[address]) return this._activeThreads[address]
     await thread._load()
@@ -101,7 +95,7 @@ class Space {
     if (threadSpace !== this._name) throw new Error('joinThreadByAddress: attempting to open thread from different space, must open within same space')
     if (this._activeThreads[address]) return this._activeThreads[address]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
-    const thread = new Thread(this._orbitdb, namesTothreadName(this._name, threadName), this._3id, opts.members, opts.firstModerator, subscribeFn, this._ensureConnected)
+    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
     await thread._load(address)
     this._activeThreads[address] = thread
     return thread
@@ -119,7 +113,7 @@ class Space {
   async subscribeThread (address, config = {}) {
     if (!OrbitDBAddress.isValid(address)) throw new Error('subscribeThread: must subscribe to valid thread/orbitdb address')
     const threadKey = `thread-${address}`
-    await this._syncSpacePromise
+    await this.syncDone
     if (!(await this.public.get(threadKey))) {
       await this.public.set(threadKey, Object.assign({}, config, { address }))
     }
@@ -177,8 +171,8 @@ const publicStoreReducer = (store) => {
       throwIfUndefined(key, 'key')
       return store.remove(PREFIX + key)
     },
-    get log () {
-      return store.log.reduce((newLog, entry) => {
+    async log () {
+      return (await store.log()).reduce((newLog, entry) => {
         if (entry.key.startsWith(PREFIX)) {
           entry.key = entry.key.slice(4)
           newLog.push(entry)
@@ -198,25 +192,17 @@ const publicStoreReducer = (store) => {
   }
 }
 
-const privateStoreReducer = (store, keyring) => {
+const privateStoreReducer = (store, threeId, spaceName) => {
   const PREFIX = 'priv_'
-  const SALT = keyring.getDBSalt()
-  const dbKey = key => {
+  const dbKey = async key => {
     throwIfUndefined(key, 'key')
-    return PREFIX + sha256Multihash(SALT + key)
+    return PREFIX + await threeId.hashDBKey(key, spaceName)
   }
-  const pad = (val, blockSize = ENC_BLOCK_SIZE) => {
-    const blockDiff = (blockSize - (val.length % blockSize)) % blockSize
-    return `${val}${'\0'.repeat(blockDiff)}`
-  }
-  const unpad = padded => padded.replace(/\0+$/, '')
-  const encryptEntry = entry => keyring.symEncrypt(pad(JSON.stringify(entry)))
-  const decryptEntry = ({ ciphertext, nonce }) => {
-    return JSON.parse(unpad(keyring.symDecrypt(ciphertext, nonce)))
-  }
+  const encryptEntry = async entry => threeId.encrypt(JSON.stringify(entry), spaceName)
+  const decryptEntry = async encObj => JSON.parse(await threeId.decrypt(encObj, spaceName))
   return {
     get: async (key, opts = {}) => {
-      const entry = await store.get(dbKey(key), opts)
+      const entry = await store.get(await dbKey(key), opts)
 
       if (!entry) {
         return null
@@ -225,51 +211,56 @@ const privateStoreReducer = (store, keyring) => {
       if (opts.metadata) {
         return {
           ...entry,
-          value: decryptEntry(entry.value).value
+          value: (await decryptEntry(entry.value)).value
         }
       }
 
-      return decryptEntry(entry).value
+      return (await decryptEntry(entry)).value
     },
-    getMetadata: async key => store.getMetadata(dbKey(key)),
-    set: async (key, value) => store.set(dbKey(key), encryptEntry({ key, value })),
+    getMetadata: async key => store.getMetadata(await dbKey(key)),
+    set: async (key, value) => store.set(await dbKey(key), await encryptEntry({ key, value })),
     setMultiple: async (keys, values) => {
       throwIfNotEqualLenArrays(keys, values)
-      const dbKeys = keys.map(dbKey)
-      const encryptedEntries = values.map((value, index) => encryptEntry({ key: keys[index], value }))
+      const dbKeys = await Promise.all(keys.map(dbKey))
+      const encryptedEntries = await Promise.all(
+        values.map((value, index) => encryptEntry({ key: keys[index], value }))
+      )
       return store.setMultiple(dbKeys, encryptedEntries)
     },
-    remove: async key => store.remove(dbKey(key)),
-    get log () {
-      return store.log.reduce((newLog, entry) => {
+    remove: async key => store.remove(await dbKey(key)),
+    async log () {
+      const log = await store.log()
+      const privLog = []
+      for (const entry of log) {
         if (entry.key.startsWith(PREFIX)) {
-          const decEntry = decryptEntry(entry.value)
+          const decEntry = await decryptEntry(entry.value)
           entry.key = decEntry.key
           entry.value = decEntry.value
-          newLog.push(entry)
+          privLog.push(entry)
         }
-        return newLog
-      }, [])
+      }
+      return privLog
     },
     all: async (opts = {}) => {
       const entries = await store.all(opts)
-      return Object.keys(entries).reduce((newAll, key) => {
+      const privEntries = {}
+      for (const key in entries) {
         if (key.startsWith(PREFIX)) {
           const entry = entries[key]
 
           if (opts.metadata) {
-            const decEntry = decryptEntry(entry.value)
-            newAll[decEntry.key] = {
+            const decEntry = await decryptEntry(entry.value)
+            privEntries[decEntry.key] = {
               ...entry,
               value: decEntry.value
             }
           } else {
-            const decEntry = decryptEntry(entry)
-            newAll[decEntry.key] = decEntry.value
+            const decEntry = await decryptEntry(entry)
+            privEntries[decEntry.key] = decEntry.value
           }
         }
-        return newAll
-      }, {})
+      }
+      return privEntries
     }
   }
 }

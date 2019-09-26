@@ -1,19 +1,15 @@
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils/index')
-const config = require('./config')
-
-const ORBITDB_OPTS = config.orbitdb_options
 
 class KeyValueStore {
   /**
    * Please use **box.public** or **box.private** to get the instance of this class
    */
-  constructor (orbitdb, name, ensureConnected, threeId) {
-    this._orbitdb = orbitdb
+  constructor (name, replicator, threeId) {
     this._name = name
+    this._replicator = replicator
     if (this._name.startsWith('3box.space.')) {
       this._space = this._name.split('.')[2]
     }
-    this._ensureConnected = ensureConnected
     this._3id = threeId
   }
 
@@ -69,7 +65,7 @@ class KeyValueStore {
   async set (key, value) {
     throwIfUndefined(key, 'key')
     this._requireLoad()
-    this._ensureConnected(this._db.address.toString())
+    this._replicator.ensureConnected(this._db.address.toString())
     const timeStamp = new Date().getTime()
     await this._db.put(key, { value, timeStamp })
     return true
@@ -85,7 +81,7 @@ class KeyValueStore {
   async setMultiple (keys, values) {
     throwIfNotEqualLenArrays(keys, values)
     this._requireLoad()
-    this._ensureConnected(this._db.address.toString())
+    this._replicator.ensureConnected(this._db.address.toString())
     try {
       await keys.reduce(async (previousPromise, nextKey, index) => {
         await previousPromise
@@ -108,7 +104,7 @@ class KeyValueStore {
   async remove (key) {
     throwIfUndefined(key, 'key')
     this._requireLoad()
-    this._ensureConnected(this._db.address.toString())
+    this._replicator.ensureConnected(this._db.address.toString())
     await this._db.del(key)
     return true
   }
@@ -138,55 +134,23 @@ class KeyValueStore {
     return this._db.get(key)
   }
 
-  async _sync (numRemoteEntries) {
+  async _sync () {
     this._requireLoad()
-    // let toid = null
-    const numEntriesDefined = !(numRemoteEntries === null || numRemoteEntries === undefined)
-    if (numEntriesDefined && numRemoteEntries <= this._db._oplog.values.length) return Promise.resolve()
-    await new Promise((resolve, reject) => {
-      if (!numRemoteEntries) {
-        setTimeout(() => {
-          this._db.events.removeAllListeners('replicated')
-          this._db.events.removeAllListeners('replicate.progress')
-          resolve()
-        }, 3000)
-      }
-      this._db.events.on('replicated', () => {
-        if (numRemoteEntries <= this._db._oplog.values.length) resolve()
-      })
-      /*
-      this._db.events.on('replicate.progress', (_x, _y, _z, num, max) => {
-        if (toid) {
-          clearTimeout(toid)
-          toid = null
-        }
-        const total = numRemoteEntries || max
-        if (num >= total) {
-          this._db.events.on('replicated', resolve)
-          listenerAdded = true
-        }
-      })
-      */
-    })
+    await this._replicator.syncDB(this._db)
     return this._db.address.toString()
   }
 
-  async _load (odbAddress) {
-    const key = this._3id.getKeyringBySpaceName(this._name).getPublicKeys(true).signingKey
-    const opts = {
-      ...ORBITDB_OPTS,
-      format: 'dag-pb',
-      accessController: {
-        write: [key],
-        type: 'legacy-ipfs-3box',
-        skipManifest: true
-      }
+  async _load () {
+    const odbAddress = this._replicator.listStoreAddresses().find(odbAddress => odbAddress.includes(this._name))
+    if (odbAddress) {
+      this._db = await this._replicator.getStore(odbAddress)
+    } else {
+      const key = (await this._3id.getPublicKeys(this._space, true)).signingKey
+      this._db = await this._replicator.addKVStore(this._name, key, Boolean(this._space), this._3id.getSubDID(this._space))
     }
-    if (this._space) {
-      opts.identity = await this._3id.getOdbId(this._space)
-    }
-    this._db = await this._orbitdb.keyvalue(odbAddress || this._name, opts)
-    await this._db.load()
+    // when this._space is undefined it will use the root identity
+    const odbIdentity = await this._3id.getOdbId(this._space)
+    this._db.setIdentity(odbIdentity)
     return this._db.address.toString()
   }
 
@@ -238,7 +202,7 @@ class KeyValueStore {
    *
    * @return    {Array<Object>}     Array of ordered log entry objects
    */
-  get log () {
+  async log () {
     return this._db._oplog.values.map(obj => {
       return { op: obj.payload.op,
         key: obj.payload.key,

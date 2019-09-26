@@ -2,8 +2,8 @@ const KeyValueStore = require('./keyValueStore')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils/index')
 
 class ProfileStore extends KeyValueStore {
-  constructor (orbitdb, name, linkProfile, ensureConnected, _3id) {
-    super(orbitdb, name, ensureConnected, _3id)
+  constructor (name, linkProfile, replicator, threeId) {
+    super(name, replicator, threeId)
     this._linkProfile = linkProfile
   }
 

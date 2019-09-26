@@ -1,5 +1,18 @@
 # Release Notes
 
+## v1.11.0 - 2019-09-24
+* feat: 3box instance can now be created with an instance of the IdentityWallet
+* feat: smarter data syncing logic
+* feat: support erc1271 address links (your contract wallet can now have a 3Box!)
+* feat: verify link proofs added by the `linkAddress` method
+
+* fix: sync rootstore before resolving promise from openBox
+
+### Updated data sync api
+To wait for the data to be fully synced from the network you can now simply await these publicly exposed promises:
+* `await box.syncDone` - for the main data storage
+* `await space.syncDone` - for data in the given space
+
 ## v1.10.10 - 2019-09-12
 * feat: add method to get ipfs instance without openBox
 

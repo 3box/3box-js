@@ -60,10 +60,13 @@ const box = await Box.openBox('0x12345abcde', ethereumProvider)
 ```
 
 #### 2. Sync user's available 3Box data from the network
-When you first open the box in your dapp all data might not be synced from the network yet. You should therefore add a listener using the `onSyncDone` method. This will allow you to know when all the user's data is available to you. We advise against *setting* any data before this sync has happened. However, reading data before the sync is complete is fine and encouraged - just remember to check for updates once this callback is fired!
+When you first open the box in your dapp all data might not be synced from the network yet. You should therefore wait for the data to be fully synced. To do this you can simply await the `box.syncDone` promise:
 ```js
-box.onSyncDone(yourCallbackFunction)
+await box.syncDone
 ```
+This will allow you to know when all the user's data is available to you. We advise against *setting* any data before this sync has happened. However, reading data before the sync is complete is fine and encouraged - just remember to check for updates once the sync is finished!
+
+If you prefer to not use promises you can add a callback using the `onSyncDone` method.
 
 #### 3. Interact with 3Box profile data
 You can now use the `box` instance object to interact with public and private data stored in the user's profile. In both the public and the private data store you use a `key` to set a `value`.
@@ -139,6 +142,12 @@ A space is a named section of a users 3Box. Each space has both a public and a p
 
 ```js
 const space = await box.openSpace('narwhal')
+```
+
+#### Sync user's available space data from the network
+Similarly to how you need to wait for data to sync in a users main data storage, you may also do the same thing for a space:
+```js
+await space.syncDone
 ```
 
 #### Get, set, and remove space data
@@ -226,9 +235,10 @@ thread.onNewCapabilities(myCallbackFunction)
 
 ## <a name="example"></a> Example Application
 
-You can quickly run and interact with some code by looking at the files in the `/example` folder. You run the example with the following command:
+You can quickly run and interact with some code by looking at the files in the `/example` folder. You run the example with the following commands:
 
 ```bash
+$ npm ci
 $ npm run example:start
 ```
 
@@ -284,9 +294,10 @@ idUtils.verifyClaim(claim)
         * [.private](#Box+private)
         * [.verified](#Box+verified)
         * [.spaces](#Box+spaces)
+        * [.syncDone](#Box+syncDone)
         * [.DID](#Box+DID)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
-        * [.onSyncDone(syncDone)](#Box+onSyncDone)
+        * [.onSyncDone(syncDone)](#Box+onSyncDone) ⇒ <code>Promise</code>
         * [.linkAddress([link])](#Box+linkAddress)
         * [.removeAddressLink(address)](#Box+removeAddressLink)
         * [.isAddressLinked([query])](#Box+isAddressLinked)
@@ -306,7 +317,7 @@ idUtils.verifyClaim(claim)
         * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
-        * [.openBox(address, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
+        * [.openBox(addrOrIdW, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
         * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
 
@@ -355,6 +366,16 @@ Please use the **openBox** method to instantiate a 3Box
 | --- | --- | --- |
 | spaces | <code>Object</code> | an object containing all open spaces indexed by their name. |
 
+<a name="Box+syncDone"></a>
+
+#### box.syncDone
+**Kind**: instance property of [<code>Box</code>](#Box)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| syncDone | <code>Promise</code> | A promise that is resolved when the box is synced |
+
 <a name="Box+DID"></a>
 
 #### box.DID
@@ -382,10 +403,11 @@ Opens the space with the given name in the users 3Box
 
 <a name="Box+onSyncDone"></a>
 
-#### box.onSyncDone(syncDone)
-Sets the callback function that will be called once when the db is fully synced.
+#### box.onSyncDone(syncDone) ⇒ <code>Promise</code>
+Sets the callback function that will be called once when the box is fully synced.
 
 **Kind**: instance method of [<code>Box</code>](#Box)  
+**Returns**: <code>Promise</code> - A promise that is fulfilled when the box is syned  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -633,7 +655,7 @@ Verifies the proofs of social accounts that is present in the profile.
 
 <a name="Box.openBox"></a>
 
-#### Box.openBox(address, ethereumProvider, opts) ⇒ [<code>Box</code>](#Box)
+#### Box.openBox(addrOrIdW, ethereumProvider, opts) ⇒ [<code>Box</code>](#Box)
 Opens the 3Box associated with the given address
 
 **Kind**: static method of [<code>Box</code>](#Box)  
@@ -641,7 +663,7 @@ Opens the 3Box associated with the given address
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
+| addrOrIdW | <code>String</code> \| <code>IdentityWallet</code> | An ethereum address, or [IdentityWallet](https://github.com/3box/identity-wallet-js/) instance |
 | ethereumProvider | <code>ethereumProvider</code> | An ethereum provider |
 | opts | <code>Object</code> | Optional parameters |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
@@ -676,34 +698,19 @@ Instanciate ipfs used by 3Box without calling openBox.
 
 * [KeyValueStore](#KeyValueStore)
     * [new KeyValueStore()](#new_KeyValueStore_new)
-    * [.log](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
     * [.get(key, opts)](#KeyValueStore+get) ⇒ <code>String</code> \| <code>Object</code>
     * [.getMetadata(key)](#KeyValueStore+getMetadata) ⇒ <code>Metadata</code>
     * [.set(key, value)](#KeyValueStore+set) ⇒ <code>Boolean</code>
     * [.setMultiple(keys, values)](#KeyValueStore+setMultiple) ⇒ <code>Boolean</code>
     * [.remove(key)](#KeyValueStore+remove) ⇒ <code>Boolean</code>
     * [.all(opts)](#KeyValueStore+all) ⇒ <code>Array.&lt;(String\|{value: String, timestamp: Number})&gt;</code>
+    * [.log()](#KeyValueStore+log) ⇒ <code>Array.&lt;Object&gt;</code>
 
 <a name="new_KeyValueStore_new"></a>
 
 #### new KeyValueStore()
 Please use **box.public** or **box.private** to get the instance of this class
 
-<a name="KeyValueStore+log"></a>
-
-#### keyValueStore.log ⇒ <code>Array.&lt;Object&gt;</code>
-Returns array of underlying log entries. In linearized order according to their Lamport clocks.
-Useful for generating a complete history of all operations on store.
-
-**Kind**: instance property of [<code>KeyValueStore</code>](#KeyValueStore)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - Array of ordered log entry objects  
-**Example**  
-```js
-const log = store.log
- const entry = log[0]
- console.log(entry)
- // { op: 'PUT', key: 'Name', value: 'Botbot', timeStamp: '1538575416068' }
-```
 <a name="KeyValueStore+get"></a>
 
 #### keyValueStore.get(key, opts) ⇒ <code>String</code> \| <code>Object</code>
@@ -781,6 +788,21 @@ Get all values and optionally metadata
 | opts | <code>Object</code> | optional parameters |
 | opts.metadata | <code>Boolean</code> | return both values and metadata |
 
+<a name="KeyValueStore+log"></a>
+
+#### keyValueStore.log() ⇒ <code>Array.&lt;Object&gt;</code>
+Returns array of underlying log entries. In linearized order according to their Lamport clocks.
+Useful for generating a complete history of all operations on store.
+
+**Kind**: instance method of [<code>KeyValueStore</code>](#KeyValueStore)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - Array of ordered log entry objects  
+**Example**  
+```js
+const log = store.log
+ const entry = log[0]
+ console.log(entry)
+ // { op: 'PUT', key: 'Name', value: 'Botbot', timeStamp: '1538575416068' }
+```
 <a name="Space"></a>
 
 ### Space
@@ -790,6 +812,7 @@ Get all values and optionally metadata
     * [new Space()](#new_Space_new)
     * [.public](#Space+public)
     * [.private](#Space+private)
+    * [.syncDone](#Space+syncDone)
     * [.DID](#Space+DID)
     * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
     * [.joinThreadByAddress(address, opts)](#Space+joinThreadByAddress) ⇒ [<code>Thread</code>](#Thread)
@@ -821,6 +844,16 @@ Please use **box.openSpace** to get the instance of this class
 | Name | Type | Description |
 | --- | --- | --- |
 | private | [<code>KeyValueStore</code>](#KeyValueStore) | access the private store of the space |
+
+<a name="Space+syncDone"></a>
+
+#### space.syncDone
+**Kind**: instance property of [<code>Space</code>](#Space)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| syncDone | <code>Promise</code> | A promise that is resolved when the box is synced |
 
 <a name="Space+DID"></a>
 
