@@ -12,7 +12,7 @@ class GhostThread extends EventEmitter {
     this._room = Room(ipfs, name) // instance of ipfs pubsub room
     this._peerId = ipfs._peerInfo.id.toB58String()
 
-    this._usersOnline = {}
+    this._members = {}
     this._backlog = new Set() // set of past messages
 
     this._room.on('message', async ({ from, data }) => {
@@ -23,8 +23,13 @@ class GhostThread extends EventEmitter {
             this._userJoined(issuer, from)
           break;
           case 'request_backlog':
-            this._sendDirect({ type: 'backlog', message: this.getPosts() }, from)
+            const posts = await this.getPosts()
+            this._sendDirect({ type: 'backlog', message: posts }, from)
           break;
+          // case 'backlog':
+          //   const response = payload.message.filter(post => post.timestamp + 24*60*60 <= payload.iat)
+          //   response.forEach(log => this._backlog.add(log))
+          // break;
           default:
             this._messageReceived(issuer, payload)
         }
@@ -32,7 +37,7 @@ class GhostThread extends EventEmitter {
     })
     this._room.on('peer joined', (peer) => {
       this._announce(peer)
-      this._requestBacklog(peer)
+      // this._requestBacklog(peer)
     })
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }
@@ -42,8 +47,8 @@ class GhostThread extends EventEmitter {
    *
    * @return    {Array<String>}      users online
    */
-  get listMembers () {
-    return Object.keys(this._usersOnline).filter(id => !id.startsWith('Qm'))
+  async listMembers () {
+    return Object.keys(this._members).filter(id => !id.startsWith('Qm'))
   }
 
   /**
@@ -53,7 +58,7 @@ class GhostThread extends EventEmitter {
    * @return    {String}      ipfs peer id
    */
   _threeIdToPeerId (did) {
-    return this._usersOnline[did]
+    return this._members[did]
   }
 
   /**
@@ -61,7 +66,7 @@ class GhostThread extends EventEmitter {
    *
    * @return    {Array<Object>}      users online
    */
-  getPosts () {
+  async getPosts () {
     return [...this._backlog]
   }
 
@@ -159,7 +164,7 @@ class GhostThread extends EventEmitter {
    *
    * @param     {Function}  updateFn               The function that will get called
    */
-  onNewCapabilites (updateFn) {
+  onNewCapabilities (updateFn) {
     this.removeAllListeners('user-joined')
     this.removeAllListeners('user-left')
     this.on('user-joined', updateFn)
@@ -173,10 +178,9 @@ class GhostThread extends EventEmitter {
    * @param     {Object}    peerID             The peerID of the user
    */
   _userJoined (did, peerID) {
-    if (!this._usersOnline.hasOwnProperty(did) && this._3id.DID != did) {
-      this._announce(peerID) // announce our presence to peer
-      this._usersOnline[did] = peerID
-      this._usersOnline[peerID] = did
+    if (!this._members.hasOwnProperty(did) && this._3id.DID != did) {
+      this._members[did] = peerID
+      this._members[peerID] = did
       this.emit('user-joined', 'joined', did, peerID)
     }
   }
@@ -187,9 +191,9 @@ class GhostThread extends EventEmitter {
    * @param     {String}    peerID              The peerID of the user
    */
   async _userLeft (peerID) {
-    const did = this._usersOnline[peerID]
-    delete this._usersOnline[did]
-    delete this._usersOnline[peerID]
+    const did = this._members[peerID]
+    delete this._members[did]
+    delete this._members[peerID]
     this.emit('user-left', 'left', did, peerID)
   }
 
@@ -199,10 +203,10 @@ class GhostThread extends EventEmitter {
    * @param     {String}    issuer              The issuer of the message
    * @param     {Object}    payload             The payload of the message
    */
-  _messageReceived (issuer, payload) {
-    const { type, message, iss: from } = payload
-    this._backlog.add({ type, from, message })
-    this.emit('message', { type, from, message })
+  async _messageReceived (issuer, payload) {
+    const { type, message, iss: author, iat: timestamp } = payload
+    this._backlog.add({ type, author, message, timestamp })
+    this.emit('message', { type, author, message })
   }
 
   /**

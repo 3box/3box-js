@@ -43,8 +43,8 @@ describe('Ghost Chat', () => {
   })
 
   it('should catch messages', async (done) => {
-    chat.onUpdate(({ from, message }) => {
-      expect(from).toEqual(DID1)
+    chat.onUpdate(({ author, message }) => {
+      expect(author).toEqual(DID1)
       expect(chat.getPosts()).not.toEqual([])
       expect(chat.getPosts()).toBeDefined()
       done()
@@ -64,43 +64,54 @@ describe('Ghost Chat', () => {
       chat2 = new GhostChat(CHAT_NAME, { ipfs: ipfs2 }, THREEID2_MOCK);
       expect(chat2._name).toEqual(CHAT_NAME)
       expect(chat2._3id).toEqual(THREEID2_MOCK)
-      expect(chat2.listMembers).toBeDefined()
+      expect(chat2.listMembers()).toBeDefined()
       expect(chat2.getPosts()).toBeDefined()
 
       // checks if chat2 joined properly
-      chat.on('user-joined', (_event, did, peerId) => {
+      chat.on('user-joined', async (_event, did, peerId) => {
         expect(_event).toEqual('joined')
-        expect(chat.listMembers).toEqual(expect.arrayContaining([DID2]))
-        expect(chat2.listMembers).toEqual(expect.arrayContaining([DID1]))
+        const members = await chat.listMembers()
+        const members2 = await chat2.listMembers()
+        expect(members).toEqual(expect.arrayContaining([DID2]))
+        expect(members2).toEqual(expect.arrayContaining([DID1]))
         done()
       })
     })
 
     it('chat2 should catch broadcasts from chat', async (done) => {
-      chat2.onUpdate(({ from, message }) => {
-        expect(from).toEqual(DID1)
+      chat2.onUpdate(async ({ author, message }) => {
+        expect(author).toEqual(DID1)
         expect(message).toEqual('wide')
-        expect(chat2.getPosts().pop()).toEqual({ type: 'chat', from: DID1, message: 'wide' })
+        const posts = await chat2.getPosts()
+        const post = posts.pop()
+        delete post.timestamp // since we have no way to get it from onUpdate
+        expect(post).toEqual({ type: 'chat', author: DID1, message: 'wide' })
         done()
       })
       await chat.post('wide')
     })
 
     it('chat2 should catch peer dms from chat', async (done) => {
-      chat2.onUpdate(({ from, message }) => {
-        expect(from).toEqual(DID1)
+      chat2.onUpdate(async ({ author, message }) => {
+        expect(author).toEqual(DID1)
         expect(message).toEqual('direct peer')
-        expect(chat2.getPosts().pop()).toEqual({ type: 'chat', from: DID1, message: 'direct peer' })
+        const posts = await chat2.getPosts()
+        const post = posts.pop()
+        delete post.timestamp // since we have no way to get it from onUpdate
+        expect(post).toEqual({ type: 'chat', author: DID1, message: 'direct peer' })
         done()
       })
       await chat.post('direct peer', chat2.peerId)
     })
 
     it('chat2 should catch 3id dms from chat', async (done) => {
-      chat2.onUpdate(({ from, message }) => {
-        expect(from).toEqual(DID1)
+      chat2.onUpdate(async ({ author, message }) => {
+        expect(author).toEqual(DID1)
         expect(message).toEqual('direct 3id')
-        expect(chat2.getPosts().pop()).toEqual({ type: 'chat', from: DID1, message: 'direct 3id' })
+        const posts = await chat2.getPosts()
+        const post = posts.pop()
+        delete post.timestamp // since we have no way to get it from onUpdate
+        expect(post).toEqual({ type: 'chat', author: DID1, message: 'direct 3id' })
         done()
       })
       await chat.post('direct 3id', DID2)
@@ -110,12 +121,14 @@ describe('Ghost Chat', () => {
       // won't work cause chat is catching the backlog request instead of chat2, but chat doesn't have a backlog
       chat.removeAllListeners('message')
       chat2.removeAllListeners('message')
-      chat.onUpdate(({ type, from, message }) => {
+      chat.onUpdate(async ({ type, author, message }) => {
         expect(type).toEqual('backlog')
-        expect(chat2.getPosts()).toEqual(message)
+        const posts = await chat2.getPosts()
+        // todo why is posts empty?
+        expect(posts).toEqual(message)
         done()
       })
-      await chat.requestBacklog()
+      await chat._requestBacklog()
     })
 
     afterAll(async () => {
