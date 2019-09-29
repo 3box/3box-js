@@ -28,7 +28,7 @@ class GhostThread extends EventEmitter {
           break;
           case 'backlog':
             const backlog = payload.message
-            this.emit('backlog-received', backlog)
+            this.emit('backlog-received', 'backlog', backlog)
           break;
           default:
             this._messageReceived(issuer, payload)
@@ -155,7 +155,9 @@ class GhostThread extends EventEmitter {
    */
   onUpdate (updateFn) {
     this.removeAllListeners('message')
+    this.removeAllListeners('backlog-received')
     this.on('message', updateFn)
+    this.on('backlog-received', updateFn)
   }
 
   /**
@@ -206,7 +208,7 @@ class GhostThread extends EventEmitter {
   async _messageReceived (issuer, payload) {
     const { type, message, iss: author, iat: timestamp } = payload
     this._backlog.add({ type, author, message, timestamp })
-    this.emit('message', { type, author, message, timestamp })
+    this.emit('message', 'message', { type, author, message, timestamp })
   }
 
   /**
