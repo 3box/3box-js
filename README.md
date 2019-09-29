@@ -60,10 +60,13 @@ const box = await Box.openBox('0x12345abcde', ethereumProvider)
 ```
 
 #### 2. Sync user's available 3Box data from the network
-When you first open the box in your dapp all data might not be synced from the network yet. You should therefore add a listener using the `onSyncDone` method. This will allow you to know when all the user's data is available to you. We advise against *setting* any data before this sync has happened. However, reading data before the sync is complete is fine and encouraged - just remember to check for updates once this callback is fired!
+When you first open the box in your dapp all data might not be synced from the network yet. You should therefore wait for the data to be fully synced. To do this you can simply await the `box.syncDone` promise:
 ```js
-box.onSyncDone(yourCallbackFunction)
+await box.syncDone
 ```
+This will allow you to know when all the user's data is available to you. We advise against *setting* any data before this sync has happened. However, reading data before the sync is complete is fine and encouraged - just remember to check for updates once the sync is finished!
+
+If you prefer to not use promises you can add a callback using the `onSyncDone` method.
 
 #### 3. Interact with 3Box profile data
 You can now use the `box` instance object to interact with public and private data stored in the user's profile. In both the public and the private data store you use a `key` to set a `value`.
@@ -139,6 +142,12 @@ A space is a named section of a users 3Box. Each space has both a public and a p
 
 ```js
 const space = await box.openSpace('narwhal')
+```
+
+#### Sync user's available space data from the network
+Similarly to how you need to wait for data to sync in a users main data storage, you may also do the same thing for a space:
+```js
+await space.syncDone
 ```
 
 #### Get, set, and remove space data
@@ -226,9 +235,10 @@ thread.onNewCapabilities(myCallbackFunction)
 
 ## <a name="example"></a> Example Application
 
-You can quickly run and interact with some code by looking at the files in the `/example` folder. You run the example with the following command:
+You can quickly run and interact with some code by looking at the files in the `/example` folder. You run the example with the following commands:
 
 ```bash
+$ npm ci
 $ npm run example:start
 ```
 
