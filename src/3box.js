@@ -365,6 +365,17 @@ class Box {
    */
   async linkAddress (link = {}) {
     if (link.proof) {
+      let valid
+      if (link.proof.type === ACCOUNT_TYPES.ethereumEOA) {
+        valid = await utils.recoverPersonalSign(link.proof.message, link.proof.signature)
+      } else if (link.proof.type === ACCOUNT_TYPES.erc1271) {
+        valid = await utils.isValidSignature(link.proof, true, this._web3provider)
+      } else {
+        throw new Error('Missing or invalid property "type" in proof')
+      }
+      if (!valid) {
+        throw new Error('There was an issue verifying the supplied proof: ', valid)
+      }
       await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, link.proof)
       return
     }
@@ -389,7 +400,7 @@ class Box {
     if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
     const payload = {
       address,
-      type: `delete-address-link`
+      type: 'delete-address-link'
     }
     const oneHour = 60 * 60
     const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour })

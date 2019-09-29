@@ -78,7 +78,7 @@ class Thread {
    */
   async listModerators () {
     this._requireLoad()
-    return this._db.access.capabilities['moderators']
+    return this._db.access.capabilities.moderators
   }
 
   /**
@@ -105,7 +105,7 @@ class Thread {
   async listMembers () {
     this._throwIfNotMembers()
     this._requireLoad()
-    return this._db.access.capabilities['members']
+    return this._db.access.capabilities.members
   }
 
   _throwIfNotMembers () {
