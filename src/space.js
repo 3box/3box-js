@@ -75,11 +75,10 @@ class Space {
     if (opts.ghost) {
       const ghostAddress = namesToChatName(this._name, name)
       if (!this._activeThreads[ghostAddress]) {
-          this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id)
+        this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id)
       }
       return this._activeThreads[ghostAddress]
-    }
-    else {
+    } else {
       const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
       if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
       const thread = new Thread(namesTothreadName(this._name, name), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)

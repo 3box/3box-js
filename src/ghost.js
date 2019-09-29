@@ -3,7 +3,6 @@ const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
 class GhostThread extends EventEmitter {
-
   constructor (name, { ipfs }, threeId) {
     super()
     this._name = name
@@ -21,15 +20,15 @@ class GhostThread extends EventEmitter {
         switch (payload.type) {
           case 'join':
             this._userJoined(issuer, from)
-          break;
+            break
           case 'request_backlog':
             const posts = await this.getPosts()
             this._sendDirect({ type: 'backlog', message: posts }, from)
-          break;
+            break
           case 'backlog':
             const backlog = payload.message
             this.emit('backlog-received', 'backlog', backlog)
-          break;
+            break
           default:
             this._messageReceived(issuer, payload)
         }
@@ -77,7 +76,7 @@ class GhostThread extends EventEmitter {
    */
   async _announce (to) {
     !to ? await this._broadcast({ type: 'join' })
-    : await this._sendDirect({ type: 'join' }, to)
+      : await this._sendDirect({ type: 'join' }, to)
   }
 
   /**
@@ -88,7 +87,7 @@ class GhostThread extends EventEmitter {
    */
   async post (message, to) {
     !to ? await this._broadcast({ type: 'chat', message })
-    : await this._sendDirect({ type: 'chat', message }, to)
+      : await this._sendDirect({ type: 'chat', message }, to)
   }
 
   async deletePost (hash) {
@@ -114,7 +113,7 @@ class GhostThread extends EventEmitter {
    */
   async _requestBacklog (to) {
     !to ? await this._broadcast({ type: 'request_backlog' })
-    : await this._sendDirect({ type: 'request_backlog' }, to)
+      : await this._sendDirect({ type: 'request_backlog' }, to)
   }
 
   /**
@@ -144,7 +143,7 @@ class GhostThread extends EventEmitter {
   async _sendDirect (message, to) {
     const jwt = await this._3id.signJWT(message, { use3ID: true })
     to.startsWith('Qm') ? this._room.sendTo(to, jwt)
-    : this._room.sendTo(this._threeIdToPeerId(to), jwt)
+      : this._room.sendTo(this._threeIdToPeerId(to), jwt)
   }
 
   /**
@@ -179,8 +178,9 @@ class GhostThread extends EventEmitter {
    * @param     {String}    did                The DID of the user
    * @param     {Object}    peerID             The peerID of the user
    */
-  _userJoined (did, peerID) {
-    if (!this._members.hasOwnProperty(did) && this._3id.DID != did) {
+  async _userJoined (did, peerID) {
+    const members = await this.listMembers()
+    if (!members.includes(did) && this._3id.DID !== did) {
       this._members[did] = peerID
       this._members[peerID] = did
       this.emit('user-joined', 'joined', did, peerID)
@@ -225,7 +225,6 @@ class GhostThread extends EventEmitter {
       console.log(e)
     }
   }
-
 }
 
 module.exports = GhostThread
