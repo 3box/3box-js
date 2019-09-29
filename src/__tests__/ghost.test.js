@@ -1,5 +1,5 @@
 const utils = require('./testUtils')
-const GhostChat = require('../ghost')
+const GhostThread = require('../ghost')
 
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 
@@ -35,7 +35,7 @@ describe('Ghost Chat', () => {
   })
 
   it('creates chat correctly', async () => {
-    chat = new GhostChat(CHAT_NAME, { ipfs }, THREEID1_MOCK);
+    chat = new GhostThread(CHAT_NAME, { ipfs }, THREEID1_MOCK);
     expect(chat._name).toEqual(CHAT_NAME)
     expect(chat._3id).toEqual(THREEID1_MOCK)
     expect(chat.listMembers).toBeDefined()
@@ -61,7 +61,7 @@ describe('Ghost Chat', () => {
     })
 
     it('creates second chat correctly', async (done) => {
-      chat2 = new GhostChat(CHAT_NAME, { ipfs: ipfs2 }, THREEID2_MOCK);
+      chat2 = new GhostThread(CHAT_NAME, { ipfs: ipfs2 }, THREEID2_MOCK);
       expect(chat2._name).toEqual(CHAT_NAME)
       expect(chat2._3id).toEqual(THREEID2_MOCK)
       expect(chat2.listMembers()).toBeDefined()
