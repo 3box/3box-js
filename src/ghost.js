@@ -4,7 +4,7 @@ const Room = require('ipfs-pubsub-room')
 
 class GhostThread extends EventEmitter {
 
-  constructor (name, { ipfs }, threeId, _onUpdate = console.log) {
+  constructor (name, { ipfs }, threeId) {
     super()
     this._name = name
     this._spaceName = name.split('.')[2]
@@ -26,10 +26,10 @@ class GhostThread extends EventEmitter {
             const posts = await this.getPosts()
             this._sendDirect({ type: 'backlog', message: posts }, from)
           break;
-          // case 'backlog':
-          //   const response = payload.message.filter(post => post.timestamp + 24*60*60 <= payload.iat)
-          //   response.forEach(log => this._backlog.add(log))
-          // break;
+          case 'backlog':
+            const response = payload.message.filter(post => post.timestamp <= payload.iat)
+            this.emit('backlog-received', response)
+          break;
           default:
             this._messageReceived(issuer, payload)
         }
@@ -37,7 +37,7 @@ class GhostThread extends EventEmitter {
     })
     this._room.on('peer joined', (peer) => {
       this._announce(peer)
-      // this._requestBacklog(peer)
+      this._requestBacklog(peer)
     })
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }
@@ -206,7 +206,7 @@ class GhostThread extends EventEmitter {
   async _messageReceived (issuer, payload) {
     const { type, message, iss: author, iat: timestamp } = payload
     this._backlog.add({ type, author, message, timestamp })
-    this.emit('message', { type, author, message })
+    this.emit('message', { type, author, message, timestamp })
   }
 
   /**

@@ -117,15 +117,12 @@ describe('Ghost Chat', () => {
       await chat.post('direct 3id', DID2)
     })
 
-    it('should request getPosts() from chat2', async (done) => {
-      // won't work cause chat is catching the backlog request instead of chat2, but chat doesn't have a backlog
-      chat.removeAllListeners('message')
-      chat2.removeAllListeners('message')
-      chat.onUpdate(async ({ type, author, message }) => {
-        expect(type).toEqual('backlog')
+    it('should request backlog from chat2', async (done) => {
+      chat.removeAllListeners('backlog-received')
+      chat.on('backlog-received', async (response) => {
         const posts = await chat2.getPosts()
-        // todo why is posts empty?
-        expect(posts).toEqual(message)
+        // TODO: the line below fails, how do I get the new logs added to the _backlog before the event is emitted
+        expect(posts).toEqual(response)
         done()
       })
       await chat._requestBacklog()
