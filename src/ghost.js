@@ -27,8 +27,8 @@ class GhostThread extends EventEmitter {
             this._sendDirect({ type: 'backlog', message: posts }, from)
           break;
           case 'backlog':
-            const response = payload.message.filter(post => post.timestamp <= payload.iat)
-            this.emit('backlog-received', response)
+            const backlog = payload.message
+            this.emit('backlog-received', backlog)
           break;
           default:
             this._messageReceived(issuer, payload)

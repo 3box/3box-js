@@ -119,10 +119,9 @@ describe('Ghost Chat', () => {
 
     it('should request backlog from chat2', async (done) => {
       chat.removeAllListeners('backlog-received')
-      chat.on('backlog-received', async (response) => {
+      chat.on('backlog-received', async (backlog) => {
         const posts = await chat2.getPosts()
-        // TODO: the line below fails, how do I get the new logs added to the _backlog before the event is emitted
-        expect(posts).toEqual(response)
+        expect(backlog).toEqual(posts)
         done()
       })
       await chat._requestBacklog()
