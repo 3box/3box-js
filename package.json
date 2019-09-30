@@ -56,6 +56,7 @@
     "ipfs-did-document": "^1.2.3",
     "ipfs-mini": "^1.1.5",
     "ipfs-postmsg-proxy": "^3.1.1",
+    "ipfs-pubsub-room": "^1.4.1",
     "js-sha256": "^0.9.0",
     "muport-did-resolver": "^0.3.0",
     "node-fetch": "^2.6.0",
