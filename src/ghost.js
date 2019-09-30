@@ -23,14 +23,14 @@ class GhostThread extends EventEmitter {
             break
           case 'request_backlog':
             const posts = await this.getPosts()
-            this._sendDirect({ type: 'backlog', message: posts }, from)
+            this._sendDirect({ type: 'backlog_response', message: posts }, from)
             break
-          case 'backlog':
+          case 'backlog_response':
             const backlog = payload.message
-            this.emit('backlog-received', 'backlog', backlog)
+            this.emit('backlog-received', { type: 'backlog', author: issuer, message: backlog, timestamp: payload.iat })
             break
           default:
-            this._messageReceived(issuer, payload)
+            this._messageReceived(payload)
         }
       }
     })
@@ -205,10 +205,10 @@ class GhostThread extends EventEmitter {
    * @param     {String}    issuer              The issuer of the message
    * @param     {Object}    payload             The payload of the message
    */
-  async _messageReceived (issuer, payload) {
+  async _messageReceived (payload) {
     const { type, message, iss: author, iat: timestamp } = payload
     this._backlog.add({ type, author, message, timestamp })
-    this.emit('message', 'message', { type, author, message, timestamp })
+    this.emit('message', { type, author, message, timestamp })
   }
 
   /**
