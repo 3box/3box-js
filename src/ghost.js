@@ -26,6 +26,9 @@ class GhostThread extends EventEmitter {
               .then(posts => this._sendDirect({ type: 'backlog_response', message: posts }, from))
             break
           case 'backlog_response':
+            payload.message.map(msg => {
+              this._backlog.add(JSON.stringify(msg))
+            })
             this.emit('backlog-received', { type: 'backlog', author: issuer, message: payload.message, timestamp: payload.iat })
             break
           default:
@@ -65,7 +68,7 @@ class GhostThread extends EventEmitter {
    * @return    {Array<Object>}      users online
    */
   async getPosts () {
-    return [...this._backlog]
+    return [...this._backlog].map(msg => JSON.parse(msg)).sort((p1, p2) => p1.timestamp - p2.timestamp)
   }
 
   /**
@@ -206,7 +209,7 @@ class GhostThread extends EventEmitter {
    */
   async _messageReceived (payload) {
     const { type, message, iss: author, iat: timestamp } = payload
-    this._backlog.add({ type, author, message, timestamp })
+    this._backlog.add(JSON.stringify({ type, author, message, timestamp }))
     this.emit('message', { type, author, message, timestamp })
   }
 
