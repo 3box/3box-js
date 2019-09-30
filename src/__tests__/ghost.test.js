@@ -128,7 +128,11 @@ describe('Ghost Chat', () => {
     it('should request backlog from chat2', async (done) => {
       chat.removeAllListeners('backlog-received')
       chat.onUpdate(async ({ type, message }) => {
+<<<<<<< HEAD
         if (type == 'backlog') {
+=======
+        if (type == 'log') {
+>>>>>>> dda4bae057c31267502eb5239626b9f34d60b2e3
           const posts = await chat2.getPosts()
           expect(message).toEqual(posts)
           done()
