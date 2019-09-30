@@ -188,65 +188,6 @@ bopen.addEventListener('click', event => {
         window.currentThread.post(postMsg.value).catch(updateThreadError)
       })
 
-      // Ghost Chat Start
-
-      const updateChatCapabilities = (user) => {
-        chatMemberList.innerHTML += user  +  '<br />'
-      }
-
-      const updateChatData = (data) => {
-        chatData.innerHTML += data  +  '<br />'
-        messageField.value = ''
-      }
-
-      joinChatBtn.addEventListener('click', async () => {
-        console.log('joined chat')
-        const name = 'example 3box dapp'
-        const threeId = box._3id
-        const ipfs = box._ipfs
-        const chat = box.spaces[window.currentSpace].joinChat()
-        window.currenChat = chat
-
-        messages.style.display = 'block'
-        chatMembers.style.display = 'block'
-        leaveChatBtn.style.display = 'block'
-        backlogBtn.style.display = 'block'
-        chatMemberList.innerHTML = ''
-        chatData.innerHTML = '';
-
-        chat.on('user-joined', (event, did, peerID) => updateChatCapabilities(`${did} has joined the chat`))
-        chat.on('user-left', (event, did, peerID) => updateChatCapabilities(`${did} has left the chat`))
-        chat.on('message', ({ type, from, message }) => {
-          if(type == 'backlog') {
-            message.forEach(log => updateChatData(`${log.from} said: ${log.message}`))
-          }
-          else {
-            updateChatData(`${from} said: ${message}`)
-          }
-        })
-
-
-      })
-
-      leaveChatBtn.addEventListener('click', async () => {
-        await window.currenChat.close()
-        messages.style.display = 'none'
-        chatMembers.style.display = 'none'
-        leaveChatBtn.style.display = 'none'
-        backlogBtn.style.display = 'none'
-        chatMemberList.innerHTML = ''
-        chatData.innerHTML = '';
-      })
-
-      postChatBtn.addEventListener('click', async () => {
-        await window.currenChat.post(messageField.value)
-      })
-
-      backlogBtn.addEventListener('click', async () => {
-        await window.currenChat.requestBacklog()
-      })
-      // Ghost Chat End
-
       bclose.addEventListener('click', () => {
         logout(box)
       })
