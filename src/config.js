@@ -16,7 +16,8 @@ module.exports = {
       Bootstrap: [],
       Addresses: {
         Swarm: [
-          '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
+          '/dns4/p2p.3box.io/tcp/9090/wss/p2p-websocket-star/',
+          '/dns/p2p.3box.io/tcp/9091/wss/p2p-webrtc-star/'
         ]
       }
     }
