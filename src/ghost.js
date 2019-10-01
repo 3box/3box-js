@@ -68,7 +68,16 @@ class GhostThread extends EventEmitter {
    * @return    {Array<Object>}      users online
    */
   async getPosts () {
-    return [...this._backlog].map(msg => JSON.parse(msg)).sort((p1, p2) => p1.timestamp - p2.timestamp)
+    const _12hrInSecs = 12 * 60 * 60
+    const posts = [...this._backlog]
+      .map(msg => JSON.parse(msg))
+      .sort((p1, p2) => p1.timestamp - p2.timestamp)
+      .filter(msg => msg.timestamp > (Math.floor(Date.now() / 1000) - _12hrInSecs))
+
+    posts.forEach(msg => {
+      this._backlog.add(JSON.stringify(msg))
+    })
+    return posts
   }
 
   /**
