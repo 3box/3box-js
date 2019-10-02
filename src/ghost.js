@@ -2,6 +2,8 @@ const EventEmitter = require('events').EventEmitter
 const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
+const POST_AGE_LIMIT = 12 * 60 * 60
+
 class GhostThread extends EventEmitter {
   constructor (name, { ipfs }, threeId) {
     super()
