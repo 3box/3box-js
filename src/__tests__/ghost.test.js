@@ -31,7 +31,7 @@ describe('Ghost Chat', () => {
   })
 
   beforeEach(async () => {
-    jest.setTimeout(2000000)
+    jest.setTimeout(20000)
   })
 
   it('creates chat correctly', async () => {
