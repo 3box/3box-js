@@ -69,29 +69,27 @@ class GhostThread extends EventEmitter {
    *
    * @return    {Array<Object>}      users online
    */
-   async getPosts (num = null) {
-     const sorted = [...this._backlog]
-       .map(msg => JSON.parse(msg))
-       .sort((p1, p2) => p1.timestamp - p2.timestamp)
+  async getPosts (num = null) {
+    const sorted = [...this._backlog]
+      .map(msg => JSON.parse(msg))
+      .sort((p1, p2) => p1.timestamp - p2.timestamp)
 
-     if (num) {
+    if (num) {
+      const posts = sorted.slice(-num)
+      posts.forEach(msg => {
+        this._backlog.add(JSON.stringify(msg))
+      })
 
-       const posts = sorted.slice(-num)
-       posts.forEach(msg => {
-         this._backlog.add(JSON.stringify(msg))
-       })
+      return posts
+    } else {
+      const posts = sorted.filter(msg => msg.timestamp > (Math.floor(Date.now() / 1000) - POST_AGE_LIMIT))
+      posts.forEach(msg => {
+        this._backlog.add(JSON.stringify(msg))
+      })
 
-       return posts
-     } else {
-
-       const posts = sorted.filter(msg => msg.timestamp > (Math.floor(Date.now() / 1000) - POST_AGE_LIMIT))
-       posts.forEach(msg => {
-         this._backlog.add(JSON.stringify(msg))
-       })
-
-       return posts
-     }
-   }
+      return posts
+    }
+  }
 
   /**
    * Announce entry in chat and share our 3id and peerID
