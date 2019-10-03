@@ -2,8 +2,6 @@ const EventEmitter = require('events').EventEmitter
 const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
-const POST_AGE_LIMIT = 12 * 60 * 60
-
 class GhostThread extends EventEmitter {
   constructor (name, { ipfs }, threeId) {
     super()
@@ -70,25 +68,14 @@ class GhostThread extends EventEmitter {
    * @return    {Array<Object>}      users online
    */
   async getPosts (num = null) {
-    const sorted = [...this._backlog]
+    const posts = [...this._backlog]
       .map(msg => JSON.parse(msg))
       .sort((p1, p2) => p1.timestamp - p2.timestamp)
+      .slice(-num)
 
-    if (num) {
-      const posts = sorted.slice(-num)
-      posts.forEach(msg => {
-        this._backlog.add(JSON.stringify(msg))
-      })
+    this._backlog = new Set(posts)
 
-      return posts
-    } else {
-      const posts = sorted.filter(msg => msg.timestamp > (Math.floor(Date.now() / 1000) - POST_AGE_LIMIT))
-      posts.forEach(msg => {
-        this._backlog.add(JSON.stringify(msg))
-      })
-
-      return posts
-    }
+    return posts
   }
 
   /**
