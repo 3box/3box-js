@@ -3,7 +3,7 @@ const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
 class GhostThread extends EventEmitter {
-  constructor (name, { ipfs }, threeId) {
+  constructor (name, { ipfs }, threeId, opts = {}) {
     super()
     this._name = name
     this._spaceName = name.split('.')[2]
@@ -13,6 +13,7 @@ class GhostThread extends EventEmitter {
 
     this._members = {}
     this._backlog = new Set() // set of past messages
+    this._backlogLimit = opts.backlogLimit || 50 // 50 message default backlog limit
 
     this._room.on('message', async ({ from, data }) => {
       const { payload, issuer } = await this._verifyData(data)
@@ -67,7 +68,7 @@ class GhostThread extends EventEmitter {
    *
    * @return    {Array<Object>}      users online
    */
-  async getPosts (num = null) {
+  async getPosts (num = this._backlogLimit) {
     const posts = [...this._backlog]
       .map(msg => JSON.parse(msg))
       .sort((p1, p2) => p1.timestamp - p2.timestamp)
