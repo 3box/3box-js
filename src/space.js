@@ -75,7 +75,7 @@ class Space {
     if (opts.ghost) {
       const ghostAddress = namesToChatName(this._name, name)
       if (!this._activeThreads[ghostAddress]) {
-        this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id)
+        this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id, opts)
       }
       return this._activeThreads[ghostAddress]
     } else {
