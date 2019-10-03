@@ -74,7 +74,8 @@ class GhostThread extends EventEmitter {
       .sort((p1, p2) => p1.timestamp - p2.timestamp)
       .slice(-num)
 
-    this._backlog = new Set(posts)
+    const stringifiedPosts = posts.map(msg => JSON.stringify(msg))
+    this._backlog = new Set(stringifiedPosts)
 
     return posts
   }
