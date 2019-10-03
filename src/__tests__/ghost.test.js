@@ -137,6 +137,20 @@ describe('Ghost Chat', () => {
       await chat._requestBacklog()
     })
 
+    it('should get last 2 posts', async (done) => {
+      chat.onUpdate(async ({ type, message }) => {
+        if (type == 'backlog') {
+          const posts = await chat2.getPosts()
+          expect(message).toEqual(posts)
+          done()
+        }
+      })
+      const allPosts = await chat.getPosts()
+      const posts = await chat.getPosts(2)
+      expect(posts.length).toEqual(2)
+      expect(allPosts).toEqual(expect.arrayContaining(posts))
+    })
+
     afterAll(async () => {
       await utils.stopIPFS(ipfs2, 5)
     })
