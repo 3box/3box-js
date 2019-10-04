@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.12.0 - 2019-10-04
+This release contains a feature called Ghost Threads. These threads are not persisted by in any way except in memory between users. Ghost Threads uses ipfs pubsub to send messages between peers, so in addition we have added a websocket signaling server to make peers discover each other easier. Ghost Threads includes a backlog for users that just joined, this is sent by already connected users that have a copy of recent messages.
+
+---
+* feat: added Ghost Threads
+* feat: enabled websocket signaling server
+* fix: small docs and dependency improvements
+
 ## v1.11.0 - 2019-09-24
 * feat: 3box instance can now be created with an instance of the IdentityWallet
 * feat: smarter data syncing logic

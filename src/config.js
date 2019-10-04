@@ -13,7 +13,12 @@ module.exports = {
     },
     preload: { enabled: false },
     config: {
-      Bootstrap: []
+      Bootstrap: [],
+      Addresses: {
+        Swarm: [
+          '/dns4/p2p.3box.io/tcp/9090/wss/p2p-websocket-star/'
+        ]
+      }
     }
   },
   orbitdb_options: {

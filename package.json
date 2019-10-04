@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -51,11 +51,11 @@
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "^0.1.0",
-    "identity-wallet": "0.1.0-beta.9",
     "ipfs": "^0.36.4",
     "ipfs-did-document": "^1.2.3",
     "ipfs-mini": "^1.1.5",
     "ipfs-postmsg-proxy": "^3.1.1",
+    "ipfs-pubsub-room": "^1.4.1",
     "js-sha256": "^0.9.0",
     "muport-did-resolver": "^0.3.0",
     "node-fetch": "^2.6.0",
@@ -77,10 +77,11 @@
     "babel-loader": "^8.0.6",
     "express": "^4.17.0",
     "ganache-cli": "^6.4.3",
+    "identity-wallet": "^0.1.0",
     "ipfsd-ctl": "^0.40.3",
     "jest": "^23.6.0",
     "jsdoc-to-markdown": "^5.0.0",
-    "standard": "^13.0.2",
+    "standard": "^14.3.1",
     "webpack": "^4.32.2",
     "webpack-cli": "^3.3.2"
   }

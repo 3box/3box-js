@@ -204,10 +204,12 @@ class KeyValueStore {
    */
   async log () {
     return this._db._oplog.values.map(obj => {
-      return { op: obj.payload.op,
+      return {
+        op: obj.payload.op,
         key: obj.payload.key,
         value: obj.payload.value ? obj.payload.value.value : null,
-        timeStamp: obj.payload.value ? obj.payload.value.timeStamp : null }
+        timeStamp: obj.payload.value ? obj.payload.value.timeStamp : null
+      }
     })
   }
 }
