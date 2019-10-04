@@ -67,7 +67,8 @@ class Space {
    * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
    * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
-   * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread (optional)
+   * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
+   * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
    *
    * @return    {Thread}                  An instance of the thread class for the joined thread
    */
@@ -75,7 +76,7 @@ class Space {
     if (opts.ghost) {
       const ghostAddress = namesToChatName(this._name, name)
       if (!this._activeThreads[ghostAddress]) {
-        this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id)
+        this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id, opts)
       }
       return this._activeThreads[ghostAddress]
     } else {

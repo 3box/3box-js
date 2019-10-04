@@ -27,11 +27,11 @@ describe('Ghost Chat', () => {
   // jest.setTimeout(2000000)
 
   beforeAll(async () => {
-    ipfs = await utils.initIPFS(4);
+    ipfs = await utils.initIPFS(11);
   })
 
   beforeEach(async () => {
-    jest.setTimeout(2000000)
+    jest.setTimeout(20000)
   })
 
   it('creates chat correctly', async () => {
@@ -59,7 +59,7 @@ describe('Ghost Chat', () => {
     let ipfs2
 
     beforeAll(async () => {
-      ipfs2 = await utils.initIPFS(5)
+      ipfs2 = await utils.initIPFS(12)
     })
 
     it('creates second chat correctly', async (done) => {
