@@ -2,6 +2,8 @@ const EventEmitter = require('events').EventEmitter
 const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
+const DEFAULT_BACKLOG_LIMIT = 50
+
 class GhostThread extends EventEmitter {
   constructor (name, { ipfs }, threeId, opts = {}) {
     super()
@@ -13,7 +15,7 @@ class GhostThread extends EventEmitter {
 
     this._members = {}
     this._backlog = new Set() // set of past messages
-    this._backlogLimit = opts.backlogLimit || 50 // 50 message default backlog limit
+    this._backlogLimit = opts.ghostBacklogLimit || DEFAULT_BACKLOG_LIMIT
 
     this._room.on('message', async ({ from, data }) => {
       const { payload, issuer } = await this._verifyData(data)
