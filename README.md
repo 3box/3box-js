@@ -853,7 +853,7 @@ Please use **box.openSpace** to get the instance of this class
 
 | Name | Type | Description |
 | --- | --- | --- |
-| syncDone | <code>Promise</code> | A promise that is resolved when the box is synced |
+| syncDone | <code>Promise</code> | A promise that is resolved when the space data is synced |
 
 <a name="Space+DID"></a>
 
@@ -880,6 +880,8 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 | opts.firstModerator | <code>String</code> | DID of first moderator of a thread, by default, user is first moderator |
 | opts.members | <code>Boolean</code> | join a members only thread, which only members can post in, defaults to open thread |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
+| opts.ghost | <code>Boolean</code> | Enable ephemeral messaging via Ghost Thread |
+| opts.ghostBacklogLimit | <code>Number</code> | The number of posts to maintain in the ghost backlog |
 
 <a name="Space+joinThreadByAddress"></a>
 
