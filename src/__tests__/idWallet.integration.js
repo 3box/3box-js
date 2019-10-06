@@ -41,7 +41,15 @@ jest.mock('node-fetch', () => {
 const utils = require('../utils/index')
 utils.recoverPersonalSign = () => '0x2D10ce5C50000496715891073804577E0Af964C0'
 
-const mockEthProvider = { sendAsync: (d, fn) => fn(null, 0x12345) }
+const mockEthProvider = {
+  sendAsync: (d, fn) => {
+    if (d.method.startsWith('3id')) {
+      fn('error!')
+    } else {
+      fn(null, 0x12345)
+    }
+  }
+}
 
 
 describe('Integration Test: IdentityWallet', () => {
@@ -57,7 +65,7 @@ describe('Integration Test: IdentityWallet', () => {
   const AUTH_1 = '68b682d67f0fccb0c56236c27ccdd70577722c385c65c00ed1c3d4fbee57db3c'
   const AUTH_2 = '05273ade0b139165d9e5864a18d1ad6b291a1a1ebc841fd68d126c593c89ce7f '
   const publishHasEntries = async () => {
-    await testUtils.delay(100)
+    await testUtils.delay(900)
     pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootStoreAddress, numEntries: 2 })
     pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: privAddr, numEntries: 0 })
     pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: pubAddr, numEntries: 2 })
@@ -87,7 +95,7 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   it('should openBox correctly when idWallet is passed', async () => {
-    const box = await Box.openBox(idWallet, mockEthProvider, opts)
+    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
     await box.syncDone
     await box.public.set('a', 1)
     await box.public.set('b', 2)
@@ -101,13 +109,13 @@ describe('Integration Test: IdentityWallet', () => {
 
   it('should get same state on second openBox', async () => {
     publishHasEntries()
-    const box = await Box.openBox(idWallet, mockEthProvider, opts)
+    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
 
     expect(box.replicator.rootstore._oplog.values.length).toEqual(3)
     idWallet.addAuthMethod(AUTH_1)
-    await testUtils.delay(100)
+    await testUtils.delay(800)
     expect(box.replicator.rootstore._oplog.values.length).toEqual(4)
 
     await box.close()
@@ -116,13 +124,13 @@ describe('Integration Test: IdentityWallet', () => {
   it('should get same state on openBox with IdentityWallet opened using first authSecret', async () => {
     publishHasEntries()
     idWallet = new IdentityWallet({ authSecret: AUTH_1, ethereumAddress: ADDRESS })
-    const box = await Box.openBox(idWallet, mockEthProvider, opts)
+    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
 
     expect(box.replicator.rootstore._oplog.values.length).toEqual(4)
     idWallet.addAuthMethod(AUTH_2)
-    await testUtils.delay(100)
+    await testUtils.delay(800)
     expect(box.replicator.rootstore._oplog.values.length).toEqual(5)
 
     await box.close()
@@ -131,7 +139,7 @@ describe('Integration Test: IdentityWallet', () => {
   it('should get same state on openBox with IdentityWallet opened using second authSecret', async () => {
     publishHasEntries()
     idWallet = new IdentityWallet({ authSecret: AUTH_2, ethereumAddress: ADDRESS })
-    const box = await Box.openBox(idWallet, mockEthProvider, opts)
+    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
     await box.close()

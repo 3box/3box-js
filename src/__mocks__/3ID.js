@@ -49,6 +49,7 @@ const threeIDMockFactory = (did) => {
     signJWT,
     getPublicKeys,
     getOdbId,
+    events: { on: () => {} },
     getSubDID
   }
 }

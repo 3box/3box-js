@@ -1,3 +1,6 @@
 coverage/
 tmp/
 example/
+orbitdb/
+.circleci/
+keystore/

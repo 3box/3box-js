@@ -1,5 +1,281 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`3id get 3ID using IdentityWallet claim signing should sign jwts correctly with rootDID 1`] = `
+Object {
+  "doc": Object {
+    "@context": "https://w3id.org/did/v1",
+    "authentication": Array [
+      Object {
+        "publicKey": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+        "type": "Secp256k1SignatureAuthentication2018",
+      },
+    ],
+    "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
+    "publicKey": Array [
+      Object {
+        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+        "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
+        "type": "Curve25519EncryptionPublicKey",
+      },
+      Object {
+        "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
+        "type": "Secp256k1VerificationKey2018",
+      },
+    ],
+  },
+  "issuer": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
+  "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOm51bGwsImRhdGEiOiJzb21lIGRhdGEiLCJpc3MiOiJkaWQ6MzpiYWZ5cmVpYXVtZ3d3azRzZHoya3lmc3BxZG92M3M2N240YXpzNm5lYzRhY2p5bnZsZ3Vna3R5eTVyYSJ9.N2Dx4jw_QeWIXJvGDamtUm0Bae7__WjBlUsO8dmHFQWgv74AqsaiDJybEOnFfM67u7vuJRgGZuADXntJtiVJzw",
+  "payload": Object {
+    "data": "some data",
+    "iat": null,
+    "iss": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
+  },
+  "signer": Object {
+    "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+    "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+    "type": "Secp256k1VerificationKey2018",
+  },
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet claim signing should sign jwts correctly with subDID 1`] = `
+Object {
+  "doc": Object {
+    "@context": "https://w3id.org/did/v1",
+    "authentication": Array [
+      Object {
+        "publicKey": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
+        "type": "Secp256k1SignatureAuthentication2018",
+      },
+    ],
+    "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
+    "proof": Object {
+      "alg": "ES256K",
+      "signature": "E4SqeAewYh6-1iczgYHTOKqHK8BPbRR5--ddWrOJR0Jg4QLVgA48dqZRwKyKkSXydKMhEdmN8wkKVGlHd-B8MA",
+    },
+    "publicKey": Array [
+      Object {
+        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+        "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
+        "type": "Curve25519EncryptionPublicKey",
+      },
+      Object {
+        "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
+        "publicKeyHex": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
+        "type": "Secp256k1VerificationKey2018",
+      },
+      Object {
+        "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subEncryptionKey",
+        "type": "Curve25519EncryptionPublicKey",
+      },
+    ],
+    "root": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
+    "space": "space1",
+  },
+  "issuer": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
+  "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOm51bGwsImRhdGEiOiJzb21lIGRhdGEiLCJpc3MiOiJkaWQ6MzpiYWZ5cmVpaHZhcDN1ZnBuczdtYmZzYmc1bTczbHdxbm5ndnNjZ3R3Z2djdGNrZWx3cW9oeWkyeWxiaSJ9.6c639QMKB6fBevDAJx3WFqCjtwZmoeaYlkix11K8nT9MEdmKlMKxr13FMUGKWzvYtMeYPxlVr_o5l3CfRYhIiA",
+  "payload": Object {
+    "data": "some data",
+    "iat": null,
+    "iss": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
+  },
+  "signer": Object {
+    "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
+    "publicKeyHex": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
+    "type": "Secp256k1VerificationKey2018",
+  },
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet instantiate threeId with IdentityWallet 1`] = `"did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra"`;
+
+exports[`3id get 3ID using IdentityWallet instantiate threeId with IdentityWallet 2`] = `
+Object {
+  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
+  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+  "signingKey": "020c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55eded",
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet instantiate threeId with IdentityWallet 3`] = `
+Object {
+  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
+  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+  "signingKey": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet instantiate threeId with IdentityWallet 4`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
+  "publicKey": Array [
+    Object {
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+      "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+  ],
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should get public keys correctly 1`] = `
+Object {
+  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
+  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+  "signingKey": "020c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55eded",
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should get public keys correctly 2`] = `
+Object {
+  "encryptionKey": "2G5n/HprsVf4xXgW7By6ZYW8ZZXiylPzUbJ+z7FGvzw=",
+  "managementKey": null,
+  "signingKey": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should get public keys correctly 3`] = `
+Object {
+  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
+  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+  "signingKey": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should get public keys correctly 4`] = `
+Object {
+  "encryptionKey": "2G5n/HprsVf4xXgW7By6ZYW8ZZXiylPzUbJ+z7FGvzw=",
+  "managementKey": null,
+  "signingKey": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should hashDBKey correctly 1`] = `"124036393264373332313662353537376162613765613432343131656139396163366333316666373132323462656564323963393663623366346637356132646661"`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should hashDBKey correctly 2`] = `"124037663937366435316639316361363564656365653362383161666332643933646239626330666339343236366161613166303061316464353933396265393064"`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should init space keyrings correctly 1`] = `"did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi"`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should init space keyrings correctly 2`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
+  "proof": Object {
+    "alg": "ES256K",
+    "signature": "E4SqeAewYh6-1iczgYHTOKqHK8BPbRR5--ddWrOJR0Jg4QLVgA48dqZRwKyKkSXydKMhEdmN8wkKVGlHd-B8MA",
+  },
+  "publicKey": Array [
+    Object {
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+      "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
+      "publicKeyHex": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subEncryptionKey",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+  ],
+  "root": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
+  "space": "space1",
+}
+`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should init space keyrings correctly 3`] = `"did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee"`;
+
+exports[`3id get 3ID using IdentityWallet keyring logic should init space keyrings correctly 4`] = `
+Object {
+  "@context": "https://w3id.org/did/v1",
+  "authentication": Array [
+    Object {
+      "publicKey": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee#subSigningKey",
+      "type": "Secp256k1SignatureAuthentication2018",
+    },
+  ],
+  "id": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee",
+  "proof": Object {
+    "alg": "ES256K",
+    "signature": "1yxv71HG1L9cF00_guvUEjDEEVyIMFYe3SREskceJqDi0JINp3Db0rpXgXah6vB4KY_lECi-rlots9S_HQuzlw",
+  },
+  "publicKey": Array [
+    Object {
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
+      "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+    Object {
+      "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
+      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee#subSigningKey",
+      "publicKeyHex": "0444c963eae74f260a51f6a5a6a45a17932062c74ab13c5d4b51d86b2ca14fbea765089b441fd6ea75e848dc32b7109b4cbcbdbcd178605b545eaf86754b64cf12",
+      "type": "Secp256k1VerificationKey2018",
+    },
+    Object {
+      "id": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee#subEncryptionKey",
+      "type": "Curve25519EncryptionPublicKey",
+    },
+  ],
+  "root": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
+  "space": "space2",
+}
+`;
+
 exports[`3id getIdFromEthAddress claim signing should sign jwts correctly with rootDID 1`] = `
 Object {
   "doc": Object {
@@ -301,283 +577,5 @@ Object {
       "type": "Secp256k1VerificationKey2018",
     },
   ],
-}
-`;
-
-exports[`3id getIdFromIdentityWallet claim signing should sign jwts correctly with rootDID 1`] = `
-Object {
-  "doc": Object {
-    "@context": "https://w3id.org/did/v1",
-    "authentication": Array [
-      Object {
-        "publicKey": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-        "type": "Secp256k1SignatureAuthentication2018",
-      },
-    ],
-    "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
-    "publicKey": Array [
-      Object {
-        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-        "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-        "type": "Secp256k1VerificationKey2018",
-      },
-      Object {
-        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
-        "type": "Curve25519EncryptionPublicKey",
-      },
-      Object {
-        "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
-        "type": "Secp256k1VerificationKey2018",
-      },
-    ],
-  },
-  "issuer": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
-  "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOm51bGwsImRhdGEiOiJzb21lIGRhdGEiLCJpc3MiOiJkaWQ6MzpiYWZ5cmVpYXVtZ3d3azRzZHoya3lmc3BxZG92M3M2N240YXpzNm5lYzRhY2p5bnZsZ3Vna3R5eTVyYSJ9.N2Dx4jw_QeWIXJvGDamtUm0Bae7__WjBlUsO8dmHFQWgv74AqsaiDJybEOnFfM67u7vuJRgGZuADXntJtiVJzw",
-  "payload": Object {
-    "data": "some data",
-    "iat": null,
-    "iss": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
-  },
-  "signer": Object {
-    "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-    "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-    "type": "Secp256k1VerificationKey2018",
-  },
-}
-`;
-
-exports[`3id getIdFromIdentityWallet claim signing should sign jwts correctly with subDID 1`] = `
-Object {
-  "doc": Object {
-    "@context": "https://w3id.org/did/v1",
-    "authentication": Array [
-      Object {
-        "publicKey": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
-        "type": "Secp256k1SignatureAuthentication2018",
-      },
-    ],
-    "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
-    "proof": Object {
-      "alg": "ES256K",
-      "signature": "E4SqeAewYh6-1iczgYHTOKqHK8BPbRR5--ddWrOJR0Jg4QLVgA48dqZRwKyKkSXydKMhEdmN8wkKVGlHd-B8MA",
-    },
-    "publicKey": Array [
-      Object {
-        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-        "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-        "type": "Secp256k1VerificationKey2018",
-      },
-      Object {
-        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
-        "type": "Curve25519EncryptionPublicKey",
-      },
-      Object {
-        "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-        "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
-        "type": "Secp256k1VerificationKey2018",
-      },
-      Object {
-        "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
-        "publicKeyHex": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
-        "type": "Secp256k1VerificationKey2018",
-      },
-      Object {
-        "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subEncryptionKey",
-        "type": "Curve25519EncryptionPublicKey",
-      },
-    ],
-    "root": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
-    "space": "space1",
-  },
-  "issuer": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
-  "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NksifQ.eyJpYXQiOm51bGwsImRhdGEiOiJzb21lIGRhdGEiLCJpc3MiOiJkaWQ6MzpiYWZ5cmVpaHZhcDN1ZnBuczdtYmZzYmc1bTczbHdxbm5ndnNjZ3R3Z2djdGNrZWx3cW9oeWkyeWxiaSJ9.6c639QMKB6fBevDAJx3WFqCjtwZmoeaYlkix11K8nT9MEdmKlMKxr13FMUGKWzvYtMeYPxlVr_o5l3CfRYhIiA",
-  "payload": Object {
-    "data": "some data",
-    "iat": null,
-    "iss": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
-  },
-  "signer": Object {
-    "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
-    "publicKeyHex": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
-    "type": "Secp256k1VerificationKey2018",
-  },
-}
-`;
-
-exports[`3id getIdFromIdentityWallet instantiate threeId with IdentityWallet 1`] = `"did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra"`;
-
-exports[`3id getIdFromIdentityWallet instantiate threeId with IdentityWallet 2`] = `
-Object {
-  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
-  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-  "signingKey": "020c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55eded",
-}
-`;
-
-exports[`3id getIdFromIdentityWallet instantiate threeId with IdentityWallet 3`] = `
-Object {
-  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
-  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-  "signingKey": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-}
-`;
-
-exports[`3id getIdFromIdentityWallet instantiate threeId with IdentityWallet 4`] = `
-Object {
-  "@context": "https://w3id.org/did/v1",
-  "authentication": Array [
-    Object {
-      "publicKey": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-      "type": "Secp256k1SignatureAuthentication2018",
-    },
-  ],
-  "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
-  "publicKey": Array [
-    Object {
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-      "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-      "type": "Secp256k1VerificationKey2018",
-    },
-    Object {
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
-      "type": "Curve25519EncryptionPublicKey",
-    },
-    Object {
-      "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
-      "type": "Secp256k1VerificationKey2018",
-    },
-  ],
-}
-`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should encrypt and decrypt correctly 1`] = `[Error: IdentityWallet: Could not decrypt message]`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should get public keys correctly 1`] = `
-Object {
-  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
-  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-  "signingKey": "020c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55eded",
-}
-`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should get public keys correctly 2`] = `
-Object {
-  "encryptionKey": "2G5n/HprsVf4xXgW7By6ZYW8ZZXiylPzUbJ+z7FGvzw=",
-  "managementKey": null,
-  "signingKey": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
-}
-`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should get public keys correctly 3`] = `
-Object {
-  "encryptionKey": "gEtBz4I7u67NlVuB75nmRQfYviv4Yo5WWldkTjiS2mQ=",
-  "managementKey": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-  "signingKey": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-}
-`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should get public keys correctly 4`] = `
-Object {
-  "encryptionKey": "2G5n/HprsVf4xXgW7By6ZYW8ZZXiylPzUbJ+z7FGvzw=",
-  "managementKey": null,
-  "signingKey": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
-}
-`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should hashDBKey correctly 1`] = `"124036393264373332313662353537376162613765613432343131656139396163366333316666373132323462656564323963393663623366346637356132646661"`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should hashDBKey correctly 2`] = `"124037663937366435316639316361363564656365653362383161666332643933646239626330666339343236366161613166303061316464353933396265393064"`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should init space keyrings correctly 1`] = `"did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi"`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should init space keyrings correctly 2`] = `
-Object {
-  "@context": "https://w3id.org/did/v1",
-  "authentication": Array [
-    Object {
-      "publicKey": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
-      "type": "Secp256k1SignatureAuthentication2018",
-    },
-  ],
-  "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi",
-  "proof": Object {
-    "alg": "ES256K",
-    "signature": "E4SqeAewYh6-1iczgYHTOKqHK8BPbRR5--ddWrOJR0Jg4QLVgA48dqZRwKyKkSXydKMhEdmN8wkKVGlHd-B8MA",
-  },
-  "publicKey": Array [
-    Object {
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-      "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-      "type": "Secp256k1VerificationKey2018",
-    },
-    Object {
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
-      "type": "Curve25519EncryptionPublicKey",
-    },
-    Object {
-      "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
-      "type": "Secp256k1VerificationKey2018",
-    },
-    Object {
-      "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subSigningKey",
-      "publicKeyHex": "043348d76fea638731116fc350c1922393a997db43362efdaeb950a3d5d9c84ccb05f856cd0fba76120d645e7e76e87577481fedf9aee33647ed44197e13d34ef1",
-      "type": "Secp256k1VerificationKey2018",
-    },
-    Object {
-      "id": "did:3:bafyreihvap3ufpns7mbfsbg5m73lwqnngvscgtwggctckelwqohyi2ylbi#subEncryptionKey",
-      "type": "Curve25519EncryptionPublicKey",
-    },
-  ],
-  "root": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
-  "space": "space1",
-}
-`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should init space keyrings correctly 3`] = `"did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee"`;
-
-exports[`3id getIdFromIdentityWallet keyring logic should init space keyrings correctly 4`] = `
-Object {
-  "@context": "https://w3id.org/did/v1",
-  "authentication": Array [
-    Object {
-      "publicKey": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee#subSigningKey",
-      "type": "Secp256k1SignatureAuthentication2018",
-    },
-  ],
-  "id": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee",
-  "proof": Object {
-    "alg": "ES256K",
-    "signature": "1yxv71HG1L9cF00_guvUEjDEEVyIMFYe3SREskceJqDi0JINp3Db0rpXgXah6vB4KY_lECi-rlots9S_HQuzlw",
-  },
-  "publicKey": Array [
-    Object {
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#signingKey",
-      "publicKeyHex": "040c7062c8a227af1239fff421099f0d77b2b1ff50d21c50406db270ffee55ededb8cbdb9c5de8efe1fe91869e0138dfc90c5d0d80b253fb11066bc22d78a72300",
-      "type": "Secp256k1VerificationKey2018",
-    },
-    Object {
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#encryptionKey",
-      "type": "Curve25519EncryptionPublicKey",
-    },
-    Object {
-      "ethereumAddress": "0x2918486bb140899533Cc661e879aA512316aB8a2",
-      "id": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra#managementKey",
-      "type": "Secp256k1VerificationKey2018",
-    },
-    Object {
-      "id": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee#subSigningKey",
-      "publicKeyHex": "0444c963eae74f260a51f6a5a6a45a17932062c74ab13c5d4b51d86b2ca14fbea765089b441fd6ea75e848dc32b7109b4cbcbdbcd178605b545eaf86754b64cf12",
-      "type": "Secp256k1VerificationKey2018",
-    },
-    Object {
-      "id": "did:3:bafyreidlcarpsxnux4qdvmg5vtn6kaqgdek2q4wp33nov3jdhs5suh5vee#subEncryptionKey",
-      "type": "Curve25519EncryptionPublicKey",
-    },
-  ],
-  "root": "did:3:bafyreiaumgwwk4sdz2kyfspqdov3s67n4azs6nec4acjynvlgugktyy5ra",
-  "space": "space2",
 }
 `;
