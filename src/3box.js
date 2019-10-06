@@ -48,9 +48,9 @@ class Box {
   /**
    * Please use the **openBox** method to instantiate a 3Box
    */
-  constructor (threeId, ethereumProvider, ipfs, opts = {}) {
+  constructor (threeId, provider, ipfs, opts = {}) {
     this._3id = threeId
-    this._web3provider = ethereumProvider
+    this._web3provider = provider
     this._ipfs = ipfs
     registerResolver(this._ipfs, { pin: true })
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
@@ -100,11 +100,9 @@ class Box {
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
     this.syncDone = this.replicator.syncDone
 
-    if (this._3id.idWallet) {
-      this._3id.idWallet.events.on('new-auth-method', authData => {
-        this._writeRootstoreEntry(Replicator.entryTypes.AUTH_DATA, authData)
-      })
-    }
+    this._3id.events.on('new-auth-method', authData => {
+      this._writeRootstoreEntry(Replicator.entryTypes.AUTH_DATA, authData)
+    })
 
     this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
@@ -253,8 +251,8 @@ class Box {
   /**
    * Opens the 3Box associated with the given address
    *
-   * @param     {String | IdentityWallet}   addrOrIdW           An ethereum address, or [IdentityWallet](https://github.com/3box/identity-wallet-js/) instance
-   * @param     {ethereumProvider}          ethereumProvider    An ethereum provider
+   * @param     {String}            address                 An ethereum address
+   * @param     {provider}          provider                An ethereum or 3ID provider
    * @param     {Object}            opts                    Optional parameters
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
@@ -263,16 +261,14 @@ class Box {
    * @param     {String}            opts.contentSignature   A signature, provided by a client of 3box using the private keys associated with the given address, of the 3box consent message
    * @return    {Box}                                       the 3Box instance for the given address
    */
-  static async openBox (addrOrIdW, ethereumProvider, opts = {}) {
-    // opts = Object.assign({ iframeStore: true }, opts)
+  static async openBox (address, provider, opts = {}) {
     const ipfs = await Box.getIPFS(opts)
-    let _3id
-    if (typeof addrOrIdW === 'string') {
-      _3id = await ThreeId.getIdFromEthAddress(addrOrIdW, ethereumProvider, ipfs, opts)
-    } else {
-      _3id = await ThreeId.getIdFromIdentityWallet(addrOrIdW, ipfs, opts)
+    if (typeof address === 'object' && address !== null) {
+      // legacy support for IdentityWallet being passed in first param
+      provider = address.get3idProvider()
     }
-    const box = new Box(_3id, ethereumProvider, ipfs, opts)
+    const threeId = await ThreeId.getIdFromEthAddress(address, provider, ipfs, opts)
+    const box = new Box(threeId, provider, ipfs, opts)
     await box._load(opts)
     return box
   }
@@ -469,9 +465,15 @@ class Box {
 
       let consent
       try {
-        consent = await utils.getLinkConsent(address, did, this._web3provider)
+        // TODO - this should be handled in the 3ID class
+        consent = await utils.callRpc(this._web3provider, '3id_linkManagementKey', { did })
       } catch (e) {
-        throw new Error('Link consent message must be signed before adding data, to link address to store')
+        // an error most likely means that the provider doesn't support 3id
+        try {
+          consent = await utils.getLinkConsent(address, did, this._web3provider)
+        } catch (e) {
+          throw new Error('Link consent message must be signed before adding data, to link address to store')
+        }
       }
 
       const addressType = await this._detectAddressType(address)
@@ -571,11 +573,16 @@ class Box {
   }
 
   async _detectAddressType (address) {
-    const bytecode = await utils.getCode(this._web3provider, address).catch(() => null)
-    if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
+    try {
+      const bytecode = await utils.getCode(this._web3provider, address).catch(() => null)
+      if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
+        return ACCOUNT_TYPES.ethereumEOA
+      }
+      return ACCOUNT_TYPES.erc1271
+    } catch (e) {
+      // Throws an error assume the provider is a 3id provider only
       return ACCOUNT_TYPES.ethereumEOA
     }
-    return ACCOUNT_TYPES.erc1271
   }
 
   async close () {

@@ -1,4 +1,5 @@
 const { HDNode } = require('ethers').utils
+const EventEmitter = require('events')
 const didJWT = require('did-jwt')
 const DidDocument = require('ipfs-did-document')
 const IpfsMini = require('ipfs-mini')
@@ -15,12 +16,23 @@ const STORAGE_KEY = 'serialized3id_'
 const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_port, protocol: config.muport_ipfs_protocol}
 
 class ThreeId {
-  constructor (idWallet, ethereum, ipfs, opts = {}) {
-    this.idWallet = idWallet
-    this._ethereum = ethereum
+  constructor (provider, ipfs, opts = {}) {
+    this.events = new EventEmitter()
+    this._provider = provider
+    this._has3idProv = Boolean(opts.has3idProv)
     this._ipfs = ipfs
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
+    if (this._has3idProv) {
+      setInterval(async () => {
+        const result = await utils.callRpc(this._provider, '3id_newAuthMethodPoll')
+        if (result.length) {
+          result.map(authData => {
+            this.events.emit('new-auth-method', authData)
+          })
+        }
+      }, 500)
+    }
   }
 
   async signJWT (payload, { use3ID, space, expiresIn } = {}) {
@@ -30,8 +42,8 @@ class ThreeId {
     } else if (space) {
       issuer = this._subDIDs[space]
     }
-    if (this.idWallet) {
-      return this.idWallet.signClaim(payload, { DID: issuer, space, expiresIn })
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_signClaim', { payload, did: issuer, space, expiresIn })
     } else {
       const keyring = this._keyringBySpace(space)
       const settings = {
@@ -64,7 +76,7 @@ class ThreeId {
   }
 
   serializeState () {
-    if (this.idWallet) throw new Error('Can not serializeState of IdentityWallet')
+    if (this._has3idProv) throw new Error('Can not serializeState of IdentityWallet')
     let stateObj = {
       managementAddress: this.managementAddress,
       seed: this._mainKeyring.serialize(),
@@ -77,7 +89,7 @@ class ThreeId {
   }
 
   _initKeys (serializedState) {
-    if (this.idWallet) throw new Error('Can not initKeys of IdentityWallet')
+    if (this._has3idProv) throw new Error('Can not initKeys of IdentityWallet')
     this._keyrings = {}
     const state = JSON.parse(serializedState)
     // TODO remove toLowerCase() in future, should be sanitized elsewhere
@@ -95,7 +107,7 @@ class ThreeId {
     const muportPromise = this._initMuport()
     this._rootDID = await this._init3ID()
     let spaces
-    if (this.idWallet) {
+    if (this._has3idProv) {
       spaces = Object.keys(this._pubkeys.spaces)
     } else {
       spaces = Object.keys(this._keyrings)
@@ -155,8 +167,8 @@ class ThreeId {
   }
 
   async getAddress () {
-    if (this.idWallet) {
-      return this.idWallet.getAddress()
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_getLink')
     } else {
       return this.managementAddress
     }
@@ -164,8 +176,8 @@ class ThreeId {
 
   async authenticate (spaces, opts = {}) {
     spaces = spaces || []
-    if (this.idWallet) {
-      const pubkeys = await this.idWallet.authenticate(spaces, opts)
+    if (this._has3idProv) {
+      const pubkeys = await utils.callRpc(this._provider, '3id_authenticate', { spaces, authData: opts.authData })
       this._pubkeys.main = pubkeys.main
       this._pubkeys.spaces = Object.assign(this._pubkeys.spaces, pubkeys.spaces)
       if (!this.DID) {
@@ -183,8 +195,8 @@ class ThreeId {
   }
 
   async isAuthenticated (spaces = []) {
-    if (this.idWallet) {
-      return this.idWallet.isAuthenticated(spaces)
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_isAuthenticated', { spaces })
     } else {
       return spaces
         .map(space => Boolean(this._keyrings[space]))
@@ -193,9 +205,9 @@ class ThreeId {
   }
 
   async _initKeyringByName (name) {
-    if (this.idWallet) throw new Error('Can not initKeyringByName of IdentityWallet')
+    if (this._has3idProv) throw new Error('Can not initKeyringByName of IdentityWallet')
     if (!this._keyrings[name]) {
-      const sig = await utils.openSpaceConsent(this.managementAddress, this._ethereum, name)
+      const sig = await utils.openSpaceConsent(this.managementAddress, this._provider, name)
       const entropy = '0x' + utils.sha256(sig.slice(2))
       const seed = HDNode.mnemonicToSeed(HDNode.entropyToMnemonic(entropy))
       this._keyrings[name] = new Keyring(seed)
@@ -209,7 +221,7 @@ class ThreeId {
 
   async getPublicKeys (space, uncompressed) {
     let pubkeys
-    if (this.idWallet) {
+    if (this._has3idProv) {
       pubkeys = Object.assign({}, space ? this._pubkeys.spaces[space] : this._pubkeys.main)
       if (uncompressed) {
         pubkeys.signingKey = Keyring.uncompress(pubkeys.signingKey)
@@ -222,24 +234,24 @@ class ThreeId {
   }
 
   async encrypt (message, space) {
-    if (this.idWallet) {
-      return this.idWallet.encrypt(message, space)
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_encrypt', { message, space })
     } else {
       return this._keyringBySpace(space).symEncrypt(utils.pad(message))
     }
   }
 
   async decrypt (encObj, space) {
-    if (this.idWallet) {
-      return this.idWallet.decrypt(encObj, space)
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space })
     } else {
       return utils.unpad(this._keyringBySpace(space).symDecrypt(encObj.ciphertext, encObj.nonce))
     }
   }
 
   async hashDBKey (key, space) {
-    if (this.idWallet) {
-      return this.idWallet.hashDBKey(key, space)
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_hashEntryKey', { key, space })
     } else {
       const salt = this._keyringBySpace(space).getDBSalt()
       return utils.sha256Multihash(salt + key)
@@ -258,38 +270,47 @@ class ThreeId {
     return Boolean(localstorage.get(STORAGE_KEY + address.toLowerCase()))
   }
 
-  static async getIdFromEthAddress (address, ethereum, ipfs, opts = {}) {
-    const normalizedAddress = address.toLowerCase()
-    let serialized3id = localstorage.get(STORAGE_KEY + normalizedAddress)
-    if (serialized3id) {
-      if (opts.consentCallback) opts.consentCallback(false)
+  static async getIdFromEthAddress (address, provider, ipfs, opts = {}) {
+    opts.has3idProv = await has3idSupport(provider)
+    if (opts.has3idProv) {
+      return new ThreeId(provider, ipfs, opts)
     } else {
-      let sig
-      if (opts.contentSignature) {
-        sig = opts.contentSignature
+      const normalizedAddress = address.toLowerCase()
+      let serialized3id = localstorage.get(STORAGE_KEY + normalizedAddress)
+      if (serialized3id) {
+        if (opts.consentCallback) opts.consentCallback(false)
       } else {
-        sig = await utils.openBoxConsent(normalizedAddress, ethereum)
+        let sig
+        if (opts.contentSignature) {
+          sig = opts.contentSignature
+        } else {
+          sig = await utils.openBoxConsent(normalizedAddress, provider)
+        }
+        if (opts.consentCallback) opts.consentCallback(true)
+        const entropy = '0x' + utils.sha256(sig.slice(2))
+        const mnemonic = HDNode.entropyToMnemonic(entropy)
+        const seed = HDNode.mnemonicToSeed(mnemonic)
+        serialized3id = JSON.stringify({
+          managementAddress: normalizedAddress,
+          seed,
+          spaceSeeds: {}
+        })
       }
-      if (opts.consentCallback) opts.consentCallback(true)
-      const entropy = '0x' + utils.sha256(sig.slice(2))
-      const mnemonic = HDNode.entropyToMnemonic(entropy)
-      const seed = HDNode.mnemonicToSeed(mnemonic)
-      serialized3id = JSON.stringify({
-        managementAddress: normalizedAddress,
-        seed,
-        spaceSeeds: {}
-      })
+      const threeId = new ThreeId(provider, ipfs, opts)
+      threeId._initKeys(serialized3id)
+      await threeId._initDID()
+      return threeId
     }
-    const threeId = new ThreeId(null, ethereum, ipfs, opts)
-    threeId._initKeys(serialized3id)
-    await threeId._initDID()
-    return threeId
   }
+}
 
-  static async getIdFromIdentityWallet (idWallet, ipfs, opts = {}) {
-    const threeId = new ThreeId(idWallet, null, ipfs, opts)
-    return threeId
-  }
+const has3idSupport = async provider => {
+  try {
+    await utils.callRpc(provider, '3id_getLink')
+    // no error thrown, provider has 3id support
+    return true
+  } catch (e) {}
+  return false
 }
 
 const createMuportDocument = (signingKey, managementKey, asymEncryptionKey) => {
