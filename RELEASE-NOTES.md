@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.13.0 - 2019-10-18
+**IdentityWallet v0.2.0** has support for a JSON-RPC provider interface. This release makes use of this interface, which allows wallets to connect to 3box in more ways.
+
+---
+* feat: added support for 3ID JSON-RPC Provider
+
 ## v1.12.0 - 2019-10-04
 This release contains a feature called Ghost Threads. These threads are not persisted by in any way except in memory between users. Ghost Threads uses ipfs pubsub to send messages between peers, so in addition we have added a websocket signaling server to make peers discover each other easier. Ghost Threads includes a backlog for users that just joined, this is sent by already connected users that have a copy of recent messages.
 
