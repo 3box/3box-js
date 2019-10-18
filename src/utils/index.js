@@ -25,20 +25,29 @@ const getMessageConsent = (did, timestamp) => {
   return msg
 }
 
-const safeEthSend = (ethereum, data, callback) => {
-  const send = (Boolean(ethereum.sendAsync) ? ethereum.sendAsync : ethereum.send).bind(ethereum)
+const safeSend = (provider, data) => {
+  const send = (Boolean(provider.sendAsync) ? provider.sendAsync : provider.send).bind(provider)
   return new Promise((resolve, reject) => {
     send(data, function(err, result) {
       if (err) reject(err)
-      if (result.error) reject(result.error)
-      resolve(result.result)
+      else if (result.error) reject(result.error)
+      else resolve(result.result)
     })
   })
 }
 
+const encodeRpcCall = (method, params) => ({
+  jsonrpc: '2.0',
+  id: 1,
+  method,
+  params
+})
+
+const callRpc = async (provider, method, params) => safeSend(provider, encodeRpcCall(method, params))
 
 module.exports = {
   getMessageConsent,
+  callRpc,
 
   recoverPersonalSign: (msg, personalSig) => {
     if (!msg || !personalSig) throw new Error('recoverPersonalSign: missing arguments, msg and/or personalSig')
@@ -54,7 +63,7 @@ module.exports = {
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return safeEthSend(ethereum, {
+    return safeSend(ethereum, {
       jsonrpc: '2.0',
       id: 0,
       method,
@@ -68,7 +77,7 @@ module.exports = {
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return safeEthSend(ethereum, {
+    return safeSend(ethereum, {
       jsonrpc: '2.0',
       id: 0,
       method,
@@ -84,7 +93,7 @@ module.exports = {
     const params = [msg, fromAddress]
     const method = 'personal_sign'
 
-    const sig = await safeEthSend(ethereum, {
+    const sig = await safeSend(ethereum, {
       jsonrpc: '2.0',
       id: 0,
       method,
@@ -102,7 +111,7 @@ module.exports = {
     const method = 'eth_chainId'
     const params = []
 
-    const chainIdHex = await safeEthSend(ethereumProvider, {
+    const chainIdHex = await safeSend(ethereumProvider, {
       jsonrpc: '2.0',
       id: 0,
       method,
@@ -115,7 +124,7 @@ module.exports = {
     const method = 'eth_getCode'
     const params = [address]
 
-    const code = await safeEthSend(ethereumProvider, {
+    const code = await safeSend(ethereumProvider, {
       jsonrpc: '2.0',
       id: 1,
       method,

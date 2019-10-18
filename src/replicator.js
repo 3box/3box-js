@@ -118,6 +118,7 @@ class Replicator {
     this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
     this._pinningRoomFilter = []
     this._publishDB({ odbAddress: this.rootstore.address.toString(), did })
+    await this.rootstore.load()
     this.rootstoreSyncDone = Promise.resolve()
     this.syncDone = Promise.resolve()
   }

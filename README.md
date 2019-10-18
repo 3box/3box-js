@@ -317,7 +317,7 @@ idUtils.verifyClaim(claim)
         * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
         * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
         * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
-        * [.openBox(addrOrIdW, ethereumProvider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
+        * [.openBox(address, provider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
         * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
 
@@ -655,7 +655,7 @@ Verifies the proofs of social accounts that is present in the profile.
 
 <a name="Box.openBox"></a>
 
-#### Box.openBox(addrOrIdW, ethereumProvider, opts) ⇒ [<code>Box</code>](#Box)
+#### Box.openBox(address, provider, opts) ⇒ [<code>Box</code>](#Box)
 Opens the 3Box associated with the given address
 
 **Kind**: static method of [<code>Box</code>](#Box)  
@@ -663,8 +663,8 @@ Opens the 3Box associated with the given address
 
 | Param | Type | Description |
 | --- | --- | --- |
-| addrOrIdW | <code>String</code> \| <code>IdentityWallet</code> | An ethereum address, or [IdentityWallet](https://github.com/3box/identity-wallet-js/) instance |
-| ethereumProvider | <code>ethereumProvider</code> | An ethereum provider |
+| address | <code>String</code> | An ethereum address |
+| provider | <code>provider</code> | An ethereum or 3ID provider |
 | opts | <code>Object</code> | Optional parameters |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 | opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
