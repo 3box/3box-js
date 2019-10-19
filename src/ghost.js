@@ -16,7 +16,9 @@ class GhostThread extends EventEmitter {
     this._members = {}
     this._backlog = new Set() // set of past messages
     this._backlogLimit = opts.ghostBacklogLimit || DEFAULT_BACKLOG_LIMIT
-    this._filterFn = () => true
+    this._filterFn = function ({ payload, issuer, from }) {
+      return true;
+    }
 
     this._room.on('message', async ({ from, data }) => {
       const { payload, issuer } = await this._verifyData(data)
