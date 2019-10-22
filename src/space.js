@@ -69,6 +69,7 @@ class Space {
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
    * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
+   * @param     {Array<Function>} opts.ghostFilters Array of functions for filtering messages
    *
    * @return    {Thread}                  An instance of the thread class for the joined thread
    */

@@ -17,9 +17,16 @@ class GhostThread extends EventEmitter {
     this._backlog = new Set() // set of past messages
     this._backlogLimit = opts.ghostBacklogLimit || DEFAULT_BACKLOG_LIMIT
 
+    this._filters = opts.ghostFilters || []
+
     this._room.on('message', async ({ from, data }) => {
       const { payload, issuer } = await this._verifyData(data)
-      if (payload) {
+
+      // looping thru _filters array w map should return an array of booleans
+      // reduce that boolean array to one boolean that indicates whether we pass all the filters
+      const passesFilters = this._filters.map(filter => filter({ payload, issuer, from })).reduce((sum, next) => sum && next, true)
+
+      if (payload && passesFilters) {
         switch (payload.type) {
           case 'join':
             this._userJoined(issuer, from)
