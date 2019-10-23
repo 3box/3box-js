@@ -24,7 +24,7 @@ class GhostThread extends EventEmitter {
 
       // looping thru _filters array w map should return an array of booleans
       // reduce that boolean array to one boolean that indicates whether we pass all the filters
-      const passesFilters = this._filters.map(filter => filter({ payload, issuer, from })).reduce((sum, next) => sum && next, true)
+      const passesFilters = this._filters.reduce((acc, filter) => acc && filter(payload, issuer, from), true)
 
       if (payload && passesFilters) {
         switch (payload.type) {
