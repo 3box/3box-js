@@ -22,8 +22,8 @@ class GhostThread extends EventEmitter {
     this._room.on('message', async ({ from, data }) => {
       const { payload, issuer } = await this._verifyData(data)
 
-      // looping thru _filters array w map should return an array of booleans
-      // reduce that boolean array to one boolean that indicates whether we pass all the filters
+      // we pass the payload, issuer and peerID (from) to each filter in our filters array and reduce the value to a single boolean
+      // this boolean indicates whether the message passed the filters
       const passesFilters = this._filters.reduce((acc, filter) => acc && filter(payload, issuer, from), true)
 
       if (payload && passesFilters) {

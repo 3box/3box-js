@@ -27,7 +27,7 @@ describe('Ghost Chat', () => {
   // jest.setTimeout(2000000)
 
   beforeAll(async () => {
-    ipfs = await utils.initIPFS(4);
+    ipfs = await utils.initIPFS(11);
   })
 
   beforeEach(async () => {
@@ -59,7 +59,7 @@ describe('Ghost Chat', () => {
     let ipfs2
 
     beforeAll(async () => {
-      ipfs2 = await utils.initIPFS(5)
+      ipfs2 = await utils.initIPFS(12)
     })
 
     it('creates second chat correctly', async (done) => {
@@ -138,7 +138,7 @@ describe('Ghost Chat', () => {
     })
 
     afterAll(async () => {
-      await utils.stopIPFS(ipfs2, 5)
+      await utils.stopIPFS(ipfs2, 12)
     })
   })
 
@@ -184,15 +184,15 @@ describe('Ghost Chat', () => {
     })
 
     beforeAll(async () => {
-      ipfs3 = await utils.initIPFS(6)
+      ipfs3 = await utils.initIPFS(12)
     })
 
     afterAll(async () => {
-      await utils.stopIPFS(ipfs3, 6)
+      await utils.stopIPFS(ipfs3, 12)
     })
   })
 
   afterAll(async () => {
-    await utils.stopIPFS(ipfs, 4)
+    await utils.stopIPFS(ipfs, 11)
   })
 })
