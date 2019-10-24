@@ -52,9 +52,20 @@ class Replicator {
     this.events.on('pinning-room-message', (topic, data) => {
       if (data.type === 'HAS_ENTRIES' && data.odbAddress) {
         const odbAddress = data.odbAddress
-        // Before the pinning room filter is created we will keep all has messages
-        // in memory. After we only care about the ones that are relevant.
-        if (this._pinningRoomFilter && !this._pinningRoomFilter.includes(odbAddress)) return
+        if (this._pinningRoomFilter) {
+          const hasMsgFor = Object.keys(this._hasPubsubMsgs)
+          if (this._pinningRoomFilter.length <= hasMsgFor.length) {
+            const haveAllMsgs = this._pinningRoomFilter.reduce((acc, addr) => acc && hasMsgFor.includes(addr), true)
+            if (haveAllMsgs) {
+              this._pubsub.unsubscribe(PINNING_ROOM)
+            }
+          }
+          // Before the pinning room filter is created we will keep all has messages
+          // in memory. After we only care about the ones that are relevant.
+          if (!this._pinningRoomFilter.includes(odbAddress)) {
+            return
+          }
+        }
         this._hasPubsubMsgs[odbAddress] = data
         this.events.emit(`has-${odbAddress}`, data)
       }
@@ -74,6 +85,11 @@ class Replicator {
   async _init (opts) {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
     this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath })
+    await this._joinPinningRoom(true)
+  }
+
+  async _joinPinningRoom (firstJoin) {
+    if (!firstJoin && (await this.ipfs.pubsub.ls()).includes(PINNING_ROOM)) return
     this._pubsub.subscribe(PINNING_ROOM, (topic, data) => {
       // console.log('message', topic, data)
       this.events.emit('pinning-room-message', topic, data)
@@ -151,6 +167,9 @@ class Replicator {
       }
     } else if (!entry) {
       await this.rootstore.add({ odbAddress: storeAddress })
+    }
+    if (!this._hasPubsubMsgs[storeAddress]) {
+      this._hasPubsubMsgs[storeAddress] = { numEntries: 0 }
     }
     return store
   }
@@ -238,11 +257,12 @@ class Replicator {
     if (!roomPeers.find(p => p === this._pinningNodePeerId)) {
       this.ipfs.swarm.connect(this._pinningNode, () => {})
       odbAddress = isThread ? odbAddress : this.rootstore.address.toString()
-      this._publishDB({ odbAddress, isThread })
+      this._publishDB({ odbAddress, isThread }, true)
     }
   }
 
-  async _publishDB ({ odbAddress, did, isThread }) {
+  async _publishDB ({ odbAddress, did, isThread }, unsubscribe) {
+    this._joinPinningRoom()
     odbAddress = odbAddress || this.rootstore.address.toString()
     // make sure that the pinning node is in the pubsub room before publishing
     const pinningNodeJoined = new Promise((resolve, reject) => {
@@ -262,6 +282,9 @@ class Replicator {
       thread: isThread
     })
     this.events.removeAllListeners('pinning-room-peer')
+    if (unsubscribe) {
+      this._pubsub.unsubscribe(PINNING_ROOM)
+    }
   }
 
   async _getNumEntries (odbAddress) {
