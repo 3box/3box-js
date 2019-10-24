@@ -75,8 +75,6 @@ class Box {
      */
     this.syncDone = null
 
-    // local store of all pinning server pubsub messages seen related to spaces
-    this.spacesPubSubMessages = {}
     this.hasPublishedLink = {}
   }
 
@@ -286,7 +284,6 @@ class Box {
     if (!this.spaces[name]) {
       this.spaces[name] = new Space(name, this.replicator, this._3id)
       try {
-        opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
         if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
