@@ -882,6 +882,7 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 | opts.ghost | <code>Boolean</code> | Enable ephemeral messaging via Ghost Thread |
 | opts.ghostBacklogLimit | <code>Number</code> | The number of posts to maintain in the ghost backlog |
+| opts.ghostFilters | <code>Array.&lt;function()&gt;</code> | Array of functions for filtering messages |
 
 <a name="Space+joinThreadByAddress"></a>
 
