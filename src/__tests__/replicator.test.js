@@ -168,6 +168,7 @@ describe('Replicator', () => {
 
   it('pinningRoomFilter works as expected', async () => {
     await new Promise((resolve, reject) => pubsub2.subscribe(PINNING_ROOM, () => {}, resolve))
+    replicator1._hasPubsubMsgs = {}
     replicator1._pinningRoomFilter = null
     pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 1'})
     pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: 'fake address 2'})

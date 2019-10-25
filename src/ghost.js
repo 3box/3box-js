@@ -2,7 +2,7 @@ const EventEmitter = require('events').EventEmitter
 const { verifyJWT } = require('did-jwt')
 const Room = require('ipfs-pubsub-room')
 
-const DEFAULT_BACKLOG_LIMIT = 50
+const DEFAULT_BACKLOG_LIMIT = 100
 
 class GhostThread extends EventEmitter {
   constructor (name, { ipfs }, threeId, opts = {}) {
@@ -17,15 +17,22 @@ class GhostThread extends EventEmitter {
     this._backlog = new Set() // set of past messages
     this._backlogLimit = opts.ghostBacklogLimit || DEFAULT_BACKLOG_LIMIT
 
+    this._filters = opts.ghostFilters || []
+
     this._room.on('message', async ({ from, data }) => {
       const { payload, issuer } = await this._verifyData(data)
-      if (payload) {
+
+      // we pass the payload, issuer and peerID (from) to each filter in our filters array and reduce the value to a single boolean
+      // this boolean indicates whether the message passed the filters
+      const passesFilters = this._filters.reduce((acc, filter) => acc && filter(payload, issuer, from), true)
+
+      if (payload && passesFilters) {
         switch (payload.type) {
           case 'join':
             this._userJoined(issuer, from)
             break
           case 'request_backlog':
-            this.getPosts()
+            this.getPosts(this._backlogLimit)
               .then(posts => this._sendDirect({ type: 'backlog_response', message: posts }, from))
             break
           case 'backlog_response':
@@ -70,14 +77,11 @@ class GhostThread extends EventEmitter {
    *
    * @return    {Array<Object>}      users online
    */
-  async getPosts (num = this._backlogLimit) {
+  async getPosts (num = 0) {
     const posts = [...this._backlog]
       .map(msg => JSON.parse(msg))
       .sort((p1, p2) => p1.timestamp - p2.timestamp)
       .slice(-num)
-
-    const stringifiedPosts = posts.map(msg => JSON.stringify(msg))
-    this._backlog = new Set(stringifiedPosts)
 
     return posts
   }

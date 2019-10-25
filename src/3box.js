@@ -75,8 +75,6 @@ class Box {
      */
     this.syncDone = null
 
-    // local store of all pinning server pubsub messages seen related to spaces
-    this.spacesPubSubMessages = {}
     this.hasPublishedLink = {}
   }
 
@@ -286,7 +284,6 @@ class Box {
     if (!this.spaces[name]) {
       this.spaces[name] = new Space(name, this.replicator, this._3id)
       try {
-        opts = Object.assign({ numEntriesMessages: this.spacesPubSubMessages }, opts)
         await this.spaces[name].open(opts)
         if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
@@ -630,7 +627,7 @@ function initIPFSRepo () {
   let ipfsRootPath
 
   // if in browser, create unique root storage, and ipfs id on each instance
-  if (window && window.indexedDB) {
+  if (typeof window !== 'undefined' && window.indexedDB) {
     const sessionID = utils.randInt(10000)
     ipfsRootPath = 'ipfs/root/' + sessionID
     const levelInstance = new LevelStore(ipfsRootPath)
@@ -666,7 +663,7 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
       })
       ipfs.on('ready', () => {
         resolve(ipfs)
-        if (ipfsRepo && window && window.indexedDB) {
+        if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {
           // deletes once db is closed again
           window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
         }

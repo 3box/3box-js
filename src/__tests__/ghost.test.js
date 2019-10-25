@@ -138,11 +138,61 @@ describe('Ghost Chat', () => {
     })
 
     afterAll(async () => {
-      await utils.stopIPFS(ipfs2, 5)
+      await utils.stopIPFS(ipfs2, 12)
+    })
+  })
+
+  describe('ghost filter tests', () => {
+    let chat3
+    let ipfs3
+    let filter = (payload, issuer, from) => {
+      if (issuer == DID1) {
+          return false
+      }
+      return true
+    }
+
+    it('creates third chat correctly', async (done) => {
+      chat.removeAllListeners()
+      chat3 = new GhostThread(CHAT_NAME, { ipfs: ipfs3 }, THREEID3_MOCK, { ghostFilters: [filter] });
+      expect(chat3._name).toEqual(CHAT_NAME)
+      expect(chat3._3id).toEqual(THREEID3_MOCK)
+      expect(chat3.listMembers()).toBeDefined()
+      expect(chat3.getPosts()).toBeDefined()
+
+      // checks if chat3 joined properly
+      chat.on('user-joined', async (_event, did, peerId) => {
+        expect(_event).toEqual('joined')
+        expect(did).toEqual(DID3)
+        done()
+      })
+    })
+
+    it('chat3 should not catch broadcasts from chat', async (done) => {
+      chat.removeAllListeners()
+      chat.onUpdate(async ({ type, author, message }) => {
+        // chat3 should not have the same backlog as chat
+        // because messages from DID1 (and by extension chat) are being ignored
+        if (message = 'wide') {
+          const posts = await chat.getPosts()
+          const posts3 = await chat3.getPosts()
+          expect(posts).not.toEqual(posts3)
+          done()
+        }
+      })
+      await chat.post('wide')
+    })
+
+    beforeAll(async () => {
+      ipfs3 = await utils.initIPFS(12)
+    })
+
+    afterAll(async () => {
+      await utils.stopIPFS(ipfs3, 12)
     })
   })
 
   afterAll(async () => {
-    await utils.stopIPFS(ipfs, 4)
+    await utils.stopIPFS(ipfs, 11)
   })
 })

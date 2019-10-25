@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.13.1 - 2019-10-25
+* feat: return all messages seen in a ghost thread on getPost
+* feat: add filters to ghost threads
+* fix: issue with window being referenced in node.js
+* fix: disconnect from pinning-room when finished
+
 ## v1.13.0 - 2019-10-18
 **IdentityWallet v0.2.0** has support for a JSON-RPC provider interface. This release makes use of this interface, which allows wallets to connect to 3box in more ways.
 

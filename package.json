@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -60,7 +60,6 @@
     "muport-did-resolver": "^0.3.0",
     "node-fetch": "^2.6.0",
     "orbit-db": "~0.21.4",
-    "orbit-db-cache-postmsg-proxy": "^0.1.1",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0"
@@ -76,9 +75,7 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "^8.0.6",
     "express": "^4.17.0",
-    "ganache-cli": "^6.4.3",
     "identity-wallet": "^0.2.0",
-    "ipfsd-ctl": "^0.40.3",
     "jest": "^23.6.0",
     "jsdoc-to-markdown": "^5.0.0",
     "standard": "^14.3.1",
