@@ -305,6 +305,7 @@ class ThreeId {
 }
 
 const has3idSupport = async provider => {
+  if (provider.isMetaMask) return false
   try {
     await utils.callRpc(provider, '3id_getLink')
     // no error thrown, provider has 3id support
