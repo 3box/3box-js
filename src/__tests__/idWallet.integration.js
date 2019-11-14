@@ -95,7 +95,10 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   it('should openBox correctly when idWallet is passed', async () => {
-    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
+    const provider = idWallet.get3idProvider()
+    // monkey patch because we're not using latest version of idwallet
+    provider.is3idProvider = true
+    const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     await box.public.set('a', 1)
     await box.public.set('b', 2)
@@ -109,7 +112,10 @@ describe('Integration Test: IdentityWallet', () => {
 
   it('should get same state on second openBox', async () => {
     publishHasEntries()
-    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
+    const provider = idWallet.get3idProvider()
+    // monkey patch because we're not using latest version of idwallet
+    provider.is3idProvider = true
+    const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
 
@@ -124,7 +130,10 @@ describe('Integration Test: IdentityWallet', () => {
   it('should get same state on openBox with IdentityWallet opened using first authSecret', async () => {
     publishHasEntries()
     idWallet = new IdentityWallet({ authSecret: AUTH_1, ethereumAddress: ADDRESS })
-    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
+    const provider = idWallet.get3idProvider()
+    // monkey patch because we're not using latest version of idwallet
+    provider.is3idProvider = true
+    const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
 
@@ -139,7 +148,10 @@ describe('Integration Test: IdentityWallet', () => {
   it('should get same state on openBox with IdentityWallet opened using second authSecret', async () => {
     publishHasEntries()
     idWallet = new IdentityWallet({ authSecret: AUTH_2, ethereumAddress: ADDRESS })
-    const box = await Box.openBox(null, idWallet.get3idProvider(), opts)
+    const provider = idWallet.get3idProvider()
+    // monkey patch because we're not using latest version of idwallet
+    provider.is3idProvider = true
+    const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
     await box.close()

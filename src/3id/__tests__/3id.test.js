@@ -215,7 +215,10 @@ describe('3id', () => {
   describe('get 3ID using IdentityWallet', () => {
     it('instantiate threeId with IdentityWallet', async () => {
       const idWallet = new IdentityWallet({ seed: ID_WALLET_SEED })
-      idw3id = await ThreeId.getIdFromEthAddress(null, idWallet.get3idProvider(), ipfs)
+      const provider = idWallet.get3idProvider()
+      // monkey patch because we're not using latest version of idwallet
+      provider.is3idProvider = true
+      idw3id = await ThreeId.getIdFromEthAddress(null, provider, ipfs)
       expect(idw3id.DID).toBeUndefined()
       await idw3id.authenticate()
       expect(idw3id.DID).toMatchSnapshot()

@@ -463,14 +463,13 @@ class Box {
       let consent
       try {
         // TODO - this should be handled in the 3ID class
-        consent = await utils.callRpc(this._web3provider, '3id_linkManagementKey', { did })
-      } catch (e) {
-        // an error most likely means that the provider doesn't support 3id
-        try {
+        if (this._web3provider.is3idProvider) {
+          consent = await utils.callRpc(this._web3provider, '3id_linkManagementKey', { did })
+        } else {
           consent = await utils.getLinkConsent(address, did, this._web3provider)
-        } catch (e) {
-          throw new Error('Link consent message must be signed before adding data, to link address to store')
         }
+      } catch (e) {
+        throw new Error('Link consent message must be signed before adding data, to link address to store')
       }
 
       const addressType = await this._detectAddressType(address)
