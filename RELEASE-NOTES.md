@@ -1,4 +1,7 @@
 # Release Notes
+j
+## v1.13.2 - 2019-11-15
+* fix: check for 3id provider support in a better way
 
 ## v1.13.1 - 2019-10-25
 * feat: return all messages seen in a ghost thread on getPost

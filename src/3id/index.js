@@ -271,7 +271,7 @@ class ThreeId {
   }
 
   static async getIdFromEthAddress (address, provider, ipfs, opts = {}) {
-    opts.has3idProv = await has3idSupport(provider)
+    opts.has3idProv = Boolean(provider.is3idProvider)
     if (opts.has3idProv) {
       return new ThreeId(provider, ipfs, opts)
     } else {
@@ -302,15 +302,6 @@ class ThreeId {
       return threeId
     }
   }
-}
-
-const has3idSupport = async provider => {
-  try {
-    await utils.callRpc(provider, '3id_getLink')
-    // no error thrown, provider has 3id support
-    return true
-  } catch (e) {}
-  return false
 }
 
 const createMuportDocument = (signingKey, managementKey, asymEncryptionKey) => {
