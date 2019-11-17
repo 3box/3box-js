@@ -1,6 +1,6 @@
 const { fetchText, getMessageConsent } = require('./index')
 const didJWT = require('did-jwt')
-const { utils.verifyMessage: verifyMessage } = require('ethers')
+const { utils } = require('ethers')
 require('https-did-resolver').default()
 require('muport-did-resolver')()
 
@@ -112,6 +112,6 @@ module.exports = {
     }
 
     // Validate the signature
-    return verifyMessage(consentMsg, consentSig)
+    return utils.verifyMessage(consentMsg, consentSig)
   }
 }
