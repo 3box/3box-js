@@ -1,7 +1,9 @@
 const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
-const { Contract, providers, utils } = require('ethers')
+const { Contract } = require('@ethersproject/contracts')
+const { Web3Provider } = require('@ethersproject/providers')
+const { verifyMessage } = require('@ethersproject/wallet')
 
 const ENC_BLOCK_SIZE = 24
 const MAGIC_ERC1271_VALUE = '0x20c13b0b'
@@ -55,7 +57,7 @@ module.exports = {
       data: msg,
       sig: personalSig
     }
-    return utils.verifyMessage(msg , personalSig)
+    return verifyMessage(msg , personalSig)
   },
 
   openBoxConsent: (fromAddress, ethereum) => {
@@ -140,7 +142,7 @@ module.exports = {
     const abi = [
       'function isValidSignature(bytes _messageHash, bytes _signature) public view returns (bytes4 magicValue)'
     ]
-    const ethersProvider = new provider.Web3Provider(web3Provider)
+    const ethersProvider = new Web3Provider(web3Provider)
     const contract = new Contract(linkObj.address, abi, ethersProvider)
     const message = '0x' + Buffer.from(linkObj.message, 'utf8').toString('hex')
     const returnValue = await contract.isValidSignature(message, linkObj.signature)

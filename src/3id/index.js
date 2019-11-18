@@ -1,4 +1,4 @@
-const { HDNode } = require('ethers').utils
+const { mnemonicToSeed, entropyToMnemonic } = require('@ethersproject/hdnode')
 const EventEmitter = require('events')
 const didJWT = require('did-jwt')
 const DidDocument = require('ipfs-did-document')
@@ -209,7 +209,7 @@ class ThreeId {
     if (!this._keyrings[name]) {
       const sig = await utils.openSpaceConsent(this.managementAddress, this._provider, name)
       const entropy = '0x' + utils.sha256(sig.slice(2))
-      const seed = HDNode.mnemonicToSeed(HDNode.entropyToMnemonic(entropy))
+      const seed = mnemonicToSeed(entropyToMnemonic(entropy))
       this._keyrings[name] = new Keyring(seed)
       this._subDIDs[name] = await this._init3ID(name)
       localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
@@ -288,8 +288,8 @@ class ThreeId {
         }
         if (opts.consentCallback) opts.consentCallback(true)
         const entropy = '0x' + utils.sha256(sig.slice(2))
-        const mnemonic = HDNode.entropyToMnemonic(entropy)
-        const seed = HDNode.mnemonicToSeed(mnemonic)
+        const mnemonic = entropyToMnemonic(entropy)
+        const seed = mnemonicToSeed(mnemonic)
         serialized3id = JSON.stringify({
           managementAddress: normalizedAddress,
           seed,
