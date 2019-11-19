@@ -75,7 +75,7 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "^8.0.6",
     "express": "^4.17.0",
-    "identity-wallet": "^0.2.0",
+    "identity-wallet": "^0.3.1",
     "jest": "^23.6.0",
     "jsdoc-to-markdown": "^5.0.0",
     "standard": "^14.3.1",
