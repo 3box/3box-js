@@ -1,5 +1,5 @@
 const Keyring = require('../keyring')
-const { HDNode } = require('ethers').utils
+const { mnemonicToSeed } = require('@ethersproject/hdnode')
 const nacl = require('tweetnacl')
 nacl.util = require('tweetnacl-util')
 
@@ -9,7 +9,7 @@ describe('Keyring', () => {
   let keyring1
   let keyring2
   let keyring3
-  const seed = HDNode.mnemonicToSeed('clay rubber drama brush salute cream nerve wear stuff sentence trade conduct')
+  const seed = mnemonicToSeed('clay rubber drama brush salute cream nerve wear stuff sentence trade conduct')
 
   it('throws error if no seed', async () => {
     expect(() => new Keyring()).toThrow()
