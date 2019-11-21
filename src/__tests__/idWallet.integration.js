@@ -85,7 +85,7 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   beforeEach(async () => {
-    idWallet = new IdentityWallet({ seed: SEED })
+    idWallet = new IdentityWallet(() => true, { seed: SEED })
     pubsub.subscribe(PINNING_ROOM, (topic, data) => {}, () => {})
   })
 
@@ -110,7 +110,7 @@ describe('Integration Test: IdentityWallet', () => {
     await box.close()
   })
 
-  it('should get same state on second openBox', async () => {
+  it('should get same state on second openBox', async (done) => {
     publishHasEntries()
     const provider = idWallet.get3idProvider()
     // monkey patch because we're not using latest version of idwallet
@@ -125,11 +125,12 @@ describe('Integration Test: IdentityWallet', () => {
     expect(box.replicator.rootstore._oplog.values.length).toEqual(4)
 
     await box.close()
+    done()
   })
 
-  it('should get same state on openBox with IdentityWallet opened using first authSecret', async () => {
+  it('should get same state on openBox with IdentityWallet opened using first authSecret', async (done) => {
     publishHasEntries()
-    idWallet = new IdentityWallet({ authSecret: AUTH_1, ethereumAddress: ADDRESS })
+    idWallet = new IdentityWallet(() => true, { authSecret: AUTH_1, ethereumAddress: ADDRESS })
     const provider = idWallet.get3idProvider()
     // monkey patch because we're not using latest version of idwallet
     provider.is3idProvider = true
@@ -143,11 +144,12 @@ describe('Integration Test: IdentityWallet', () => {
     expect(box.replicator.rootstore._oplog.values.length).toEqual(5)
 
     await box.close()
+    done()
   })
 
-  it('should get same state on openBox with IdentityWallet opened using second authSecret', async () => {
+  it('should get same state on openBox with IdentityWallet opened using second authSecret', async (done) => {
     publishHasEntries()
-    idWallet = new IdentityWallet({ authSecret: AUTH_2, ethereumAddress: ADDRESS })
+    idWallet = new IdentityWallet(() => true, { authSecret: AUTH_2, ethereumAddress: ADDRESS })
     const provider = idWallet.get3idProvider()
     // monkey patch because we're not using latest version of idwallet
     provider.is3idProvider = true
@@ -155,5 +157,6 @@ describe('Integration Test: IdentityWallet', () => {
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
     await box.close()
+    done()
   })
 })
