@@ -102,6 +102,8 @@ module.exports = {
    * @return    {String}                                  The ethereum address used to sign the message
    */
   verifyEthereum: async (ethProof, did) => {
+    // TODO - is this function needed? Can it be removed in
+    // favour of proofs that are in the rootstore?
     const consentMsg = ethProof.version ?  ethProof.message : ethProof['consent_msg']
     const consentSig = ethProof.version ?  ethProof.signature : ethProof['consent_signature']
 

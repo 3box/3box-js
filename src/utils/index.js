@@ -1,9 +1,6 @@
 const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
-const { Contract } = require('@ethersproject/contracts')
-const { Web3Provider } = require('@ethersproject/providers')
-const { verifyMessage } = require('@ethersproject/wallet')
 
 const ENC_BLOCK_SIZE = 24
 const MAGIC_ERC1271_VALUE = '0x20c13b0b'
@@ -51,15 +48,6 @@ module.exports = {
   getMessageConsent,
   callRpc,
 
-  recoverPersonalSign: (msg, personalSig) => {
-    if (!msg || !personalSig) throw new Error('recoverPersonalSign: missing arguments, msg and/or personalSig')
-    const msgParams = {
-      data: msg,
-      sig: personalSig
-    }
-    return verifyMessage(msg , personalSig)
-  },
-
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
@@ -88,68 +76,6 @@ module.exports = {
     })
   },
 
-  getLinkConsent: async (fromAddress, toDID, ethereum) => {
-    const timestamp = Math.floor(new Date().getTime() / 1000)
-    const text = getMessageConsent(toDID, timestamp)
-    const msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
-    const params = [msg, fromAddress]
-    const method = 'personal_sign'
-
-    const sig = await safeSend(ethereum, {
-      jsonrpc: '2.0',
-      id: 0,
-      method,
-      params,
-      fromAddress
-    })
-    return {
-      msg: text,
-      sig,
-      timestamp
-    }
-  },
-
-  getChainId: async (ethereumProvider) => {
-    const method = 'eth_chainId'
-    const params = []
-
-    const chainIdHex = await safeSend(ethereumProvider, {
-      jsonrpc: '2.0',
-      id: 0,
-      method,
-      params
-    })
-    return parseInt(chainIdHex, 16)
-  },
-
-  getCode: async (ethereumProvider, address) => {
-    const method = 'eth_getCode'
-    const params = [address, 'latest']
-
-    const code = await safeSend(ethereumProvider, {
-      jsonrpc: '2.0',
-      id: 1,
-      method,
-      params
-    })
-    return code
-  },
-
-  isValidSignature: async (linkObj, isErc1271, web3Provider) => {
-    if (!linkObj.address) return false
-    if (!isErc1271) return true
-
-    const abi = [
-      'function isValidSignature(bytes _messageHash, bytes _signature) public view returns (bytes4 magicValue)'
-    ]
-    const ethersProvider = new Web3Provider(web3Provider)
-    const contract = new Contract(linkObj.address, abi, ethersProvider)
-    const message = '0x' + Buffer.from(linkObj.message, 'utf8').toString('hex')
-    const returnValue = await contract.isValidSignature(message, linkObj.signature)
-
-    return returnValue === MAGIC_ERC1271_VALUE
-  },
-
   fetchJson: async (url, body) => {
     let opts
     if (body) {
@@ -158,7 +84,8 @@ module.exports = {
     const r = await fetch(url, opts)
 
     if (r.ok) {
-      return r.json()
+      let res = await r.json()
+      return res
     } else {
       throw HTTPError(r.status, (await r.json()).message)
     }

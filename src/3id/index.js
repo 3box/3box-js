@@ -14,6 +14,7 @@ const config = require('../config.js')
 const DID_METHOD_NAME = '3'
 const STORAGE_KEY = 'serialized3id_'
 const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_port, protocol: config.muport_ipfs_protocol}
+const POLL_INTERVAL = 500
 
 class ThreeId {
   constructor (provider, ipfs, opts = {}) {
@@ -23,15 +24,20 @@ class ThreeId {
     this._ipfs = ipfs
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
+  }
+
+  startUpdatePolling () {
     if (this._has3idProv) {
-      setInterval(async () => {
-        const result = await utils.callRpc(this._provider, '3id_newAuthMethodPoll')
-        if (result.length) {
-          result.map(authData => {
-            this.events.emit('new-auth-method', authData)
-          })
-        }
-      }, 500)
+      const poll = async (method, event) => {
+        const result = await utils.callRpc(this._provider, method)
+        result.map(data => {
+          this.events.emit(event, data)
+        })
+      }
+      setInterval(() => {
+        poll('3id_newAuthMethodPoll', 'new-auth-method')
+        poll('3id_newLinkPoll', 'new-link-proof')
+      }, POLL_INTERVAL)
     }
   }
 

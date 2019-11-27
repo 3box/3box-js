@@ -7,7 +7,8 @@ const IdentityWallet = require('identity-wallet')
 const PINNING_ROOM = '3box-pinning'
 
 jest.mock('node-fetch', () => {
-  const rootStoreAddress = '/orbitdb/QmZggbAyvHMBgQX6vSFXpG31BvqwVAiLF6UUJn4s91ZUP2/122099b9c5866419e91e3d470b364b721e4b43e9f699fb0b032bdc0d402a0ac41a27.root'
+  // be careful, this address might change
+  const rootStoreAddress = '/orbitdb/QmX25N5fMa9bw6g3dqstjbDGuMMGf4u5SaPaBJGy37tanz/1220693f7b44d61924943390395980d9f76c01f9d029129e15f4bcff77280104cace.root'
   let called = false
   return (url, opts) => {
     //console.log('fetch', url, opts)
@@ -39,17 +40,8 @@ jest.mock('node-fetch', () => {
 })
 
 const utils = require('../utils/index')
-utils.recoverPersonalSign = () => '0x2D10ce5C50000496715891073804577E0Af964C0'
 
-const mockEthProvider = {
-  sendAsync: (d, fn) => {
-    if (d.method.startsWith('3id')) {
-      fn('error!')
-    } else {
-      fn(null, 0x12345)
-    }
-  }
-}
+const getConsent = () => true
 
 
 describe('Integration Test: IdentityWallet', () => {
@@ -61,11 +53,10 @@ describe('Integration Test: IdentityWallet', () => {
   let rootStoreAddress, pubAddr, privAddr
 
   const SEED = '0x95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be'
-  const ADDRESS = '0x2D10ce5C50000496715891073804577E0Af964C0'
   const AUTH_1 = '68b682d67f0fccb0c56236c27ccdd70577722c385c65c00ed1c3d4fbee57db3c'
-  const AUTH_2 = '05273ade0b139165d9e5864a18d1ad6b291a1a1ebc841fd68d126c593c89ce7f '
+  const AUTH_2 = '05273ade0b139165d9e5864a18d1ad6b291a1a1ebc841fd68d126c593c89ce7f'
   const publishHasEntries = async () => {
-    await testUtils.delay(900)
+    await testUtils.delay(2000)
     pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootStoreAddress, numEntries: 2 })
     pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: privAddr, numEntries: 0 })
     pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: pubAddr, numEntries: 2 })
@@ -85,7 +76,7 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   beforeEach(async () => {
-    idWallet = new IdentityWallet({ seed: SEED })
+    idWallet = new IdentityWallet(getConsent, { seed: SEED })
     pubsub.subscribe(PINNING_ROOM, (topic, data) => {}, () => {})
   })
 
@@ -96,8 +87,6 @@ describe('Integration Test: IdentityWallet', () => {
 
   it('should openBox correctly when idWallet is passed', async () => {
     const provider = idWallet.get3idProvider()
-    // monkey patch because we're not using latest version of idwallet
-    provider.is3idProvider = true
     const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     await box.public.set('a', 1)
@@ -111,10 +100,8 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   it('should get same state on second openBox', async () => {
-    publishHasEntries()
     const provider = idWallet.get3idProvider()
-    // monkey patch because we're not using latest version of idwallet
-    provider.is3idProvider = true
+    publishHasEntries()
     const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
@@ -128,11 +115,9 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   it('should get same state on openBox with IdentityWallet opened using first authSecret', async () => {
-    publishHasEntries()
-    idWallet = new IdentityWallet({ authSecret: AUTH_1, ethereumAddress: ADDRESS })
+    idWallet = new IdentityWallet(getConsent, { authSecret: AUTH_1 })
     const provider = idWallet.get3idProvider()
-    // monkey patch because we're not using latest version of idwallet
-    provider.is3idProvider = true
+    publishHasEntries()
     const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
@@ -146,11 +131,9 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   it('should get same state on openBox with IdentityWallet opened using second authSecret', async () => {
-    publishHasEntries()
-    idWallet = new IdentityWallet({ authSecret: AUTH_2, ethereumAddress: ADDRESS })
+    idWallet = new IdentityWallet(getConsent, { authSecret: AUTH_2 })
     const provider = idWallet.get3idProvider()
-    // monkey patch because we're not using latest version of idwallet
-    provider.is3idProvider = true
+    publishHasEntries()
     const box = await Box.openBox(null, provider, opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
