@@ -1,6 +1,7 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
 const registerResolver = require('3id-resolver')
+const { createLink, validateLink } = require('3id-blockchain-utils')
 
 const ThreeId = require('./3id')
 const Replicator = require('./replicator')
@@ -14,12 +15,6 @@ const config = require('./config.js')
 const API = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
-
-const ACCOUNT_TYPES = {
-  ethereum: 'ethereum',
-  ethereumEOA: 'ethereum-eoa',
-  erc1271: 'erc1271'
-}
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -92,7 +87,7 @@ class Box {
       await this._3id.authenticate()
       const rootstoreName = this._3id.muportFingerprint + '.root'
       const key = (await this._3id.getPublicKeys(null, true)).signingKey
-      await this.replicator.new(rootstoreName, key, this.DID)
+      await this.replicator.new(rootstoreName, key, this._3id.DID, this._3id.muportDID)
       this._publishRootStore(this.replicator.rootstore.address.toString())
     }
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
@@ -101,6 +96,10 @@ class Box {
     this._3id.events.on('new-auth-method', authData => {
       this._writeRootstoreEntry(Replicator.entryTypes.AUTH_DATA, authData)
     })
+    this._3id.events.on('new-link-proof', proof => {
+      this._writeAddressLink(proof)
+    })
+    this._3id.startUpdatePolling()
 
     this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
@@ -314,19 +313,28 @@ class Box {
 
   async _publishRootStore (rootStoreAddress) {
     // Sign rootstoreAddress
-    const addressToken = await this._3id.signJWT({ rootStoreAddress })
+    const addressToken = await this._3id.signJWT({ rootStoreAddress }, { use3ID: true })
     // Store odbAddress on 3box-address-server
-    try {
-      await utils.fetchJson(this._serverUrl + '/odbAddress', {
-        address_token: addressToken
-      })
-    } catch (err) {
-      // we capture http errors (500, etc)
-      // see: https://github.com/3box/3box-js/pull/351
-      if (!err.statusCode) {
-        throw new Error(err)
+    const publish = async token => {
+      try {
+        await utils.fetchJson(this._serverUrl + '/odbAddress', {
+          address_token: token
+        })
+      } catch (err) {
+        if (err.message === 'Invalid JWT') {
+          // we tried to publish before address-server has access to 3ID
+          // so it can't verify the JWT. Retry until it is available
+          await new Promise(resolve => setTimeout(resolve, 300))
+          await publish(token)
+        }
+        // we capture http errors (500, etc)
+        // see: https://github.com/3box/3box-js/pull/351
+        if (!err.statusCode) {
+          throw new Error(err)
+        }
       }
     }
+    await publish(addressToken)
     return true
   }
 
@@ -346,6 +354,7 @@ class Box {
    * @property {String} DID        the DID of the user
    */
   get DID () {
+    // TODO - update once verification service supports 3ID
     return this._3id.muportDID
   }
 
@@ -353,33 +362,14 @@ class Box {
    * Creates a proof that links an ethereum address to the 3Box account of the user. If given proof, it will simply be added to the root store.
    *
    * @param     {Object}    [link]                         Optional link object with type or proof
-   * @param     {String}    [link.type='ethereum-eoa']     The type of link (default 'ethereum')
    * @param     {Object}    [link.proof]                   Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md)
    */
   async linkAddress (link = {}) {
     if (link.proof) {
-      let valid
-      if (link.proof.type === ACCOUNT_TYPES.ethereumEOA) {
-        valid = await utils.recoverPersonalSign(link.proof.message, link.proof.signature)
-      } else if (link.proof.type === ACCOUNT_TYPES.erc1271) {
-        valid = await utils.isValidSignature(link.proof, true, this._web3provider)
-      } else {
-        throw new Error('Missing or invalid property "type" in proof')
-      }
-      if (!valid) {
-        throw new Error('There was an issue verifying the supplied proof: ', valid)
-      }
-      await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, link.proof)
-      return
-    }
-    if (!link.type || link.type === ACCOUNT_TYPES.ethereumEOA) {
+      await this._writeAddressLink(link.proof)
+    } else {
       await this._linkProfile()
     }
-  }
-
-  async linkAccount (type = ACCOUNT_TYPES.ethereumEOA) {
-    console.warn('linkAccount: deprecated, please use linkAddress going forward')
-    await this.linkAddress(type)
   }
 
   /**
@@ -396,7 +386,7 @@ class Box {
       type: 'delete-address-link'
     }
     const oneHour = 60 * 60
-    const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour })
+    const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour, use3ID: true })
 
     try {
       await utils.fetchJson(this._serverUrl + '/linkdelete', {
@@ -432,11 +422,6 @@ class Box {
     return Boolean(linksQuery)
   }
 
-  async isAccountLinked (type = ACCOUNT_TYPES.ethereumEOA) {
-    console.warn('isAccountLinked: deprecated, please use isAddressLinked going forward')
-    return this.isAddressLinked(type)
-  }
-
   /**
    * Lists address links associated with this 3Box
    *
@@ -453,66 +438,49 @@ class Box {
     }, [])
   }
 
+  async _writeAddressLink (proof) {
+    const validProof = validateLink(proof)
+    if (!validProof) {
+      throw new Error('tried to write invalid link proof', proof)
+    }
+    if (await this.isAddressLinked({ address: validProof.address })) return true // address already linked
+    await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, proof)
+    await utils.fetchJson(this._serverUrl + '/link', proof)
+  }
+
   async _linkProfile () {
     const address = await this._3id.getAddress()
-    let linkData = await this._readAddressLink(address)
+    let proof = await this._readAddressLink(address)
 
-    if (!linkData) {
-      const did = this.DID
-
-      let consent
-      try {
-        // TODO - this should be handled in the 3ID class
-        if (this._web3provider.is3idProvider) {
-          consent = await utils.callRpc(this._web3provider, '3id_linkManagementKey', { did })
-        } else {
-          consent = await utils.getLinkConsent(address, did, this._web3provider)
+    if (!proof) {
+      if (!this._web3provider.is3idProvider) {
+        try {
+          proof = await createLink(this._3id.DID, address, this._web3provider)
+        } catch (e) {
+          throw new Error('Link consent message must be signed before adding data, to link address to store', e)
         }
-      } catch (e) {
-        throw new Error('Link consent message must be signed before adding data, to link address to store')
-      }
-
-      const addressType = await this._detectAddressType(address)
-      if (addressType === ACCOUNT_TYPES.erc1271) {
-        const chainId = await utils.getChainId(this._web3provider)
-        linkData = {
-          version: 1,
-          type: ACCOUNT_TYPES.erc1271,
-          chainId,
-          address,
-          message: consent.msg,
-          timestamp: consent.timestamp,
-          signature: consent.sig
+        try {
+          await this._writeAddressLink(proof)
+        } catch (err) {
+          throw new Error('An error occured while publishing link:', err)
         }
-      } else {
-        linkData = {
-          version: 1,
-          type: ACCOUNT_TYPES.ethereumEOA,
-          message: consent.msg,
-          signature: consent.sig,
-          timestamp: consent.timestamp
-        }
-      }
-      try {
-        await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, linkData)
-      } catch (err) {
-        throw new Error('An error occured while publishing link:', err)
       }
     } else {
       // Send consentSignature to 3box-address-server to link profile with ethereum address
       // _writeAddressLink already does this if the other conditional is called
-      if (!this.hasPublishedLink[linkData.signature]) {
+      if (!this.hasPublishedLink[proof.signature]) {
         // Don't want to publish on every call to _linkProfile
-        this.hasPublishedLink[linkData.signature] = true
+        this.hasPublishedLink[proof.signature] = true
         try {
           // Send consentSignature to 3box-address-server to link profile with ethereum address
-          await utils.fetchJson(this._serverUrl + '/link', linkData)
+          await utils.fetchJson(this._serverUrl + '/link', proof)
         } catch (err) {
           throw new Error('An error occured while publishing link:', err)
         }
       }
     }
     // Ensure we self-published our did
+    // TODO - is this still needed?
     if (!(await this.public.get('proof_did'))) {
       // we can just sign an empty JWT as a proof that we own this DID
       await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
@@ -522,16 +490,19 @@ class Box {
   async _writeRootstoreEntry (type, payload) {
     const cid = (await this._ipfs.dag.put(payload)).toBaseEncodedString()
     await this._ipfs.pin.add(cid)
-    const linkExist = await this._typeCIDExists(type, cid)
-    if (linkExist) return
-    const link = {
+    const entryExist = await this._typeCIDExists(type, cid)
+    if (entryExist) return
+    const entry = {
       type,
       data: cid
     }
-    await this.replicator.rootstore.add(link)
-    if (type === Replicator.entryTypes.ADDRESS_LINK) {
-      await utils.fetchJson(this._serverUrl + '/link', payload)
-    }
+    // the below code prevents multiple simultaneous writes,
+    // which orbitdb doesn't support
+    const prev = this._rootstoreQueue
+    this._rootstoreQueue = (async () => {
+      if (prev) await prev
+      await this.replicator.rootstore.add(entry)
+    })()
   }
 
   async _typeCIDExists (type, cid) {
@@ -549,16 +520,7 @@ class Box {
 
   async _readAddressLinks () {
     const links = await this.replicator.getAddressLinks()
-    const allLinks = await Promise.all(links.map(async linkObj => {
-      if (!linkObj.address) {
-        linkObj.address = utils.recoverPersonalSign(linkObj.message, linkObj.signature)
-      }
-      const isErc1271 = linkObj.type === ACCOUNT_TYPES.erc1271
-      if (!(await utils.isValidSignature(linkObj, isErc1271, this._web3provider))) {
-        return null
-      }
-      return linkObj
-    }))
+    const allLinks = await Promise.all(links.map(validateLink))
     return allLinks.filter(Boolean)
   }
 
@@ -566,19 +528,6 @@ class Box {
     address = address.toLowerCase()
     const links = await this._readAddressLinks()
     return links.find(link => link.address.toLowerCase() === address)
-  }
-
-  async _detectAddressType (address) {
-    try {
-      const bytecode = await utils.getCode(this._web3provider, address).catch(() => null)
-      if (!bytecode || bytecode === '0x' || bytecode === '0x0' || bytecode === '0x00') {
-        return ACCOUNT_TYPES.ethereumEOA
-      }
-      return ACCOUNT_TYPES.erc1271
-    } catch (e) {
-      // Throws an error assume the provider is a 3id provider only
-      return ACCOUNT_TYPES.ethereumEOA
-    }
   }
 
   async close () {
@@ -643,7 +592,7 @@ function initIPFSRepo () {
 
 async function initIPFS (ipfs, iframeStore, ipfsOptions) {
   // if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
-  if (!!ipfs && iframeStore) console.log('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
+  if (!!ipfs && iframeStore) console.warn('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
   if (ipfs) {
     return ipfs
   } else {

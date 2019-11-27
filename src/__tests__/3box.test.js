@@ -22,7 +22,7 @@ const DIDMUPORT2 = DID2.replace('3', 'muport')
 
 const randomStr = () => `${Math.floor(Math.random() * 1000000)}`
 
-
+jest.mock('3id-resolver')
 jest.mock('../3id', () => {
   const randomStr = () => `${Math.floor(Math.random() * 1000000)}`
   const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
@@ -111,6 +111,18 @@ jest.mock('../replicator', () => {
   }
 })
 
+jest.mock('3id-blockchain-utils', () => ({
+  createLink: jest.fn(async (did, address, provider) => ({
+    message: 'I agree to stuff,' + did,
+    signature: '0xSuchRealSig,' + address,
+    timestamp: 111,
+    type: 'ethereum-eoa',
+    version: 1
+  })),
+  validateLink: (proof, did) => {
+    return 'todo'
+  }
+}))
 
 jest.mock('../utils/verifier')
 jest.mock('../utils/index', () => {
@@ -122,7 +134,6 @@ jest.mock('../utils/index', () => {
   let linkNum = 0
   return {
     getMessageConsent: actualUtils.getMessageConsent,
-    recoverPersonalSign: () => '0x8726348762348723487238476238746827364872634876234876234',
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
     fetchJson: jest.fn(async (url, body) => {
       const split = url.split('/')
@@ -162,22 +173,6 @@ jest.mock('../utils/index', () => {
           }
       }
     }),
-    getLinkConsent: jest.fn(async (address, did, web3prov) => {
-      return {
-        msg: 'I agree to stuff,' + did,
-        sig: '0xSuchRealSig,' + address,
-        timestamp: 111
-      }
-    }),
-    getChainId: jest.fn(async (web3prov) => {
-      return 1
-    }),
-    getCode: jest.fn(async (web3prov, address) => {
-      return '0x'
-    }),
-    isValidSignature: jest.fn(async (linkObj, isErc1271, web3Provider) => {
-      return true
-    }),
     sha256Multihash: jest.fn(str => {
       if (str === 'did:muport:Qmsdsdf87g329') return 'ab8c73d8f'
       return 'b932fe7ab'
@@ -187,6 +182,7 @@ jest.mock('../utils/index', () => {
 })
 
 const mockedUtils = require('../utils/index')
+const { createLink } = require('3id-blockchain-utils')
 const mocked3id = require('../3id')
 const MOCK_HASH_SERVER = 'address-server'
 const MOCK_PROFILE_SERVER = 'profile-server'
@@ -198,9 +194,9 @@ describe('3Box', () => {
   const clearMocks = () => {
     mockedUtils.openBoxConsent.mockClear()
     mockedUtils.fetchJson.mockClear()
-    mockedUtils.getLinkConsent.mockClear()
     mocked3id.getIdFromEthAddress.mockClear()
     mocked3id.logoutFn.mockClear()
+    createLink.mockClear()
   }
 
   beforeAll(async () => {
@@ -271,7 +267,7 @@ describe('3Box', () => {
 
   it('should handle error and not link profile on first call to _linkProfile', async () => {
     const box = await Box.openBox('0x12345','web3prov', boxOpts)
-    const didMuPort = box._3id.muportDID
+    const did = box._3id.DID
     clearMocks()
 
     // first two calls in our mock will throw an error
@@ -282,17 +278,17 @@ describe('3Box', () => {
     // It will check the self-signed did
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      message: `I agree to stuff,${didMuPort}`,
+      message: `I agree to stuff,${did}`,
       signature: "0xSuchRealSig,0x12345",
       timestamp: 111,
       type: "ethereum-eoa",
       version: 1,
     })
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
+    expect(createLink).toHaveBeenCalledTimes(1)
     await box.close()
   })
 
-  it('should not call getLinkConsent if ethereum_proof in rootStore on call to _linkProfile', async () => {
+  it('should not call createLink if ethereum_proof in rootStore on call to _linkProfile', async () => {
     const boxWithLinks = await Box.openBox('0x12345', 'web3prov', boxOpts)
     clearMocks()
 
@@ -324,7 +320,7 @@ describe('3Box', () => {
       type: "ethereum-eoa",
       version: 1,
     })
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(0)
+    expect(createLink).toHaveBeenCalledTimes(0)
     expect(boxWithLinks.public.set).toHaveBeenCalledTimes(0)
 
     await boxWithLinks.close()
@@ -332,7 +328,7 @@ describe('3Box', () => {
 
   it('should link profile on call to _linkProfile', async () => {
     const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
-    const didMuPort = box._3id.muportDID
+    const did = box._3id.DID
     clearMocks()
 
     box.public.set.mockClear()
@@ -341,13 +337,13 @@ describe('3Box', () => {
 
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      message: `I agree to stuff,${didMuPort}`,
+      message: `I agree to stuff,${did}`,
       signature: "0xSuchRealSig,0x12345",
       timestamp: 111,
       type: "ethereum-eoa",
       version: 1,
     })
-    expect(mockedUtils.getLinkConsent).toHaveBeenCalledTimes(1)
+    expect(createLink).toHaveBeenCalledTimes(1)
     expect(box.public.set).toHaveBeenCalledTimes(1) // did proof
     await box.close()
   })

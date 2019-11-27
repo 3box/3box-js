@@ -2,4 +2,4 @@
 
 exports[`3Box should handle error and not link profile on first call to _linkProfile 1`] = `[Error: An error occured while publishing link:]`;
 
-exports[`3Box should not call getLinkConsent if ethereum_proof in rootStore on call to _linkProfile 1`] = `[Error: An error occured while publishing link:]`;
+exports[`3Box should not call createLink if ethereum_proof in rootStore on call to _linkProfile 1`] = `[Error: An error occured while publishing link:]`;

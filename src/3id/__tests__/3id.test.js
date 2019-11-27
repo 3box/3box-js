@@ -23,7 +23,7 @@ const clearLocalStorage3id = (address) => {
   localstorage.remove(STORAGE_KEY + address)
 }
 
-const ID_WALLET_SEED = '0x8726348762348723487238476238746827364872634876234876234'
+const ID_WALLET_SEED = '0x95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be'
 const ADDR_1 = '0x12345'
 const ADDR_2 = '0xabcde'
 const ADDR_3 = '0xlmnop'
@@ -214,10 +214,8 @@ describe('3id', () => {
 
   describe('get 3ID using IdentityWallet', () => {
     it('instantiate threeId with IdentityWallet', async () => {
-      const idWallet = new IdentityWallet({ seed: ID_WALLET_SEED })
+      const idWallet = new IdentityWallet(() => true, { seed: ID_WALLET_SEED })
       const provider = idWallet.get3idProvider()
-      // monkey patch because we're not using latest version of idwallet
-      provider.is3idProvider = true
       idw3id = await ThreeId.getIdFromEthAddress(null, provider, ipfs)
       expect(idw3id.DID).toBeUndefined()
       await idw3id.authenticate()
@@ -258,7 +256,7 @@ describe('3id', () => {
         expect(await idw3id.decrypt(enc1)).toEqual(message)
         const enc2 = await idw3id.encrypt(message, SPACE_1)
         expect(await idw3id.decrypt(enc2, SPACE_1)).toEqual(message)
-        //await expect(idw3id.decrypt(enc1, SPACE_1)).rejects.toMatchSnapshot()
+        await expect(idw3id.decrypt(enc1, SPACE_1)).rejects.toMatchSnapshot()
       })
     })
 
