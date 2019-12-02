@@ -1,5 +1,11 @@
 # Release Notes
-j
+
+## v1.14.0 - 2019-12-02
+* feat: Support IdentityWallet v1.0.0 🎉
+* chore: use ethers v5
+
+* fix: add 'latest' parameter to `get_code` call (note: this was moved to the 3id-blockchain-utils package)
+
 ## v1.13.2 - 2019-11-15
 * fix: check for 3id provider support in a better way
 

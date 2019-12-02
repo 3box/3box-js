@@ -1,6 +1,6 @@
 const { fetchText, getMessageConsent } = require('./index')
 const didJWT = require('did-jwt')
-const ethers = require('ethers')
+const { verifyMessage } = require('@ethersproject/wallet')
 require('https-did-resolver').default()
 require('muport-did-resolver')()
 
@@ -102,6 +102,8 @@ module.exports = {
    * @return    {String}                                  The ethereum address used to sign the message
    */
   verifyEthereum: async (ethProof, did) => {
+    // TODO - is this function needed? Can it be removed in
+    // favour of proofs that are in the rootstore?
     const consentMsg = ethProof.version ?  ethProof.message : ethProof['consent_msg']
     const consentSig = ethProof.version ?  ethProof.signature : ethProof['consent_signature']
 
@@ -112,6 +114,6 @@ module.exports = {
     }
 
     // Validate the signature
-    return ethers.utils.verifyMessage(consentMsg, consentSig)
+    return verifyMessage(consentMsg, consentSig)
   }
 }

@@ -1,4 +1,4 @@
-const { HDNode } = require('ethers').utils
+const { mnemonicToSeed, entropyToMnemonic } = require('@ethersproject/hdnode')
 const EventEmitter = require('events')
 const didJWT = require('did-jwt')
 const DidDocument = require('ipfs-did-document')
@@ -14,6 +14,7 @@ const config = require('../config.js')
 const DID_METHOD_NAME = '3'
 const STORAGE_KEY = 'serialized3id_'
 const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_port, protocol: config.muport_ipfs_protocol}
+const POLL_INTERVAL = 500
 
 class ThreeId {
   constructor (provider, ipfs, opts = {}) {
@@ -23,15 +24,20 @@ class ThreeId {
     this._ipfs = ipfs
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
+  }
+
+  startUpdatePolling () {
     if (this._has3idProv) {
-      setInterval(async () => {
-        const result = await utils.callRpc(this._provider, '3id_newAuthMethodPoll')
-        if (result.length) {
-          result.map(authData => {
-            this.events.emit('new-auth-method', authData)
-          })
-        }
-      }, 500)
+      const poll = async (method, event) => {
+        const result = await utils.callRpc(this._provider, method)
+        result.map(data => {
+          this.events.emit(event, data)
+        })
+      }
+      setInterval(() => {
+        poll('3id_newAuthMethodPoll', 'new-auth-method')
+        poll('3id_newLinkPoll', 'new-link-proof')
+      }, POLL_INTERVAL)
     }
   }
 
@@ -209,7 +215,7 @@ class ThreeId {
     if (!this._keyrings[name]) {
       const sig = await utils.openSpaceConsent(this.managementAddress, this._provider, name)
       const entropy = '0x' + utils.sha256(sig.slice(2))
-      const seed = HDNode.mnemonicToSeed(HDNode.entropyToMnemonic(entropy))
+      const seed = mnemonicToSeed(entropyToMnemonic(entropy))
       this._keyrings[name] = new Keyring(seed)
       this._subDIDs[name] = await this._init3ID(name)
       localstorage.set(STORAGE_KEY + this.managementAddress, this.serializeState())
@@ -288,8 +294,8 @@ class ThreeId {
         }
         if (opts.consentCallback) opts.consentCallback(true)
         const entropy = '0x' + utils.sha256(sig.slice(2))
-        const mnemonic = HDNode.entropyToMnemonic(entropy)
-        const seed = HDNode.mnemonicToSeed(mnemonic)
+        const mnemonic = entropyToMnemonic(entropy)
+        const seed = mnemonicToSeed(mnemonic)
         serialized3id = JSON.stringify({
           managementAddress: normalizedAddress,
           seed,

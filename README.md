@@ -420,11 +420,10 @@ Creates a proof that links an ethereum address to the 3Box account of the user. 
 
 **Kind**: instance method of [<code>Box</code>](#Box)  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [link] | <code>Object</code> |  | Optional link object with type or proof |
-| [link.type] | <code>String</code> | <code>&#x27;ethereum-eoa&#x27;</code> | The type of link (default 'ethereum') |
-| [link.proof] | <code>Object</code> |  | Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md) |
+| Param | Type | Description |
+| --- | --- | --- |
+| [link] | <code>Object</code> | Optional link object with type or proof |
+| [link.proof] | <code>Object</code> | Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md) |
 
 <a name="Box+removeAddressLink"></a>
 
