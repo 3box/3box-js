@@ -284,10 +284,11 @@ idUtils.verifyClaim(claim)
 ## <a name="api"></a> API Documentation
 <a name="Box"></a>
 
-### Box
+### Box ⇐ [<code>BoxApi</code>](#BoxApi)
 **Kind**: global class  
+**Extends**: [<code>BoxApi</code>](#BoxApi)  
 
-* [Box](#Box)
+* [Box](#Box) ⇐ [<code>BoxApi</code>](#BoxApi)
     * [new Box()](#new_Box_new)
     * _instance_
         * [.public](#Box+public)
@@ -308,15 +309,6 @@ idUtils.verifyClaim(claim)
             * [.verifyClaim](#Box.idUtils.verifyClaim) ⇒ <code>Object</code>
             * [.isSupportedDID(did)](#Box.idUtils.isSupportedDID) ⇒ <code>\*</code> \| <code>boolean</code>
             * [.isClaim(claim, opts)](#Box.idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
-        * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
-        * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
-        * [.getSpace(address, name, opts)](#Box.getSpace) ⇒ <code>Object</code>
-        * [.getThread(space, name, firstModerator, members, opts)](#Box.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
-        * [.getThreadByAddress(address, opts)](#Box.getThreadByAddress) ⇒ <code>Array.&lt;Object&gt;</code>
-        * [.getConfig(address, opts)](#Box.getConfig) ⇒ <code>Array.&lt;Object&gt;</code>
-        * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
-        * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
-        * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
         * [.openBox(address, provider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
         * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
@@ -517,141 +509,6 @@ Check whether a string is a valid claim or not
 | opts | <code>Object</code> | Optional parameters |
 | opts.audience | <code>string</code> | The DID of the audience of the JWT |
 
-<a name="Box.getProfile"></a>
-
-#### Box.getProfile(address, opts) ⇒ <code>Object</code>
-Get the public profile of a given address
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with the profile for the given address  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
-| opts | <code>Object</code> | Optional parameters |
-| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
-| opts.metadata | <code>String</code> | flag to retrieve metadata |
-| opts.addressServer | <code>String</code> | URL of the Address Server |
-| opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
-| opts.useCacheService | <code>Boolean</code> | Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true. |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getProfiles"></a>
-
-#### Box.getProfiles(address, opts) ⇒ <code>Object</code>
-Get a list of public profiles for given addresses. This relies on 3Box profile API.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>Array</code> | An array of ethereum addresses |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getSpace"></a>
-
-#### Box.getSpace(address, name, opts) ⇒ <code>Object</code>
-Get the public data in a space of a given address with the given name
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with the public space data  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
-| name | <code>String</code> | A space name |
-| opts | <code>Object</code> | Optional parameters |
-| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
-| opts.metadata | <code>String</code> | flag to retrieve metadata |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getThread"></a>
-
-#### Box.getThread(space, name, firstModerator, members, opts) ⇒ <code>Array.&lt;Object&gt;</code>
-Get all posts that are made to a thread.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| space | <code>String</code> | The name of the space the thread is in |
-| name | <code>String</code> | The name of the thread |
-| firstModerator | <code>String</code> | The DID (or ethereum address) of the first moderator |
-| members | <code>Boolean</code> | True if only members are allowed to post |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getThreadByAddress"></a>
-
-#### Box.getThreadByAddress(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
-Get all posts that are made to a thread.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | The orbitdb-address of the thread |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getConfig"></a>
-
-#### Box.getConfig(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
-Get the configuration of a users 3Box
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | The ethereum address |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.listSpaces"></a>
-
-#### Box.listSpaces(address, opts) ⇒ <code>Object</code>
-Get the names of all spaces a user has
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - an array with all spaces as strings  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.profileGraphQL"></a>
-
-#### Box.profileGraphQL(query, opts) ⇒ <code>Object</code>
-GraphQL for 3Box profile API
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| query | <code>Object</code> | A graphQL query object. |
-| opts | <code>Object</code> | Optional parameters |
-| opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
-
-<a name="Box.getVerifiedAccounts"></a>
-
-#### Box.getVerifiedAccounts(profile) ⇒ <code>Object</code>
-Verifies the proofs of social accounts that is present in the profile.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - An object containing the accounts that have been verified  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| profile | <code>Object</code> | A user profile object, received from the `getProfile` function |
-
 <a name="Box.openBox"></a>
 
 #### Box.openBox(address, provider, opts) ⇒ [<code>Box</code>](#Box)
@@ -690,6 +547,154 @@ Instanciate ipfs used by 3Box without calling openBox.
 
 **Kind**: static method of [<code>Box</code>](#Box)  
 **Returns**: <code>IPFS</code> - the ipfs instance  
+<a name="BoxApi"></a>
+
+### BoxApi
+**Kind**: global class  
+
+* [BoxApi](#BoxApi)
+    * [.listSpaces(address, opts)](#BoxApi.listSpaces) ⇒ <code>Object</code>
+    * [.getSpace(address, name, opts)](#BoxApi.getSpace) ⇒ <code>Object</code>
+    * [.getThread(space, name, firstModerator, members, opts)](#BoxApi.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
+    * [.getThreadByAddress(address, opts)](#BoxApi.getThreadByAddress) ⇒ <code>Array.&lt;Object&gt;</code>
+    * [.getConfig(address, opts)](#BoxApi.getConfig) ⇒ <code>Array.&lt;Object&gt;</code>
+    * [.getProfile(address, opts)](#BoxApi.getProfile) ⇒ <code>Object</code>
+    * [.getProfiles(address, opts)](#BoxApi.getProfiles) ⇒ <code>Object</code>
+    * [.profileGraphQL(query, opts)](#BoxApi.profileGraphQL) ⇒ <code>Object</code>
+    * [.getVerifiedAccounts(profile)](#BoxApi.getVerifiedAccounts) ⇒ <code>Object</code>
+
+<a name="BoxApi.listSpaces"></a>
+
+#### BoxApi.listSpaces(address, opts) ⇒ <code>Object</code>
+Get the names of all spaces a user has
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - an array with all spaces as strings  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getSpace"></a>
+
+#### BoxApi.getSpace(address, name, opts) ⇒ <code>Object</code>
+Get the public data in a space of a given address with the given name
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with the public space data  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
+| name | <code>String</code> | A space name |
+| opts | <code>Object</code> | Optional parameters |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
+| opts.metadata | <code>String</code> | flag to retrieve metadata |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getThread"></a>
+
+#### BoxApi.getThread(space, name, firstModerator, members, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get all posts that are made to a thread.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| space | <code>String</code> | The name of the space the thread is in |
+| name | <code>String</code> | The name of the thread |
+| firstModerator | <code>String</code> | The DID (or ethereum address) of the first moderator |
+| members | <code>Boolean</code> | True if only members are allowed to post |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getThreadByAddress"></a>
+
+#### BoxApi.getThreadByAddress(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get all posts that are made to a thread.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The orbitdb-address of the thread |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getConfig"></a>
+
+#### BoxApi.getConfig(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get the configuration of a users 3Box
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The ethereum address |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getProfile"></a>
+
+#### BoxApi.getProfile(address, opts) ⇒ <code>Object</code>
+Get the public profile of a given address
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with the profile for the given address  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
+| opts | <code>Object</code> | Optional parameters |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
+| opts.metadata | <code>String</code> | flag to retrieve metadata |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getProfiles"></a>
+
+#### BoxApi.getProfiles(address, opts) ⇒ <code>Object</code>
+Get a list of public profiles for given addresses. This relies on 3Box profile API.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>Array</code> | An array of ethereum addresses |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.profileGraphQL"></a>
+
+#### BoxApi.profileGraphQL(query, opts) ⇒ <code>Object</code>
+GraphQL for 3Box profile API
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| query | <code>Object</code> | A graphQL query object. |
+| opts | <code>Object</code> | Optional parameters |
+| opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
+
+<a name="BoxApi.getVerifiedAccounts"></a>
+
+#### BoxApi.getVerifiedAccounts(profile) ⇒ <code>Object</code>
+Verifies the proofs of social accounts that is present in the profile.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - An object containing the accounts that have been verified  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| profile | <code>Object</code> | A user profile object, received from the `getProfile` function |
+
 <a name="KeyValueStore"></a>
 
 ### KeyValueStore

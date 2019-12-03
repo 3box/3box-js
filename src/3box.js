@@ -12,7 +12,7 @@ const Space = require('./space')
 const utils = require('./utils/index')
 const idUtils = require('./utils/id')
 const config = require('./config.js')
-const API = require('./api')
+const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 
@@ -39,11 +39,16 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   cacheProxy = OrbitDBCacheProxy({ postMessage })
 } */
 
-class Box {
+/**
+ * @extends BoxApi
+ */
+class Box extends BoxApi {
   /**
    * Please use the **openBox** method to instantiate a 3Box
+   * @constructor
    */
   constructor (threeId, provider, ipfs, opts = {}) {
+    super()
     this._3id = threeId
     this._web3provider = provider
     this._ipfs = ipfs
@@ -105,144 +110,6 @@ class Box {
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
     await this.public._load()
     await this.private._load()
-  }
-
-  /**
-   * Get the public profile of a given address
-   *
-   * @param     {String}    address                 An ethereum address
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
-   * @param     {String}    opts.metadata           flag to retrieve metadata
-   * @param     {String}    opts.addressServer      URL of the Address Server
-   * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
-   * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            a json object with the profile for the given address
-   */
-  static async getProfile (address, opts = {}) {
-    const metadata = opts.metadata
-    opts = Object.assign({ useCacheService: true }, opts)
-
-    let profile
-    if (opts.useCacheService) {
-      profile = await API.getProfile(address, opts.profileServer, { metadata })
-    } else {
-      if (metadata) {
-        throw new Error('getting metadata is not yet supported outside of the API')
-      }
-
-      const normalizedAddress = address.toLowerCase()
-      profile = await this._getProfileOrbit(normalizedAddress, opts)
-    }
-    return profile
-  }
-
-  /**
-   * Get a list of public profiles for given addresses. This relies on 3Box profile API.
-   *
-   * @param     {Array}     address                 An array of ethereum addresses
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            a json object with each key an address and value the profile
-   */
-  static async getProfiles (addressArray, opts = {}) {
-    return API.getProfiles(addressArray, opts)
-  }
-
-  /**
-   * Get the public data in a space of a given address with the given name
-   *
-   * @param     {String}    address                 An ethereum address
-   * @param     {String}    name                    A space name
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
-   * @param     {String}    opts.metadata           flag to retrieve metadata
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            a json object with the public space data
-   */
-  static async getSpace (address, name, opts = {}) {
-    return API.getSpace(address, name, opts.profileServer, opts)
-  }
-
-  /**
-   * Get all posts that are made to a thread.
-   *
-   * @param     {String}    space                   The name of the space the thread is in
-   * @param     {String}    name                    The name of the thread
-   * @param     {String}    firstModerator          The DID (or ethereum address) of the first moderator
-   * @param     {Boolean}   members                 True if only members are allowed to post
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Array<Object>}                     An array of posts
-   */
-  static async getThread (space, name, firstModerator, members, opts = {}) {
-    return API.getThread(space, name, firstModerator, members, opts)
-  }
-
-  /**
-   * Get all posts that are made to a thread.
-   *
-   * @param     {String}    address                 The orbitdb-address of the thread
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Array<Object>}                     An array of posts
-   */
-  static async getThreadByAddress (address, opts = {}) {
-    return API.getThreadByAddress(address, opts)
-  }
-
-  /**
-   * Get the configuration of a users 3Box
-   *
-   * @param     {String}    address                 The ethereum address
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Array<Object>}                     An array of posts
-   */
-  static async getConfig (address, opts = {}) {
-    return API.getConfig(address, opts)
-  }
-
-  /**
-   * Get the names of all spaces a user has
-   *
-   * @param     {String}    address                 An ethereum address
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            an array with all spaces as strings
-   */
-  static async listSpaces (address, opts = {}) {
-    return API.listSpaces(address, opts.profileServer)
-  }
-
-  static async _getProfileOrbit (address, opts = {}) {
-    // Removed this code since it's completely outdated.
-    // TODO - implement using the replicator module
-    throw new Error('Not implemented yet')
-  }
-
-  /**
-   * GraphQL for 3Box profile API
-   *
-   * @param     {Object}    query               A graphQL query object.
-   * @param     {Object}    opts                Optional parameters
-   * @param     {String}    opts.graphqlServer  URL of graphQL 3Box profile service
-   * @return    {Object}                        a json object with each key an address and value the profile
-   */
-
-  static async profileGraphQL (query, opts = {}) {
-    return API.profileGraphQL(query, opts.graphqlServer)
-  }
-
-  /**
-   * Verifies the proofs of social accounts that is present in the profile.
-   *
-   * @param     {Object}            profile                 A user profile object, received from the `getProfile` function
-   * @return    {Object}                                    An object containing the accounts that have been verified
-   */
-  static async getVerifiedAccounts (profile) {
-    return API.getVerifiedAccounts(profile)
   }
 
   /**
