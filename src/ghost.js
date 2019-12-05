@@ -11,6 +11,7 @@ class GhostThread extends EventEmitter {
     this._spaceName = name.split('.')[2]
     this._3id = threeId
     this._room = Room(ipfs, name) // instance of ipfs pubsub room
+    this._ipfs = ipfs
     this._peerId = ipfs._peerInfo.id.toB58String()
 
     this._members = {}
@@ -223,9 +224,9 @@ class GhostThread extends EventEmitter {
    * @param     {Object}    payload             The payload of the message
    */
   async _messageReceived (payload) {
-    const { type, message, iss: author, iat: timestamp } = payload
-    this._backlog.add(JSON.stringify({ type, author, message, timestamp }))
-    this.emit('message', { type, author, message, timestamp })
+    const { type, message, iss: author, iat: timestamp, postId } = payload
+    this._backlog.add(JSON.stringify({ type, author, message, timestamp, postId }))
+    this.emit('message', { type, author, message, timestamp, postId })
   }
 
   /**
@@ -236,8 +237,11 @@ class GhostThread extends EventEmitter {
    */
   async _verifyData (data) {
     const jwt = data.toString()
+    const cidPromise = this._ipfs.dag.put(jwt)
     try {
-      return await verifyJWT(jwt)
+      const verified = await verifyJWT(jwt)
+      verified.payload.postId = (await cidPromise).toString()
+      return verified
     } catch (e) {
       console.log(e)
     }
