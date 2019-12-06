@@ -97,7 +97,7 @@ class Space {
         this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id, opts)
       }
       if (this._3id) {
-        thread._set3id(this._3id)
+        this._activeThreads[ghostAddress]._set3id(this._3id)
       }
       return this._activeThreads[ghostAddress]
     } else {

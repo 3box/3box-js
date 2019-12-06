@@ -81,13 +81,15 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   afterAll(async () => {
-    //await testutils.stopipfs(ipfs1, 9)
-    //await testUtils.stopIPFS(ipfs2, 10)
+    await pubsub.disconnect()
+    await testUtils.stopIPFS(ipfs1, 9)
+    await testUtils.stopIPFS(ipfs2, 10)
   })
 
-  it('should openBox correctly when idWallet is passed', async () => {
+  it('should create and auth correctly when idWallet is passed', async () => {
     const provider = idWallet.get3idProvider()
-    const box = await Box.openBox(null, provider, opts)
+    const box = await Box.create(provider, opts)
+    await box.auth([], opts)
     await box.syncDone
     await box.public.set('a', 1)
     await box.public.set('b', 2)
@@ -99,10 +101,11 @@ describe('Integration Test: IdentityWallet', () => {
     await box.close()
   })
 
-  it('should get same state on second openBox', async () => {
+  it('should get same state on second open and auth', async () => {
     const provider = idWallet.get3idProvider()
     publishHasEntries()
-    const box = await Box.openBox(null, provider, opts)
+    const box = await Box.create(provider, opts)
+    await box.auth([], opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
 
@@ -114,11 +117,12 @@ describe('Integration Test: IdentityWallet', () => {
     await box.close()
   })
 
-  it('should get same state on openBox with IdentityWallet opened using first authSecret', async () => {
+  it('should get same state on create and auth with IdentityWallet opened using first authSecret', async () => {
     idWallet = new IdentityWallet(getConsent, { authSecret: AUTH_1 })
     const provider = idWallet.get3idProvider()
     publishHasEntries()
-    const box = await Box.openBox(null, provider, opts)
+    const box = await Box.create(provider, opts)
+    await box.auth([], opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
 
@@ -130,11 +134,12 @@ describe('Integration Test: IdentityWallet', () => {
     await box.close()
   })
 
-  it('should get same state on openBox with IdentityWallet opened using second authSecret', async () => {
+  it('should get same state on create and auth with IdentityWallet opened using second authSecret', async () => {
     idWallet = new IdentityWallet(getConsent, { authSecret: AUTH_2 })
     const provider = idWallet.get3idProvider()
     publishHasEntries()
-    const box = await Box.openBox(null, provider, opts)
+    const box = await Box.create(provider, opts)
+    await box.auth([], opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
     await box.close()
