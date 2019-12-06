@@ -5,11 +5,10 @@ const Room = require('ipfs-pubsub-room')
 const DEFAULT_BACKLOG_LIMIT = 100
 
 class GhostThread extends EventEmitter {
-  constructor (name, { ipfs }, threeId, opts = {}) {
+  constructor (name, { ipfs }, opts = {}) {
     super()
     this._name = name
     this._spaceName = name.split('.')[2]
-    this._3id = threeId
     this._room = Room(ipfs, name) // instance of ipfs pubsub room
     this._peerId = ipfs._peerInfo.id.toB58String()
 
@@ -51,6 +50,14 @@ class GhostThread extends EventEmitter {
       this._requestBacklog(peer)
     })
     this._room.on('peer left', (peer) => this._userLeft(peer))
+  }
+
+  get isGhost () {
+    return true
+  }
+
+  _set3id (threeId) {
+    this._3id = threeId
   }
 
   /**
@@ -147,6 +154,7 @@ class GhostThread extends EventEmitter {
    * @param     {Object}    message                 The message
    */
   async _broadcast (message) {
+    if (!this._3id) throw new Error('Can not send message if not authenticated')
     const jwt = await this._3id.signJWT(message, { use3ID: true })
     this._room.broadcast(jwt)
   }
@@ -158,6 +166,7 @@ class GhostThread extends EventEmitter {
    * @param     {String}    to                  The PeerID or 3ID of the receiver
    */
   async _sendDirect (message, to) {
+    if (!this._3id) throw new Error('Can not send message if not authenticated')
     const jwt = await this._3id.signJWT(message, { use3ID: true })
     to.startsWith('Qm') ? this._room.sendTo(to, jwt)
       : this._room.sendTo(this._threeIdToPeerId(to), jwt)
@@ -197,7 +206,7 @@ class GhostThread extends EventEmitter {
    */
   async _userJoined (did, peerID) {
     const members = await this.listMembers()
-    if (!members.includes(did) && this._3id.DID !== did) {
+    if (!members.includes(did) && (this._3id && this._3id.DID !== did)) {
       this._members[did] = peerID
       this._members[peerID] = did
       this.emit('user-joined', 'joined', did, peerID)

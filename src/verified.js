@@ -6,29 +6,28 @@ class Verified {
    */
   constructor (box) {
     this._box = box
-    this._did = box._3id.muportDID
   }
 
   async _addVerifiedPublicAccount (key, proof, verificationFunction) {
-    const account = await verificationFunction(this._did, proof)
+    const account = await verificationFunction(this._box.DID, proof)
     await this._box.public.set('proof_' + key, proof)
     return account
   }
 
   async _getVerifiedPublicAccount (key, verificationFunction) {
     const proof = await this._box.public.get('proof_' + key)
-    return verificationFunction(this._did, proof)
+    return verificationFunction(this._box.DID, proof)
   }
 
   async _addVerifiedPrivateAccount (key, proof, verificationFunction) {
-    const account = await verificationFunction(this._did, proof)
+    const account = await verificationFunction(this._box.DID, proof)
     await this._box.private.set('proof_' + key, proof)
     return account
   }
 
   async _getVerifiedPrivateAccount (key, verificationFunction) {
     const proof = await this._box.private.get('proof_' + key)
-    return verificationFunction(this._did, proof)
+    return verificationFunction(this._box.DID, proof)
   }
 
   /**
@@ -37,7 +36,7 @@ class Verified {
    * @return    {String}                            The DID of the user
    */
   async DID () {
-    return this._did
+    return this._box.DID
   }
 
   /**

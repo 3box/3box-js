@@ -39,12 +39,6 @@ Array [
 ]
 `;
 
-exports[`Replicator creates replicator correctly 1`] = `
-Array [
-  "3box-pinning",
-]
-`;
-
 exports[`Replicator ensureConnected works as expected for store 1`] = `
 Object {
   "odbAddress": "/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root",
@@ -87,9 +81,18 @@ exports[`Replicator new rootstore created 1`] = `"/orbitdb/QmVL3Dtc7GxYdjXQW6raR
 
 exports[`Replicator new rootstore created 2`] = `"/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root"`;
 
+exports[`Replicator new rootstore created 3`] = `
+Array [
+  "3box-pinning",
+  "/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root",
+]
+`;
+
 exports[`Replicator replicates 3box on start, with profile 1`] = `
 Object {
   "emoji": ";P",
   "name": "asdfasdf",
 }
 `;
+
+exports[`Replicator replicates 3box on start, without stores 1`] = `"3box-pinning"`;

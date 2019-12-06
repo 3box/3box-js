@@ -12,11 +12,10 @@ class Space {
   /**
    * Please use **box.openSpace** to get the instance of this class
    */
-  constructor (name, replicator, threeId) {
+  constructor (name, replicator) {
     this._name = name
-    this._3id = threeId
     this._replicator = replicator
-    this._store = new KeyValueStore(nameToSpaceName(this._name), this._replicator, this._3id)
+    this._store = new KeyValueStore(nameToSpaceName(this._name), this._replicator)
     this._activeThreads = {}
     /**
      * @property {KeyValueStore} public         access the profile store of the space
@@ -39,15 +38,20 @@ class Space {
     return this._3id.getSubDID(this._name)
   }
 
-  async open (opts = {}) {
-    if (!this._store._db) {
+  get isOpen () {
+    return Boolean(this._store._db)
+  }
+
+  async open (threeId, opts = {}) {
+    if (!this.isOpen) {
       // store is not loaded opened yet
+      this._3id = threeId
       const authenticated = await this._3id.isAuthenticated([this._name])
       if (!authenticated) {
         await this._3id.authenticate([this._name])
       }
       if (opts.consentCallback) opts.consentCallback(!authenticated, this._name)
-      await this._store._load()
+      await this._store._load(this._3id)
 
       const syncSpace = async () => {
         await this._store._sync()
@@ -56,7 +60,20 @@ class Space {
       this.syncDone = syncSpace()
       this.public = publicStoreReducer(this._store)
       this.private = privateStoreReducer(this._store, this._3id, this._name)
+      // make sure we're authenticated to all threads
+      await this._authThreads(this._3id)
     }
+  }
+
+  async _authThreads (threeId) {
+    const odbIdentity = await threeId.getOdbId(this._name)
+    Object.values(this._activeThreads).forEach(thread => {
+      if (thread.isGhost) {
+        thread._set3id(this._3id)
+      } else {
+        thread._setIdentity(odbIdentity)
+      }
+    })
   }
 
   /**
@@ -79,14 +96,23 @@ class Space {
       if (!this._activeThreads[ghostAddress]) {
         this._activeThreads[ghostAddress] = new GhostThread(ghostAddress, this._replicator, this._3id, opts)
       }
+      if (this._3id) {
+        thread._set3id(this._3id)
+      }
       return this._activeThreads[ghostAddress]
     } else {
       const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
-      if (!opts.firstModerator) opts.firstModerator = this._3id.getSubDID(this._name)
-      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
+      if (!opts.firstModerator) {
+        if (!this._3id) throw new Error('firstModerator required if not authenticated')
+        opts.firstModerator = this._3id.getSubDID(this._name)
+      }
+      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, subscribeFn)
       const address = await thread._getThreadAddress()
       if (this._activeThreads[address]) return this._activeThreads[address]
       await thread._load()
+      if (this._3id) {
+        thread._setIdentity(await this._3id.getOdbId(this._name))
+      }
       this._activeThreads[address] = thread
       return thread
     }
@@ -103,6 +129,7 @@ class Space {
    */
   async joinThreadByAddress (address, opts = {}) {
     if (!OrbitDBAddress.isValid(address)) throw new Error('joinThreadByAddress: valid orbitdb address required')
+    if (!this.isOpen) throw new Error('joinThreadByAddress requires space to be open')
     const threadSpace = address.split('.')[2]
     const threadName = address.split('.')[3]
     if (threadSpace !== this._name) throw new Error('joinThreadByAddress: attempting to open thread from different space, must open within same space')
@@ -125,6 +152,7 @@ class Space {
    */
   async subscribeThread (address, config = {}) {
     if (!OrbitDBAddress.isValid(address)) throw new Error('subscribeThread: must subscribe to valid thread/orbitdb address')
+    if (!this.isOpen) return // we can't subscribe if space isn't open
     const threadKey = `thread-${address}`
     await this.syncDone
     if (!(await this.public.get(threadKey))) {
@@ -138,6 +166,7 @@ class Space {
    * @param     {String}    address     The address of the thread
    */
   async unsubscribeThread (address) {
+    if (!this.isOpen) throw new Error('unsubscribeThread requires space to be open')
     const threadKey = `thread-${address}`
     if (await this.public.get(threadKey)) {
       await this.public.remove(threadKey)
@@ -150,6 +179,7 @@ class Space {
    * @return    {Array<Objects>}    A list of thread objects as { address, firstModerator, members, name}
    */
   async subscribedThreads () {
+    if (!this.isOpen) throw new Error('subscribedThreads requires space to be open')
     const allEntries = await this.public.all()
     return Object.keys(allEntries).reduce((threads, key) => {
       if (key.startsWith('thread')) {

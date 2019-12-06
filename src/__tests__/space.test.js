@@ -14,6 +14,7 @@ const threeIdMock = {
   signJWT: (payload, { space }) => {
     return `a fake jwt for ${space}`
   },
+  getOdbId: async () => 'odbid',
   getSubDID: (space) => `subdid-${space}`
 }
 const replicatorMock = 'replicator'
@@ -40,11 +41,11 @@ describe('Space', () => {
   })
 
   it('should be correctly constructed', async () => {
-    space = new Space(NAME1, replicatorMock, threeIdMock)
+    space = new Space(NAME1, replicatorMock)
     expect(space._name).toEqual(NAME1)
-    expect(space._3id).toEqual(threeIdMock)
     expect(space._store._replicator).toEqual(replicatorMock)
     expect(space._store._name).toEqual('3box.space.' + NAME1 + '.keyvalue')
+    expect(space.isOpen).toBeFalsy()
   })
 
   it('should open a new space correctly', async () => {
@@ -54,7 +55,8 @@ describe('Space', () => {
     const syncDonePromise = new Promise((resolve, reject) => {
       opts.onSyncDone = resolve
     })
-    await space.open(opts)
+    await space.open(threeIdMock, opts)
+    expect(space.isOpen).toBeTruthy()
     expect(opts.consentCallback).toHaveBeenCalledWith(true, NAME1)
     //expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
     expect(threeIdMock.isAuthenticated).toHaveBeenCalledWith([NAME1])
@@ -66,7 +68,7 @@ describe('Space', () => {
     let opts = {
       consentCallback: jest.fn(),
     }
-    await space.open(opts)
+    await space.open(threeIdMock, opts)
     expect(opts.consentCallback).toHaveBeenCalledTimes(0)
   })
 
@@ -207,10 +209,11 @@ describe('Space', () => {
       expect(Thread).toHaveBeenCalledTimes(1)
       expect(Thread.mock.calls[0][0]).toEqual(`3box.thread.${NAME1}.t2`)
       expect(Thread.mock.calls[0][1]).toEqual(replicatorMock)
-      expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
+      expect(t1._setIdentity).toHaveBeenCalledTimes(1)
+      expect(t1._setIdentity).toHaveBeenCalledWith('odbid')
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][5](threadAddress)
+      await Thread.mock.calls[0][4](threadAddress)
       expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
 
@@ -224,11 +227,32 @@ describe('Space', () => {
       expect(Thread).toHaveBeenCalledTimes(1)
       expect(Thread.mock.calls[0][0]).toEqual(`3box.thread.${NAME1}.t3`)
       expect(Thread.mock.calls[0][1]).toEqual(replicatorMock)
-      expect(Thread.mock.calls[0][2]).toEqual(threeIdMock)
       expect(t1._load).toHaveBeenCalledTimes(1)
+      expect(t1._setIdentity).toHaveBeenCalledTimes(1)
+      expect(t1._setIdentity).toHaveBeenCalledWith('odbid')
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][5](threadAddress2)
+      await Thread.mock.calls[0][4](threadAddress2)
       expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
+    })
+
+    it('should trow if space not open and no firstModerator', async () => {
+      const sp = new Space(NAME2, replicatorMock)
+      const t1 = await
+      expect(sp.joinThread('t1')).rejects.toMatchSnapshot()
+    })
+
+    it('joins thread correctly with space that is not open', async () => {
+      const sp = new Space(NAME2, replicatorMock)
+      const firstModerator = 'did:3:bafyasdf'
+      const t1 = await sp.joinThread('t1', { firstModerator })
+      expect(Thread).toHaveBeenCalledTimes(1)
+      expect(Thread.mock.calls[0][0]).toEqual(`3box.thread.${NAME2}.t1`)
+      expect(Thread.mock.calls[0][1]).toEqual(replicatorMock)
+      expect(Thread.mock.calls[0][3]).toEqual(firstModerator)
+      expect(t1._load).toHaveBeenCalledTimes(1)
+      expect(t1._setIdentity).toHaveBeenCalledTimes(0)
+      // function for autosubscribing works as intended
+      await Thread.mock.calls[0][4](threadAddress)
     })
   })
 })

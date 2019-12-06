@@ -77,9 +77,13 @@ jest.mock('../privateStore', () => {
 })
 jest.mock('../space', () => {
   return jest.fn(name => {
+    let isOpen = false
     return {
       _name: name,
-      open: jest.fn()
+      get isOpen () {
+        return isOpen
+      },
+      open: jest.fn(() => isOpen = true)
     }
   })
 })
@@ -362,7 +366,7 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
-    expect(box._3id.authenticate).toHaveBeenCalledWith(null, { authData: [] })
+    expect(box._3id.authenticate).toHaveBeenCalledWith([], { authData: [] })
     expect(box.replicator.start).toHaveBeenCalledTimes(1)
     expect(box.replicator.start).toHaveBeenCalledWith('/orbitdb/asdf/rootstore-address', { profile: true })
     expect(box.replicator.new).toHaveBeenCalledTimes(0)
@@ -382,7 +386,7 @@ describe('3Box', () => {
     global.console.error = jest.fn()
     let space1 = await box.openSpace('name1', {})
     expect(space1._name).toEqual('name1')
-    expect(space1.open).toHaveBeenCalledWith(expect.any(Object))
+    expect(space1.open).toHaveBeenCalledWith(expect.any(Object), {})
     let opts = { onSyncDone: jest.fn() }
     let space2 = await box.openSpace('name1', opts)
     expect(space1).toEqual(space2)
