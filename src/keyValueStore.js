@@ -141,7 +141,7 @@ class KeyValueStore {
   }
 
   async _load (threeId) {
-    this._3id = threeId ? threeId : this._3id
+    this._3id = threeId || this._3id
     const odbAddress = this._replicator.listStoreAddresses().find(odbAddress => odbAddress.includes(this._name))
     if (odbAddress) {
       this._db = await this._replicator.getStore(odbAddress)

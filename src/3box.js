@@ -149,7 +149,9 @@ class Box extends BoxApi {
     }
     // make sure we are authenticated to threads
     spaces.forEach(space => {
-      this.spaces[space]._authThreads(this._3id)
+      if (this.spaces[space]) {
+        this.spaces[space]._authThreads(this._3id)
+      }
     })
   }
 
@@ -221,7 +223,7 @@ class Box extends BoxApi {
    *
    * @return    {Thread}                  An instance of the thread class for the joined thread
    */
-  async joinThread(space, name, opts) {
+  async joinThread (space, name, opts) {
     if (!this.spaces[space]) {
       this.spaces[space] = new Space(space, this.replicator)
     }
