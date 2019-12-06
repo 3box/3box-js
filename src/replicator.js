@@ -85,7 +85,6 @@ class Replicator {
   async _init (opts) {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
     this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath })
-    await this._joinPinningRoom(true)
   }
 
   async _joinPinningRoom (firstJoin) {
@@ -106,6 +105,7 @@ class Replicator {
   }
 
   async start (rootstoreAddress, opts = {}) {
+    await this._joinPinningRoom(true)
     this._publishDB({ odbAddress: rootstoreAddress })
 
     this.rootstore = await this._orbitdb.feed(rootstoreAddress, ODB_STORE_OPTS)
@@ -126,6 +126,7 @@ class Replicator {
 
   async new (rootstoreName, pubkey, did, muportDID) {
     if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
+    await this._joinPinningRoom(true)
     const opts = {
       ...ODB_STORE_OPTS,
       format: 'dag-pb'

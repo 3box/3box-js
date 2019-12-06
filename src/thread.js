@@ -16,15 +16,14 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (name, replicator, threeId, members, firstModerator, subscribe) {
+  constructor (name, replicator, members, firstModerator, subscribe) {
     this._name = name
     this._replicator = replicator
     this._spaceName = name.split('.')[2]
-    this._3id = threeId
     this._subscribe = subscribe
     this._queuedNewPosts = []
     this._members = Boolean(members)
-    this._firstModerator = firstModerator || this._3id.getSubDID(this._spaceName)
+    this._firstModerator = firstModerator
   }
 
   /**
@@ -35,6 +34,7 @@ class Thread {
    */
   async post (message) {
     this._requireLoad()
+    this._requireAuth()
     this._subscribe(this._address, { firstModerator: this._firstModerator, members: this._members, name: this._name })
     this._replicator.ensureConnected(this._address, true)
     const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
@@ -64,6 +64,7 @@ class Thread {
    */
   async addModerator (id) {
     this._requireLoad()
+    this._requireAuth()
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
@@ -88,6 +89,7 @@ class Thread {
    */
   async addMember (id) {
     this._requireLoad()
+    this._requireAuth()
     this._throwIfNotMembers()
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
@@ -119,6 +121,7 @@ class Thread {
    */
   async deletePost (hash) {
     this._requireLoad()
+    this._requireAuth()
     return this._db.remove(hash)
   }
 
@@ -181,10 +184,8 @@ class Thread {
 
   async _load (odbAddress) {
     await this._initConfigs()
-    const identity = this._identity
     this._db = await this._replicator._orbitdb.feed(odbAddress || this._name, {
       ...ORBITDB_OPTS,
-      identity,
       accessController: this._accessController
     })
     await this._db.load()
@@ -197,14 +198,23 @@ class Thread {
     if (!this._db) throw new Error('_load must be called before interacting with the store')
   }
 
+  _requireAuth () {
+    if (!this._authenticated) throw new Error('You must authenticate before performing this action')
+  }
+
   async close () {
     this._requireLoad()
     await this._db.close()
   }
 
+  _setIdentity (odbId) {
+    this._db.setIdentity(odbId)
+    this._db.access._db.setIdentity(odbId)
+    this._authenticated = true
+  }
+
   async _initConfigs () {
-    if (this._identity) return
-    this._identity = await this._3id.getOdbId(this._spaceName)
+    if (this._accessController) return
     if (this._firstModerator.startsWith('0x')) {
       this._firstModerator = await API.getSpaceDID(this._firstModerator, this._spaceName)
     }
@@ -212,8 +222,7 @@ class Thread {
       type: 'thread-access',
       threadName: this._name,
       members: this._members,
-      firstModerator: this._firstModerator,
-      identity: this._identity
+      firstModerator: this._firstModerator
     }
   }
 }

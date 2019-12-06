@@ -72,6 +72,14 @@ describe('KeyValueStore', () => {
     replicatorMock.addKVStore.mockClear()
   })
 
+  it('should correctly take 3id at _load', async () => {
+    const kvs = new KeyValueStore('tmp', replicatorMock)
+    expect(kvs._3id).toBeUndefined()
+    await kvs._load(THREEID_MOCK)
+    expect(kvs._3id).toEqual(THREEID_MOCK)
+    kvs.close()
+  })
+
   it('should throw if not synced', async () => {
     expect(keyValueStore.set('key', 'value')).rejects.toThrow(/_load must/)
     expect(keyValueStore.setMultiple(['keys'], ['values'])).rejects.toThrow(/_load must/)

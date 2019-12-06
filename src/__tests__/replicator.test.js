@@ -37,9 +37,6 @@ describe('Replicator', () => {
       orbitPath: './tmp/orbitdb13',
     }
     replicator1 = await Replicator.create(ipfs1, opts)
-
-    expect(await replicator1.ipfs.pubsub.ls()).toMatchSnapshot()
-    expect((await replicator1.ipfs.swarm.peers()).map(p => p.peer._idB58String)).toContain(ipfs2MultiAddr.split('/').pop())
     registerMethod('3', didResolverMock)
   })
 
@@ -60,6 +57,9 @@ describe('Replicator', () => {
     expect(replicator1.rootstore.address.toString()).toMatchSnapshot()
     await publishPromise
     await pubsub2.unsubscribe(PINNING_ROOM)
+
+    expect(await replicator1.ipfs.pubsub.ls()).toMatchSnapshot()
+    expect((await replicator1.ipfs.swarm.peers()).map(p => p.peer._idB58String)).toContain(ipfs2MultiAddr.split('/').pop())
   })
 
   it('adds profile KVStore correctly', async () => {
@@ -98,6 +98,10 @@ describe('Replicator', () => {
     replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
     await replicator2.rootstoreSyncDone
     await replicator2.syncDone
+
+    expect((await replicator2.ipfs.pubsub.ls())[0]).toMatchSnapshot()
+    expect((await replicator2.ipfs.swarm.peers()).map(p => p.peer._idB58String)).toContain(ipfs1MultiAddr.split('/').pop())
+
     expect(replicator2.listStoreAddresses()).toEqual(replicator1.listStoreAddresses())
     expect(replicator2.rootstore.iterator({ limit: -1 }).collect()).toEqual(replicator1.rootstore.iterator({ limit: -1 }).collect())
     expect(replicator2._stores).toEqual({})

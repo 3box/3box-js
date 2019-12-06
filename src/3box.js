@@ -47,10 +47,9 @@ class Box extends BoxApi {
    * Please use the **openBox** method to instantiate a 3Box
    * @constructor
    */
-  constructor (threeId, provider, ipfs, opts = {}) {
+  constructor (provider, ipfs, opts = {}) {
     super()
-    this._3id = threeId
-    this._web3provider = provider
+    this._provider = provider
     this._ipfs = ipfs
     registerResolver(this._ipfs, { pin: true })
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
@@ -78,18 +77,20 @@ class Box extends BoxApi {
     this.hasPublishedLink = {}
   }
 
-  async _load (opts = {}) {
+  async _init (opts) {
     this.replicator = await Replicator.create(this._ipfs, opts)
+  }
 
+  async _load (opts = {}) {
     const address = await this._3id.getAddress()
     const rootstoreAddress = address ? await this._getRootstore(address) : null
     if (rootstoreAddress) {
       await this.replicator.start(rootstoreAddress, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
-      await this._3id.authenticate(null, { authData })
+      await this._3id.authenticate(opts.spaces, { authData })
     } else {
-      await this._3id.authenticate()
+      await this._3id.authenticate(opts.spaces)
       const rootstoreName = this._3id.muportFingerprint + '.root'
       const key = (await this._3id.getPublicKeys(null, true)).signingKey
       await this.replicator.new(rootstoreName, key, this._3id.DID, this._3id.muportDID)
@@ -113,6 +114,46 @@ class Box extends BoxApi {
   }
 
   /**
+   * Creates an instance of 3Box
+   *
+   * @param     {provider}          provider                A 3ID provider, or ethereum provider
+   * @param     {Object}            opts                    Optional parameters
+   * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
+   * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
+   * @param     {String}            opts.addressServer      URL of the Address Server
+   * @return    {Box}                                       the 3Box instance for the given address
+   */
+  static async create (provider, opts = {}) {
+    const ipfs = await Box.getIPFS(opts)
+    const box = new Box(provider, ipfs, opts)
+    await box._init(opts)
+    return box
+  }
+
+  /**
+   * Authenticate the user
+   *
+   * @param     {Array<String>}     spaces                  A list of spaces to authenticate (optional)
+   * @param     {Object}            opts                    Optional parameters
+   * @param     {String}            opts.address            An ethereum address
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   */
+  async auth (spaces = [], opts = {}) {
+    if (!this._3id) {
+      if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
+      this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, opts)
+      await this._load(Object.assign(opts, { spaces }))
+    } else {
+      // box already loaded, just authenticate spaces
+      await this._3id.authenticate(spaces)
+    }
+    // make sure we are authenticated to threads
+    spaces.forEach(space => {
+      this.spaces[space]._authThreads(this._3id)
+    })
+  }
+
+  /**
    * Opens the 3Box associated with the given address
    *
    * @param     {String}            address                 An ethereum address
@@ -126,14 +167,9 @@ class Box extends BoxApi {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, provider, opts = {}) {
-    const ipfs = await Box.getIPFS(opts)
-    if (typeof address === 'object' && address !== null) {
-      // legacy support for IdentityWallet being passed in first param
-      provider = address.get3idProvider()
-    }
-    const threeId = await ThreeId.getIdFromEthAddress(address, provider, ipfs, opts)
-    const box = new Box(threeId, provider, ipfs, opts)
-    await box._load(opts)
+    opts = Object.assign(opts, { address })
+    const box = await Box.create(provider, opts)
+    await box.auth([], opts)
     return box
   }
 
@@ -147,10 +183,13 @@ class Box extends BoxApi {
    * @return    {Space}                                     the Space instance for the given space name
    */
   async openSpace (name, opts = {}) {
+    if (!this._3id) throw new Error('openSpace: auth required')
     if (!this.spaces[name]) {
-      this.spaces[name] = new Space(name, this.replicator, this._3id)
+      this.spaces[name] = new Space(name, this.replicator)
+    }
+    if (!this.spaces[name].isOpen) {
       try {
-        await this.spaces[name].open(opts)
+        await this.spaces[name].open(this._3id, opts)
         if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
         delete this.spaces[name]
@@ -165,6 +204,28 @@ class Box extends BoxApi {
       opts.onSyncDone()
     }
     return this.spaces[name]
+  }
+
+  /**
+   * Join a thread. Use this to start receiving updates
+   *
+   * @param     {String}    space                   The name of the space for this thread
+   * @param     {String}    name                    The name of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
+   * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
+   * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
+   * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
+   * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
+   * @param     {Array<Function>} opts.ghostFilters Array of functions for filtering messages
+   *
+   * @return    {Thread}                  An instance of the thread class for the joined thread
+   */
+  async joinThread(space, name, opts) {
+    if (!this.spaces[space]) {
+      this.spaces[space] = new Space(space, this.replicator)
+    }
+    return this.spaces[space].joinThread(name, opts)
   }
 
   /**
@@ -221,6 +282,7 @@ class Box extends BoxApi {
    * @property {String} DID        the DID of the user
    */
   get DID () {
+    if (!this._3id) throw new Error('DID: auth required')
     // TODO - update once verification service supports 3ID
     return this._3id.muportDID
   }
@@ -232,6 +294,7 @@ class Box extends BoxApi {
    * @param     {Object}    [link.proof]                   Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md)
    */
   async linkAddress (link = {}) {
+    if (!this._3id) throw new Error('linkAddress: auth required')
     if (link.proof) {
       await this._writeAddressLink(link.proof)
     } else {
@@ -245,6 +308,7 @@ class Box extends BoxApi {
    * @param     {String}   address      address that is linked
    */
   async removeAddressLink (address) {
+    if (!this._3id) throw new Error('removeAddressLink: auth required')
     address = address.toLowerCase()
     const linkExist = await this.isAddressLinked({ address })
     if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
@@ -280,6 +344,7 @@ class Box extends BoxApi {
    * @param     {String}    [query.address]    Is the given adressed linked
    */
   async isAddressLinked (query = {}) {
+    if (!this._3id) throw new Error('isAddressLinked: auth required')
     if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
@@ -295,6 +360,7 @@ class Box extends BoxApi {
    * @return    {Array}                        An array of link objects
    */
   async listAddressLinks () {
+    if (!this._3id) throw new Error('listAddressLinks: auth required')
     const entries = await this._readAddressLinks()
     return entries.reduce((list, entry) => {
       const item = Object.assign({}, entry)
@@ -320,9 +386,9 @@ class Box extends BoxApi {
     let proof = await this._readAddressLink(address)
 
     if (!proof) {
-      if (!this._web3provider.is3idProvider) {
+      if (!this._provider.is3idProvider) {
         try {
-          proof = await createLink(this._3id.DID, address, this._web3provider)
+          proof = await createLink(this._3id.DID, address, this._provider)
         } catch (e) {
           throw new Error('Link consent message must be signed before adding data, to link address to store', e)
         }
@@ -398,6 +464,7 @@ class Box extends BoxApi {
   }
 
   async close () {
+    if (!this._3id) throw new Error('close: auth required')
     await this.replicator.stop()
   }
 
@@ -407,6 +474,7 @@ class Box extends BoxApi {
    * you call openBox.
    */
   async logout () {
+    if (!this._3id) throw new Error('logout: auth required')
     await this.close()
     this._3id.logout()
     const address = await this._3id.getAddress()

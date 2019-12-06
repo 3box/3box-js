@@ -49,7 +49,7 @@ class KeyValueStore {
     return '/orbitdb/myodbaddr'
   }
 
-  _load () {
+  _load (threeId) {
     this._db = {
       all: () => {
         let allObj = {}

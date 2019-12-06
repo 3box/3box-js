@@ -13,6 +13,7 @@ class Box {
       set: (k, v) => this._privateStore[k] = v,
       get: (k) => this._privateStore[k]
     }
+    this.DID = muportDID
   }
 
   static async openBox (address, ethereumProvider, opts = {}) {
