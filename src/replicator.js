@@ -4,6 +4,7 @@ const Pubsub = require('orbit-db-pubsub')
 const AccessControllers = require('orbit-db-access-controllers')
 const resolveDID = require('did-resolver').default
 const {
+  OdbIdentityProvider,
   LegacyIPFS3BoxAccessController,
   ThreadAccessController,
   ModeratorAccessController
@@ -12,6 +13,8 @@ AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessCo
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 const config = require('./config')
+const Identities = require('orbit-db-identity-provider')
+Identities.addIdentityProvider(OdbIdentityProvider)
 
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
@@ -84,7 +87,9 @@ class Replicator {
 
   async _init (opts) {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
-    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath })
+    // Identity not used, passes ref to 3ID orbit identity provider
+    const identity = await Identities.createIdentity({ id: 'nullid' })
+    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath, identity })
   }
 
   async _joinPinningRoom (firstJoin) {
