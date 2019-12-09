@@ -121,7 +121,7 @@ class Box extends BoxApi {
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.addressServer      URL of the Address Server
-   * @return    {Box}                                       the 3Box instance for the given address
+   * @return    {Box}                                       the 3Box session instance
    */
   static async create (provider, opts = {}) {
     const ipfs = await Box.getIPFS(opts)
