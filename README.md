@@ -51,16 +51,24 @@ console.log(profile)
 ```
 
 ### Update (get, set, remove) public and private profile data
-3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first open the user's 3Box by calling the openBox method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
+3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first authenticate the user's 3Box by calling the `auth` method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
-#### 1. Authenticate users to begin new 3Box session
-Calling the openBox method will open a new 3Box session. If the user's ethereum address already has a 3Box account, your application will gain access to it. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+#### 1. Create a 3Box instance
+To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to joinThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)).
 ```js
-const box = await Box.openBox('0x12345abcde', ethereumProvider)
+const box = await Box.create(provider)
 ```
 
-#### 2. Sync user's available 3Box data from the network
-When you first open the box in your dapp all data might not be synced from the network yet. You should therefore wait for the data to be fully synced. To do this you can simply await the `box.syncDone` promise:
+#### 2. Authenticate user
+Calling the `auth` method will authenticate the user. If you want to authenticate the user to one or multiple spaces you can specify this here. If when you created the 3Box session you used an ethereum provider you need to pass an ethereum address to the `auth` method. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+```js
+const address = '0x12345abcde'
+const spaces = ['myDapp']
+await box.auth(spaces, { address })
+```
+
+#### 3. Sync user's available 3Box data from the network
+When you first authenticate the box in your dapp all data might not be synced from the network yet. You should therefore wait for the data to be fully synced. To do this you can simply await the `box.syncDone` promise:
 ```js
 await box.syncDone
 ```
@@ -103,6 +111,14 @@ const privateValues = ['xxx', 'yyy']
 
 await box.private.setMultiple(privateFields, privateValues)
 ```
+
+##### Join a thread
+Once you have created a 3Box session you can join a thread to view data in it. This can be done before you authenticate the user to be able to post in the thread.
+When joining a thread the moderation options need to be given. You can pass `firstModerator`, a 3ID (or ethereum address) of the first moderator, and a `members` boolean which indicates if it is a members thread or not.
+```js
+const thread = await box.joinThread('myDapp', 'myThread', { firstModerator: 'did:3:bafy...', members: true })
+```
+
 
 <!-- commenting this out for now, not really needed when we're not using the iframe
 #### IPFS Configs
@@ -297,7 +313,9 @@ idUtils.verifyClaim(claim)
         * [.spaces](#Box+spaces)
         * [.syncDone](#Box+syncDone)
         * [.DID](#Box+DID)
+        * [.auth(spaces, opts)](#Box+auth)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
+        * [.joinThread(space, name, opts)](#Box+joinThread) ⇒ [<code>Thread</code>](#Thread)
         * [.onSyncDone(syncDone)](#Box+onSyncDone) ⇒ <code>Promise</code>
         * [.linkAddress([link])](#Box+linkAddress)
         * [.removeAddressLink(address)](#Box+removeAddressLink)
@@ -309,6 +327,7 @@ idUtils.verifyClaim(claim)
             * [.verifyClaim](#Box.idUtils.verifyClaim) ⇒ <code>Object</code>
             * [.isSupportedDID(did)](#Box.idUtils.isSupportedDID) ⇒ <code>\*</code> \| <code>boolean</code>
             * [.isClaim(claim, opts)](#Box.idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
+        * [.create(provider, opts)](#Box.create) ⇒ [<code>Box</code>](#Box)
         * [.openBox(address, provider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
         * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
@@ -378,6 +397,20 @@ Please use the **openBox** method to instantiate a 3Box
 | --- | --- | --- |
 | DID | <code>String</code> | the DID of the user |
 
+<a name="Box+auth"></a>
+
+#### box.auth(spaces, opts)
+Authenticate the user
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| spaces | <code>Array.&lt;String&gt;</code> | A list of spaces to authenticate (optional) |
+| opts | <code>Object</code> | Optional parameters |
+| opts.address | <code>String</code> | An ethereum address |
+| opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
+
 <a name="Box+openSpace"></a>
 
 #### box.openSpace(name, opts) ⇒ [<code>Space</code>](#Space)
@@ -392,6 +425,26 @@ Opens the space with the given name in the users 3Box
 | opts | <code>Object</code> | Optional parameters |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 | opts.onSyncDone | <code>function</code> | A function that will be called when the space has finished syncing with the pinning node |
+
+<a name="Box+joinThread"></a>
+
+#### box.joinThread(space, name, opts) ⇒ [<code>Thread</code>](#Thread)
+Join a thread. Use this to start receiving updates
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+**Returns**: [<code>Thread</code>](#Thread) - An instance of the thread class for the joined thread  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| space | <code>String</code> | The name of the space for this thread |
+| name | <code>String</code> | The name of the thread |
+| opts | <code>Object</code> | Optional parameters |
+| opts.firstModerator | <code>String</code> | DID of first moderator of a thread, by default, user is first moderator |
+| opts.members | <code>Boolean</code> | join a members only thread, which only members can post in, defaults to open thread |
+| opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
+| opts.ghost | <code>Boolean</code> | Enable ephemeral messaging via Ghost Thread |
+| opts.ghostBacklogLimit | <code>Number</code> | The number of posts to maintain in the ghost backlog |
+| opts.ghostFilters | <code>Array.&lt;function()&gt;</code> | Array of functions for filtering messages |
 
 <a name="Box+onSyncDone"></a>
 
@@ -508,6 +561,22 @@ Check whether a string is a valid claim or not
 | claim | <code>String</code> |  |
 | opts | <code>Object</code> | Optional parameters |
 | opts.audience | <code>string</code> | The DID of the audience of the JWT |
+
+<a name="Box.create"></a>
+
+#### Box.create(provider, opts) ⇒ [<code>Box</code>](#Box)
+Creates an instance of 3Box
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: [<code>Box</code>](#Box) - the 3Box session instance  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| provider | <code>provider</code> | A 3ID provider, or ethereum provider |
+| opts | <code>Object</code> | Optional parameters |
+| opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
+| opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
+| opts.addressServer | <code>String</code> | URL of the Address Server |
 
 <a name="Box.openBox"></a>
 
