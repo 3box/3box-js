@@ -185,6 +185,7 @@ class Box extends BoxApi {
    * @return    {Space}                                     the Space instance for the given space name
    */
   async openSpace (name, opts = {}) {
+    if (name.includes('.')) throw new Error('Invalid name: character "." not allowed')
     if (!this._3id) throw new Error('openSpace: auth required')
     if (!this.spaces[name]) {
       this.spaces[name] = new Space(name, this.replicator)
