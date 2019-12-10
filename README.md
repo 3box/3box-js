@@ -112,11 +112,11 @@ const privateValues = ['xxx', 'yyy']
 await box.private.setMultiple(privateFields, privateValues)
 ```
 
-##### Join a thread
-Once you have created a 3Box session you can join a thread to view data in it. This can be done before you authenticate the user to be able to post in the thread.
-When joining a thread the moderation options need to be given. You can pass `firstModerator`, a 3ID (or ethereum address) of the first moderator, and a `members` boolean which indicates if it is a members thread or not.
+##### Open a thread
+Once you have created a 3Box session you can open a thread to view data in it. This can be done before you authenticate the user to be able to post in the thread.
+When opening a thread the moderation options need to be given. You can pass `firstModerator`, a 3ID (or ethereum address) of the first moderator, and a `members` boolean which indicates if it is a members thread or not.
 ```js
-const thread = await box.joinThread('myDapp', 'myThread', { firstModerator: 'did:3:bafy...', members: true })
+const thread = await box.openThread('myDapp', 'myThread', { firstModerator: 'did:3:bafy...', members: true })
 ```
 
 
@@ -315,7 +315,7 @@ idUtils.verifyClaim(claim)
         * [.DID](#Box+DID)
         * [.auth(spaces, opts)](#Box+auth)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
-        * [.joinThread(space, name, opts)](#Box+joinThread) ⇒ [<code>Thread</code>](#Thread)
+        * [.openThread(space, name, opts)](#Box+openThread) ⇒ [<code>Thread</code>](#Thread)
         * [.onSyncDone(syncDone)](#Box+onSyncDone) ⇒ <code>Promise</code>
         * [.linkAddress([link])](#Box+linkAddress)
         * [.removeAddressLink(address)](#Box+removeAddressLink)
@@ -426,10 +426,10 @@ Opens the space with the given name in the users 3Box
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 | opts.onSyncDone | <code>function</code> | A function that will be called when the space has finished syncing with the pinning node |
 
-<a name="Box+joinThread"></a>
+<a name="Box+openThread"></a>
 
-#### box.joinThread(space, name, opts) ⇒ [<code>Thread</code>](#Thread)
-Join a thread. Use this to start receiving updates
+#### box.openThread(space, name, opts) ⇒ [<code>Thread</code>](#Thread)
+Open a thread. Use this to start receiving updates
 
 **Kind**: instance method of [<code>Box</code>](#Box)  
 **Returns**: [<code>Thread</code>](#Thread) - An instance of the thread class for the joined thread  

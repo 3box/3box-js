@@ -209,7 +209,7 @@ class Box extends BoxApi {
   }
 
   /**
-   * Join a thread. Use this to start receiving updates
+   * Open a thread. Use this to start receiving updates
    *
    * @param     {String}    space                   The name of the space for this thread
    * @param     {String}    name                    The name of the thread
@@ -223,7 +223,7 @@ class Box extends BoxApi {
    *
    * @return    {Thread}                  An instance of the thread class for the joined thread
    */
-  async joinThread (space, name, opts) {
+  async openThread (space, name, opts) {
     if (!this.spaces[space]) {
       this.spaces[space] = new Space(space, this.replicator)
     }

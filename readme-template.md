@@ -112,11 +112,11 @@ const privateValues = ['xxx', 'yyy']
 await box.private.setMultiple(privateFields, privateValues)
 ```
 
-##### Join a thread
-Once you have created a 3Box session you can join a thread to view data in it. This can be done before you authenticate the user to be able to post in the thread.
-When joining a thread the moderation options need to be given. You can pass `firstModerator`, a 3ID (or ethereum address) of the first moderator, and a `members` boolean which indicates if it is a members thread or not.
+##### Open a thread
+Once you have created a 3Box session you can open a thread to view data in it. This can be done before you authenticate the user to be able to post in the thread.
+When opening a thread the moderation options need to be given. You can pass `firstModerator`, a 3ID (or ethereum address) of the first moderator, and a `members` boolean which indicates if it is a members thread or not.
 ```js
-const thread = await box.joinThread('myDapp', 'myThread', { firstModerator: 'did:3:bafy...', members: true })
+const thread = await box.openThread('myDapp', 'myThread', { firstModerator: 'did:3:bafy...', members: true })
 ```
 
 

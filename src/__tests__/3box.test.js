@@ -247,12 +247,12 @@ describe('3Box', () => {
     expect(box._ipfs).toEqual(boxOpts.ipfs)
   })
 
-  it('joinThread without being authenticated', async () => {
+  it('openThread without being authenticated', async () => {
     const space = 's1'
     const name = 't1'
     const prov = 'web3prov'
     const box = await Box.create(prov, boxOpts)
-    await box.joinThread(space, name, {})
+    await box.openThread(space, name, {})
     expect(box.spaces[space]).toBeDefined()
     expect(box.spaces[space].joinThread).toHaveBeenCalledWith(name, {})
   })
@@ -263,7 +263,7 @@ describe('3Box', () => {
     const prov = 'web3prov'
     const opts = { address: '0x12345' }
     const box = await Box.create(prov, boxOpts)
-    await box.joinThread(space, name, {})
+    await box.openThread(space, name, {})
 
     await box.auth([space], opts)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
