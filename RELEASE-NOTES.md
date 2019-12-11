@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.15.0 - 2019-12-13
+This release features a new interface for how to create and authenticate to a 3Box, it also adds the ability to open a thread before being authenticated to a space.
+
+---
+* feat: new initialization interface
+* fix: add postId to ghost chat messages
+* fix: don't allow space names with dots
+
 ## v1.14.0 - 2019-12-02
 * feat: Support IdentityWallet v1.0.0 🎉
 * chore: use ethers v5
