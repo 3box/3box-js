@@ -93,7 +93,7 @@ class Box extends BoxApi {
       await this._3id.authenticate(opts.spaces)
       const rootstoreName = this._3id.muportFingerprint + '.root'
       const key = (await this._3id.getPublicKeys(null, true)).signingKey
-      await this.replicator.new(rootstoreName, key, this._3id.DID, this._3id.muportDID)
+      await this.replicator.new(rootstoreName, key, this._3id.DID)
       this._publishRootStore(this.replicator.rootstore.address.toString())
     }
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
@@ -286,8 +286,7 @@ class Box extends BoxApi {
    */
   get DID () {
     if (!this._3id) throw new Error('DID: auth required')
-    // TODO - update once verification service supports 3ID
-    return this._3id.muportDID
+    return this._3id.did
   }
 
   /**
