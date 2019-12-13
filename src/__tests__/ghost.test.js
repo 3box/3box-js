@@ -35,11 +35,13 @@ describe('Ghost Chat', () => {
   })
 
   it('creates chat correctly', async () => {
-    chat = new GhostThread(CHAT_NAME, { ipfs }, THREEID1_MOCK);
+    chat = new GhostThread(CHAT_NAME, { ipfs })
     expect(chat._name).toEqual(CHAT_NAME)
-    expect(chat._3id).toEqual(THREEID1_MOCK)
     expect(chat.listMembers).toBeDefined()
     expect(chat.getPosts()).toBeDefined()
+    expect(chat.isGhost).toBeTruthy()
+    chat._set3id(THREEID1_MOCK)
+    expect(chat._3id).toEqual(THREEID1_MOCK)
   })
 
   it('should catch messages', async (done) => {
@@ -63,7 +65,8 @@ describe('Ghost Chat', () => {
     })
 
     it('creates second chat correctly', async (done) => {
-      chat2 = new GhostThread(CHAT_NAME, { ipfs: ipfs2 }, THREEID2_MOCK);
+      chat2 = new GhostThread(CHAT_NAME, { ipfs: ipfs2 });
+      chat2._set3id(THREEID2_MOCK)
       expect(chat2._name).toEqual(CHAT_NAME)
       expect(chat2._3id).toEqual(THREEID2_MOCK)
       expect(chat2.listMembers()).toBeDefined()
@@ -87,8 +90,9 @@ describe('Ghost Chat', () => {
           expect(message).toEqual('wide')
           const posts = await chat2.getPosts()
           const post = posts.pop()
-          delete post.timestamp // since we have no way to get it from onUpdate
-          expect(post).toEqual({ type: 'chat', author: DID1, message: 'wide' })
+          expect(post).toMatchObject({ type: 'chat', author: DID1, message: 'wide' })
+          expect(post).toHaveProperty('postId')
+          expect(post).toHaveProperty('timestamp')
           done()
         }
       })
@@ -102,8 +106,9 @@ describe('Ghost Chat', () => {
           expect(message).toEqual('direct peer')
           const posts = await chat2.getPosts()
           const post = posts.pop()
-          delete post.timestamp // since we have no way to get it from onUpdate
-          expect(post).toEqual({ type: 'chat', author: DID1, message: 'direct peer' })
+          expect(post).toMatchObject({ type: 'chat', author: DID1, message: 'direct peer' })
+          expect(post).toHaveProperty('postId')
+          expect(post).toHaveProperty('timestamp')
           done()
         }
       })
@@ -117,8 +122,9 @@ describe('Ghost Chat', () => {
           expect(message).toEqual('direct 3id')
           const posts = await chat2.getPosts()
           const post = posts.pop()
-          delete post.timestamp // since we have no way to get it from onUpdate
-          expect(post).toEqual({ type: 'chat', author: DID1, message: 'direct 3id' })
+          expect(post).toMatchObject({ type: 'chat', author: DID1, message: 'direct 3id' })
+          expect(post).toHaveProperty('postId')
+          expect(post).toHaveProperty('timestamp')
           done()
         }
       })
@@ -138,6 +144,7 @@ describe('Ghost Chat', () => {
     })
 
     afterAll(async () => {
+      await chat2.close()
       await utils.stopIPFS(ipfs2, 12)
     })
   })
@@ -154,7 +161,8 @@ describe('Ghost Chat', () => {
 
     it('creates third chat correctly', async (done) => {
       chat.removeAllListeners()
-      chat3 = new GhostThread(CHAT_NAME, { ipfs: ipfs3 }, THREEID3_MOCK, { ghostFilters: [filter] });
+      chat3 = new GhostThread(CHAT_NAME, { ipfs: ipfs3 }, { ghostFilters: [filter] });
+      chat3._set3id(THREEID3_MOCK)
       expect(chat3._name).toEqual(CHAT_NAME)
       expect(chat3._3id).toEqual(THREEID3_MOCK)
       expect(chat3.listMembers()).toBeDefined()
@@ -188,11 +196,13 @@ describe('Ghost Chat', () => {
     })
 
     afterAll(async () => {
+      await chat3.close()
       await utils.stopIPFS(ipfs3, 12)
     })
   })
 
   afterAll(async () => {
+    await chat1.close()
     await utils.stopIPFS(ipfs, 11)
   })
 })

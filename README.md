@@ -51,16 +51,24 @@ console.log(profile)
 ```
 
 ### Update (get, set, remove) public and private profile data
-3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first open the user's 3Box by calling the openBox method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
+3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first authenticate the user's 3Box by calling the `auth` method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
-#### 1. Authenticate users to begin new 3Box session
-Calling the openBox method will open a new 3Box session. If the user's ethereum address already has a 3Box account, your application will gain access to it. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+#### 1. Create a 3Box instance
+To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to joinThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)).
 ```js
-const box = await Box.openBox('0x12345abcde', ethereumProvider)
+const box = await Box.create(provider)
 ```
 
-#### 2. Sync user's available 3Box data from the network
-When you first open the box in your dapp all data might not be synced from the network yet. You should therefore wait for the data to be fully synced. To do this you can simply await the `box.syncDone` promise:
+#### 2. Authenticate user
+Calling the `auth` method will authenticate the user. If you want to authenticate the user to one or multiple spaces you can specify this here. If when you created the 3Box session you used an ethereum provider you need to pass an ethereum address to the `auth` method. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+```js
+const address = '0x12345abcde'
+const spaces = ['myDapp']
+await box.auth(spaces, { address })
+```
+
+#### 3. Sync user's available 3Box data from the network
+When you first authenticate the box in your dapp all data might not be synced from the network yet. You should therefore wait for the data to be fully synced. To do this you can simply await the `box.syncDone` promise:
 ```js
 await box.syncDone
 ```
@@ -103,6 +111,14 @@ const privateValues = ['xxx', 'yyy']
 
 await box.private.setMultiple(privateFields, privateValues)
 ```
+
+##### Open a thread
+Once you have created a 3Box session you can open a thread to view data in it. This can be done before you authenticate the user to be able to post in the thread.
+When opening a thread the moderation options need to be given. You can pass `firstModerator`, a 3ID (or ethereum address) of the first moderator, and a `members` boolean which indicates if it is a members thread or not.
+```js
+const thread = await box.openThread('myDapp', 'myThread', { firstModerator: 'did:3:bafy...', members: true })
+```
+
 
 <!-- commenting this out for now, not really needed when we're not using the iframe
 #### IPFS Configs
@@ -284,10 +300,11 @@ idUtils.verifyClaim(claim)
 ## <a name="api"></a> API Documentation
 <a name="Box"></a>
 
-### Box
+### Box ⇐ [<code>BoxApi</code>](#BoxApi)
 **Kind**: global class  
+**Extends**: [<code>BoxApi</code>](#BoxApi)  
 
-* [Box](#Box)
+* [Box](#Box) ⇐ [<code>BoxApi</code>](#BoxApi)
     * [new Box()](#new_Box_new)
     * _instance_
         * [.public](#Box+public)
@@ -296,7 +313,9 @@ idUtils.verifyClaim(claim)
         * [.spaces](#Box+spaces)
         * [.syncDone](#Box+syncDone)
         * [.DID](#Box+DID)
+        * [.auth(spaces, opts)](#Box+auth)
         * [.openSpace(name, opts)](#Box+openSpace) ⇒ [<code>Space</code>](#Space)
+        * [.openThread(space, name, opts)](#Box+openThread) ⇒ [<code>Thread</code>](#Thread)
         * [.onSyncDone(syncDone)](#Box+onSyncDone) ⇒ <code>Promise</code>
         * [.linkAddress([link])](#Box+linkAddress)
         * [.removeAddressLink(address)](#Box+removeAddressLink)
@@ -308,15 +327,7 @@ idUtils.verifyClaim(claim)
             * [.verifyClaim](#Box.idUtils.verifyClaim) ⇒ <code>Object</code>
             * [.isSupportedDID(did)](#Box.idUtils.isSupportedDID) ⇒ <code>\*</code> \| <code>boolean</code>
             * [.isClaim(claim, opts)](#Box.idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
-        * [.getProfile(address, opts)](#Box.getProfile) ⇒ <code>Object</code>
-        * [.getProfiles(address, opts)](#Box.getProfiles) ⇒ <code>Object</code>
-        * [.getSpace(address, name, opts)](#Box.getSpace) ⇒ <code>Object</code>
-        * [.getThread(space, name, firstModerator, members, opts)](#Box.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
-        * [.getThreadByAddress(address, opts)](#Box.getThreadByAddress) ⇒ <code>Array.&lt;Object&gt;</code>
-        * [.getConfig(address, opts)](#Box.getConfig) ⇒ <code>Array.&lt;Object&gt;</code>
-        * [.listSpaces(address, opts)](#Box.listSpaces) ⇒ <code>Object</code>
-        * [.profileGraphQL(query, opts)](#Box.profileGraphQL) ⇒ <code>Object</code>
-        * [.getVerifiedAccounts(profile)](#Box.getVerifiedAccounts) ⇒ <code>Object</code>
+        * [.create(provider, opts)](#Box.create) ⇒ [<code>Box</code>](#Box)
         * [.openBox(address, provider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
         * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
@@ -386,6 +397,20 @@ Please use the **openBox** method to instantiate a 3Box
 | --- | --- | --- |
 | DID | <code>String</code> | the DID of the user |
 
+<a name="Box+auth"></a>
+
+#### box.auth(spaces, opts)
+Authenticate the user
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| spaces | <code>Array.&lt;String&gt;</code> | A list of spaces to authenticate (optional) |
+| opts | <code>Object</code> | Optional parameters |
+| opts.address | <code>String</code> | An ethereum address |
+| opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
+
 <a name="Box+openSpace"></a>
 
 #### box.openSpace(name, opts) ⇒ [<code>Space</code>](#Space)
@@ -400,6 +425,26 @@ Opens the space with the given name in the users 3Box
 | opts | <code>Object</code> | Optional parameters |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 | opts.onSyncDone | <code>function</code> | A function that will be called when the space has finished syncing with the pinning node |
+
+<a name="Box+openThread"></a>
+
+#### box.openThread(space, name, opts) ⇒ [<code>Thread</code>](#Thread)
+Open a thread. Use this to start receiving updates
+
+**Kind**: instance method of [<code>Box</code>](#Box)  
+**Returns**: [<code>Thread</code>](#Thread) - An instance of the thread class for the joined thread  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| space | <code>String</code> | The name of the space for this thread |
+| name | <code>String</code> | The name of the thread |
+| opts | <code>Object</code> | Optional parameters |
+| opts.firstModerator | <code>String</code> | DID of first moderator of a thread, by default, user is first moderator |
+| opts.members | <code>Boolean</code> | join a members only thread, which only members can post in, defaults to open thread |
+| opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
+| opts.ghost | <code>Boolean</code> | Enable ephemeral messaging via Ghost Thread |
+| opts.ghostBacklogLimit | <code>Number</code> | The number of posts to maintain in the ghost backlog |
+| opts.ghostFilters | <code>Array.&lt;function()&gt;</code> | Array of functions for filtering messages |
 
 <a name="Box+onSyncDone"></a>
 
@@ -517,140 +562,21 @@ Check whether a string is a valid claim or not
 | opts | <code>Object</code> | Optional parameters |
 | opts.audience | <code>string</code> | The DID of the audience of the JWT |
 
-<a name="Box.getProfile"></a>
+<a name="Box.create"></a>
 
-#### Box.getProfile(address, opts) ⇒ <code>Object</code>
-Get the public profile of a given address
+#### Box.create(provider, opts) ⇒ [<code>Box</code>](#Box)
+Creates an instance of 3Box
 
 **Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with the profile for the given address  
+**Returns**: [<code>Box</code>](#Box) - the 3Box session instance  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
+| provider | <code>provider</code> | A 3ID provider, or ethereum provider |
 | opts | <code>Object</code> | Optional parameters |
-| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
-| opts.metadata | <code>String</code> | flag to retrieve metadata |
-| opts.addressServer | <code>String</code> | URL of the Address Server |
+| opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
-| opts.useCacheService | <code>Boolean</code> | Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true. |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getProfiles"></a>
-
-#### Box.getProfiles(address, opts) ⇒ <code>Object</code>
-Get a list of public profiles for given addresses. This relies on 3Box profile API.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>Array</code> | An array of ethereum addresses |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getSpace"></a>
-
-#### Box.getSpace(address, name, opts) ⇒ <code>Object</code>
-Get the public data in a space of a given address with the given name
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with the public space data  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
-| name | <code>String</code> | A space name |
-| opts | <code>Object</code> | Optional parameters |
-| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
-| opts.metadata | <code>String</code> | flag to retrieve metadata |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getThread"></a>
-
-#### Box.getThread(space, name, firstModerator, members, opts) ⇒ <code>Array.&lt;Object&gt;</code>
-Get all posts that are made to a thread.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| space | <code>String</code> | The name of the space the thread is in |
-| name | <code>String</code> | The name of the thread |
-| firstModerator | <code>String</code> | The DID (or ethereum address) of the first moderator |
-| members | <code>Boolean</code> | True if only members are allowed to post |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getThreadByAddress"></a>
-
-#### Box.getThreadByAddress(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
-Get all posts that are made to a thread.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | The orbitdb-address of the thread |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.getConfig"></a>
-
-#### Box.getConfig(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
-Get the configuration of a users 3Box
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | The ethereum address |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.listSpaces"></a>
-
-#### Box.listSpaces(address, opts) ⇒ <code>Object</code>
-Get the names of all spaces a user has
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - an array with all spaces as strings  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>String</code> | An ethereum address |
-| opts | <code>Object</code> | Optional parameters |
-| opts.profileServer | <code>String</code> | URL of Profile API server |
-
-<a name="Box.profileGraphQL"></a>
-
-#### Box.profileGraphQL(query, opts) ⇒ <code>Object</code>
-GraphQL for 3Box profile API
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| query | <code>Object</code> | A graphQL query object. |
-| opts | <code>Object</code> | Optional parameters |
-| opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
-
-<a name="Box.getVerifiedAccounts"></a>
-
-#### Box.getVerifiedAccounts(profile) ⇒ <code>Object</code>
-Verifies the proofs of social accounts that is present in the profile.
-
-**Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>Object</code> - An object containing the accounts that have been verified  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| profile | <code>Object</code> | A user profile object, received from the `getProfile` function |
+| opts.addressServer | <code>String</code> | URL of the Address Server |
 
 <a name="Box.openBox"></a>
 
@@ -690,6 +616,154 @@ Instanciate ipfs used by 3Box without calling openBox.
 
 **Kind**: static method of [<code>Box</code>](#Box)  
 **Returns**: <code>IPFS</code> - the ipfs instance  
+<a name="BoxApi"></a>
+
+### BoxApi
+**Kind**: global class  
+
+* [BoxApi](#BoxApi)
+    * [.listSpaces(address, opts)](#BoxApi.listSpaces) ⇒ <code>Object</code>
+    * [.getSpace(address, name, opts)](#BoxApi.getSpace) ⇒ <code>Object</code>
+    * [.getThread(space, name, firstModerator, members, opts)](#BoxApi.getThread) ⇒ <code>Array.&lt;Object&gt;</code>
+    * [.getThreadByAddress(address, opts)](#BoxApi.getThreadByAddress) ⇒ <code>Array.&lt;Object&gt;</code>
+    * [.getConfig(address, opts)](#BoxApi.getConfig) ⇒ <code>Array.&lt;Object&gt;</code>
+    * [.getProfile(address, opts)](#BoxApi.getProfile) ⇒ <code>Object</code>
+    * [.getProfiles(address, opts)](#BoxApi.getProfiles) ⇒ <code>Object</code>
+    * [.profileGraphQL(query, opts)](#BoxApi.profileGraphQL) ⇒ <code>Object</code>
+    * [.getVerifiedAccounts(profile)](#BoxApi.getVerifiedAccounts) ⇒ <code>Object</code>
+
+<a name="BoxApi.listSpaces"></a>
+
+#### BoxApi.listSpaces(address, opts) ⇒ <code>Object</code>
+Get the names of all spaces a user has
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - an array with all spaces as strings  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getSpace"></a>
+
+#### BoxApi.getSpace(address, name, opts) ⇒ <code>Object</code>
+Get the public data in a space of a given address with the given name
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with the public space data  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
+| name | <code>String</code> | A space name |
+| opts | <code>Object</code> | Optional parameters |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
+| opts.metadata | <code>String</code> | flag to retrieve metadata |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getThread"></a>
+
+#### BoxApi.getThread(space, name, firstModerator, members, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get all posts that are made to a thread.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| space | <code>String</code> | The name of the space the thread is in |
+| name | <code>String</code> | The name of the thread |
+| firstModerator | <code>String</code> | The DID (or ethereum address) of the first moderator |
+| members | <code>Boolean</code> | True if only members are allowed to post |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getThreadByAddress"></a>
+
+#### BoxApi.getThreadByAddress(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get all posts that are made to a thread.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The orbitdb-address of the thread |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getConfig"></a>
+
+#### BoxApi.getConfig(address, opts) ⇒ <code>Array.&lt;Object&gt;</code>
+Get the configuration of a users 3Box
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Array.&lt;Object&gt;</code> - An array of posts  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | The ethereum address |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getProfile"></a>
+
+#### BoxApi.getProfile(address, opts) ⇒ <code>Object</code>
+Get the public profile of a given address
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with the profile for the given address  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>String</code> | An ethereum address |
+| opts | <code>Object</code> | Optional parameters |
+| opts.blocklist | <code>function</code> | A function that takes an address and returns true if the user has been blocked |
+| opts.metadata | <code>String</code> | flag to retrieve metadata |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.getProfiles"></a>
+
+#### BoxApi.getProfiles(address, opts) ⇒ <code>Object</code>
+Get a list of public profiles for given addresses. This relies on 3Box profile API.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| address | <code>Array</code> | An array of ethereum addresses |
+| opts | <code>Object</code> | Optional parameters |
+| opts.profileServer | <code>String</code> | URL of Profile API server |
+
+<a name="BoxApi.profileGraphQL"></a>
+
+#### BoxApi.profileGraphQL(query, opts) ⇒ <code>Object</code>
+GraphQL for 3Box profile API
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - a json object with each key an address and value the profile  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| query | <code>Object</code> | A graphQL query object. |
+| opts | <code>Object</code> | Optional parameters |
+| opts.graphqlServer | <code>String</code> | URL of graphQL 3Box profile service |
+
+<a name="BoxApi.getVerifiedAccounts"></a>
+
+#### BoxApi.getVerifiedAccounts(profile) ⇒ <code>Object</code>
+Verifies the proofs of social accounts that is present in the profile.
+
+**Kind**: static method of [<code>BoxApi</code>](#BoxApi)  
+**Returns**: <code>Object</code> - An object containing the accounts that have been verified  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| profile | <code>Object</code> | A user profile object, received from the `getProfile` function |
+
 <a name="KeyValueStore"></a>
 
 ### KeyValueStore

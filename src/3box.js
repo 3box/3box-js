@@ -12,7 +12,7 @@ const Space = require('./space')
 const utils = require('./utils/index')
 const idUtils = require('./utils/id')
 const config = require('./config.js')
-const API = require('./api')
+const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 
@@ -39,13 +39,17 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   cacheProxy = OrbitDBCacheProxy({ postMessage })
 } */
 
-class Box {
+/**
+ * @extends BoxApi
+ */
+class Box extends BoxApi {
   /**
    * Please use the **openBox** method to instantiate a 3Box
+   * @constructor
    */
-  constructor (threeId, provider, ipfs, opts = {}) {
-    this._3id = threeId
-    this._web3provider = provider
+  constructor (provider, ipfs, opts = {}) {
+    super()
+    this._provider = provider
     this._ipfs = ipfs
     registerResolver(this._ipfs, { pin: true })
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
@@ -73,18 +77,20 @@ class Box {
     this.hasPublishedLink = {}
   }
 
-  async _load (opts = {}) {
+  async _init (opts) {
     this.replicator = await Replicator.create(this._ipfs, opts)
+  }
 
+  async _load (opts = {}) {
     const address = await this._3id.getAddress()
     const rootstoreAddress = address ? await this._getRootstore(address) : null
     if (rootstoreAddress) {
       await this.replicator.start(rootstoreAddress, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
-      await this._3id.authenticate(null, { authData })
+      await this._3id.authenticate(opts.spaces, { authData })
     } else {
-      await this._3id.authenticate()
+      await this._3id.authenticate(opts.spaces)
       const rootstoreName = this._3id.muportFingerprint + '.root'
       const key = (await this._3id.getPublicKeys(null, true)).signingKey
       await this.replicator.new(rootstoreName, key, this._3id.DID, this._3id.muportDID)
@@ -108,141 +114,45 @@ class Box {
   }
 
   /**
-   * Get the public profile of a given address
+   * Creates an instance of 3Box
    *
-   * @param     {String}    address                 An ethereum address
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
-   * @param     {String}    opts.metadata           flag to retrieve metadata
-   * @param     {String}    opts.addressServer      URL of the Address Server
-   * @param     {Object}    opts.ipfs               A js-ipfs ipfs object
-   * @param     {Boolean}   opts.useCacheService    Use 3Box API and Cache Service to fetch profile instead of OrbitDB. Default true.
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            a json object with the profile for the given address
+   * @param     {provider}          provider                A 3ID provider, or ethereum provider
+   * @param     {Object}            opts                    Optional parameters
+   * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
+   * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
+   * @param     {String}            opts.addressServer      URL of the Address Server
+   * @return    {Box}                                       the 3Box session instance
    */
-  static async getProfile (address, opts = {}) {
-    const metadata = opts.metadata
-    opts = Object.assign({ useCacheService: true }, opts)
+  static async create (provider, opts = {}) {
+    const ipfs = await Box.getIPFS(opts)
+    const box = new Box(provider, ipfs, opts)
+    await box._init(opts)
+    return box
+  }
 
-    let profile
-    if (opts.useCacheService) {
-      profile = await API.getProfile(address, opts.profileServer, { metadata })
+  /**
+   * Authenticate the user
+   *
+   * @param     {Array<String>}     spaces                  A list of spaces to authenticate (optional)
+   * @param     {Object}            opts                    Optional parameters
+   * @param     {String}            opts.address            An ethereum address
+   * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
+   */
+  async auth (spaces = [], opts = {}) {
+    if (!this._3id) {
+      if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
+      this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, opts)
+      await this._load(Object.assign(opts, { spaces }))
     } else {
-      if (metadata) {
-        throw new Error('getting metadata is not yet supported outside of the API')
-      }
-
-      const normalizedAddress = address.toLowerCase()
-      profile = await this._getProfileOrbit(normalizedAddress, opts)
+      // box already loaded, just authenticate spaces
+      await this._3id.authenticate(spaces)
     }
-    return profile
-  }
-
-  /**
-   * Get a list of public profiles for given addresses. This relies on 3Box profile API.
-   *
-   * @param     {Array}     address                 An array of ethereum addresses
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            a json object with each key an address and value the profile
-   */
-  static async getProfiles (addressArray, opts = {}) {
-    return API.getProfiles(addressArray, opts)
-  }
-
-  /**
-   * Get the public data in a space of a given address with the given name
-   *
-   * @param     {String}    address                 An ethereum address
-   * @param     {String}    name                    A space name
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {Function}  opts.blocklist          A function that takes an address and returns true if the user has been blocked
-   * @param     {String}    opts.metadata           flag to retrieve metadata
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            a json object with the public space data
-   */
-  static async getSpace (address, name, opts = {}) {
-    return API.getSpace(address, name, opts.profileServer, opts)
-  }
-
-  /**
-   * Get all posts that are made to a thread.
-   *
-   * @param     {String}    space                   The name of the space the thread is in
-   * @param     {String}    name                    The name of the thread
-   * @param     {String}    firstModerator          The DID (or ethereum address) of the first moderator
-   * @param     {Boolean}   members                 True if only members are allowed to post
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Array<Object>}                     An array of posts
-   */
-  static async getThread (space, name, firstModerator, members, opts = {}) {
-    return API.getThread(space, name, firstModerator, members, opts)
-  }
-
-  /**
-   * Get all posts that are made to a thread.
-   *
-   * @param     {String}    address                 The orbitdb-address of the thread
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Array<Object>}                     An array of posts
-   */
-  static async getThreadByAddress (address, opts = {}) {
-    return API.getThreadByAddress(address, opts)
-  }
-
-  /**
-   * Get the configuration of a users 3Box
-   *
-   * @param     {String}    address                 The ethereum address
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Array<Object>}                     An array of posts
-   */
-  static async getConfig (address, opts = {}) {
-    return API.getConfig(address, opts)
-  }
-
-  /**
-   * Get the names of all spaces a user has
-   *
-   * @param     {String}    address                 An ethereum address
-   * @param     {Object}    opts                    Optional parameters
-   * @param     {String}    opts.profileServer      URL of Profile API server
-   * @return    {Object}                            an array with all spaces as strings
-   */
-  static async listSpaces (address, opts = {}) {
-    return API.listSpaces(address, opts.profileServer)
-  }
-
-  static async _getProfileOrbit (address, opts = {}) {
-    // Removed this code since it's completely outdated.
-    // TODO - implement using the replicator module
-    throw new Error('Not implemented yet')
-  }
-
-  /**
-   * GraphQL for 3Box profile API
-   *
-   * @param     {Object}    query               A graphQL query object.
-   * @param     {Object}    opts                Optional parameters
-   * @param     {String}    opts.graphqlServer  URL of graphQL 3Box profile service
-   * @return    {Object}                        a json object with each key an address and value the profile
-   */
-
-  static async profileGraphQL (query, opts = {}) {
-    return API.profileGraphQL(query, opts.graphqlServer)
-  }
-
-  /**
-   * Verifies the proofs of social accounts that is present in the profile.
-   *
-   * @param     {Object}            profile                 A user profile object, received from the `getProfile` function
-   * @return    {Object}                                    An object containing the accounts that have been verified
-   */
-  static async getVerifiedAccounts (profile) {
-    return API.getVerifiedAccounts(profile)
+    // make sure we are authenticated to threads
+    spaces.forEach(space => {
+      if (this.spaces[space]) {
+        this.spaces[space]._authThreads(this._3id)
+      }
+    })
   }
 
   /**
@@ -259,14 +169,9 @@ class Box {
    * @return    {Box}                                       the 3Box instance for the given address
    */
   static async openBox (address, provider, opts = {}) {
-    const ipfs = await Box.getIPFS(opts)
-    if (typeof address === 'object' && address !== null) {
-      // legacy support for IdentityWallet being passed in first param
-      provider = address.get3idProvider()
-    }
-    const threeId = await ThreeId.getIdFromEthAddress(address, provider, ipfs, opts)
-    const box = new Box(threeId, provider, ipfs, opts)
-    await box._load(opts)
+    opts = Object.assign(opts, { address })
+    const box = await Box.create(provider, opts)
+    await box.auth([], opts)
     return box
   }
 
@@ -280,10 +185,14 @@ class Box {
    * @return    {Space}                                     the Space instance for the given space name
    */
   async openSpace (name, opts = {}) {
+    if (name.includes('.')) throw new Error('Invalid name: character "." not allowed')
+    if (!this._3id) throw new Error('openSpace: auth required')
     if (!this.spaces[name]) {
-      this.spaces[name] = new Space(name, this.replicator, this._3id)
+      this.spaces[name] = new Space(name, this.replicator)
+    }
+    if (!this.spaces[name].isOpen) {
       try {
-        await this.spaces[name].open(opts)
+        await this.spaces[name].open(this._3id, opts)
         if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
         delete this.spaces[name]
@@ -298,6 +207,28 @@ class Box {
       opts.onSyncDone()
     }
     return this.spaces[name]
+  }
+
+  /**
+   * Open a thread. Use this to start receiving updates
+   *
+   * @param     {String}    space                   The name of the space for this thread
+   * @param     {String}    name                    The name of the thread
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
+   * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
+   * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
+   * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
+   * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
+   * @param     {Array<Function>} opts.ghostFilters Array of functions for filtering messages
+   *
+   * @return    {Thread}                  An instance of the thread class for the joined thread
+   */
+  async openThread (space, name, opts) {
+    if (!this.spaces[space]) {
+      this.spaces[space] = new Space(space, this.replicator)
+    }
+    return this.spaces[space].joinThread(name, opts)
   }
 
   /**
@@ -354,6 +285,7 @@ class Box {
    * @property {String} DID        the DID of the user
    */
   get DID () {
+    if (!this._3id) throw new Error('DID: auth required')
     // TODO - update once verification service supports 3ID
     return this._3id.muportDID
   }
@@ -365,6 +297,7 @@ class Box {
    * @param     {Object}    [link.proof]                   Proof object, should follow [spec](https://github.com/3box/3box/blob/master/3IPs/3ip-5.md)
    */
   async linkAddress (link = {}) {
+    if (!this._3id) throw new Error('linkAddress: auth required')
     if (link.proof) {
       await this._writeAddressLink(link.proof)
     } else {
@@ -378,6 +311,7 @@ class Box {
    * @param     {String}   address      address that is linked
    */
   async removeAddressLink (address) {
+    if (!this._3id) throw new Error('removeAddressLink: auth required')
     address = address.toLowerCase()
     const linkExist = await this.isAddressLinked({ address })
     if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
@@ -413,6 +347,7 @@ class Box {
    * @param     {String}    [query.address]    Is the given adressed linked
    */
   async isAddressLinked (query = {}) {
+    if (!this._3id) throw new Error('isAddressLinked: auth required')
     if (query.address) query.address = query.address.toLowerCase()
     const links = await this._readAddressLinks()
     const linksQuery = links.find(link => {
@@ -428,6 +363,7 @@ class Box {
    * @return    {Array}                        An array of link objects
    */
   async listAddressLinks () {
+    if (!this._3id) throw new Error('listAddressLinks: auth required')
     const entries = await this._readAddressLinks()
     return entries.reduce((list, entry) => {
       const item = Object.assign({}, entry)
@@ -453,9 +389,9 @@ class Box {
     let proof = await this._readAddressLink(address)
 
     if (!proof) {
-      if (!this._web3provider.is3idProvider) {
+      if (!this._provider.is3idProvider) {
         try {
-          proof = await createLink(this._3id.DID, address, this._web3provider)
+          proof = await createLink(this._3id.DID, address, this._provider)
         } catch (e) {
           throw new Error('Link consent message must be signed before adding data, to link address to store', e)
         }
@@ -531,6 +467,7 @@ class Box {
   }
 
   async close () {
+    if (!this._3id) throw new Error('close: auth required')
     await this.replicator.stop()
   }
 
@@ -540,6 +477,7 @@ class Box {
    * you call openBox.
    */
   async logout () {
+    if (!this._3id) throw new Error('logout: auth required')
     await this.close()
     this._3id.logout()
     const address = await this._3id.getAddress()

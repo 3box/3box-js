@@ -1,6 +1,5 @@
 const testUtils = require('./testUtils')
 const OrbitDB = require('orbit-db')
-const Pubsub = require('orbit-db-pubsub')
 const jsdom = require('jsdom')
 const didJWT = require('did-jwt')
 const Box = require('../3box')
@@ -77,9 +76,15 @@ jest.mock('../privateStore', () => {
 })
 jest.mock('../space', () => {
   return jest.fn(name => {
+    let isOpen = false
     return {
       _name: name,
-      open: jest.fn()
+      get isOpen () {
+        return isOpen
+      },
+      open: jest.fn(() => isOpen = true),
+      joinThread: jest.fn(),
+      _authThreads: jest.fn()
     }
   })
 })
@@ -188,7 +193,7 @@ const MOCK_HASH_SERVER = 'address-server'
 const MOCK_PROFILE_SERVER = 'profile-server'
 
 describe('3Box', () => {
-  let ipfs, pubsub, boxOpts, ipfsBox, box, boxWithLinks
+  let ipfs, boxOpts, ipfsBox
   jest.setTimeout(30000)
 
   const clearMocks = () => {
@@ -202,7 +207,6 @@ describe('3Box', () => {
   beforeAll(async () => {
     if (!ipfs) ipfs = await testUtils.initIPFS(0)
     const ipfsMultiAddr = (await ipfs.id()).addresses[0]
-    if (!pubsub) pubsub = new Pubsub(ipfs, (await ipfs.id()).id)
 
     const IPFS_OPTIONS = {
       EXPERIMENTAL: {
@@ -231,10 +235,59 @@ describe('3Box', () => {
   })
 
   afterAll(async () => {
-    await pubsub.disconnect()
-    await box.close()
     await testUtils.stopIPFS(ipfs, 0)
     await testUtils.stopIPFS(ipfsBox, 1)
+  })
+
+  it('Create instance of 3box works as intended', async () => {
+    const prov = 'web3prov'
+    const box = await Box.create(prov, boxOpts)
+    expect(box.replicator).toBeDefined()
+    expect(box._provider).toEqual(prov)
+    expect(box._ipfs).toEqual(boxOpts.ipfs)
+  })
+
+  it('openThread without being authenticated', async () => {
+    const space = 's1'
+    const name = 't1'
+    const prov = 'web3prov'
+    const box = await Box.create(prov, boxOpts)
+    await box.openThread(space, name, {})
+    expect(box.spaces[space]).toBeDefined()
+    expect(box.spaces[space].joinThread).toHaveBeenCalledWith(name, {})
+  })
+
+  it('authenticating works as expected', async () => {
+    const space = 's1'
+    const name = 't1'
+    const prov = 'web3prov'
+    const opts = { address: '0x12345' }
+    const box = await Box.create(prov, boxOpts)
+    await box.openThread(space, name, {})
+
+    await box.auth([space], opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(opts.address, prov, boxOpts.ipfs, opts)
+    expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
+    expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
+    expect(box.replicator.start).toHaveBeenCalledTimes(0)
+    expect(box.replicator.new).toHaveBeenCalledTimes(1)
+    expect(box.replicator.rootstore.setIdentity).toHaveBeenCalledTimes(1)
+    expect(box.public._load).toHaveBeenCalledTimes(1)
+    expect(box.public._load).toHaveBeenCalledWith()
+    expect(box.private._load).toHaveBeenCalledTimes(1)
+    expect(box.private._load).toHaveBeenCalledWith()
+    expect(box.spaces[space]._authThreads).toHaveBeenCalledTimes(1)
+    await box.syncDone
+    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
+    expect(mockedUtils.fetchJson.mock.calls[1][0]).toEqual('address-server/odbAddress')
+    expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[1][1].address_token).payload.rootStoreAddress).toEqual('/orbitdb/asdf/rootstore-address')
+
+    // second call to auth should only auth new spaces
+    await box.auth(['s2'])
+    expect(box._3id.authenticate).toHaveBeenCalledTimes(2)
+    expect(box._3id.authenticate).toHaveBeenCalledWith(['s2'])
   })
 
   it('should openBox correctly with normal auth flow, for new accounts', async () => {
@@ -362,7 +415,7 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
-    expect(box._3id.authenticate).toHaveBeenCalledWith(null, { authData: [] })
+    expect(box._3id.authenticate).toHaveBeenCalledWith([], { authData: [] })
     expect(box.replicator.start).toHaveBeenCalledTimes(1)
     expect(box.replicator.start).toHaveBeenCalledWith('/orbitdb/asdf/rootstore-address', { profile: true })
     expect(box.replicator.new).toHaveBeenCalledTimes(0)
@@ -382,7 +435,7 @@ describe('3Box', () => {
     global.console.error = jest.fn()
     let space1 = await box.openSpace('name1', {})
     expect(space1._name).toEqual('name1')
-    expect(space1.open).toHaveBeenCalledWith(expect.any(Object))
+    expect(space1.open).toHaveBeenCalledWith(expect.any(Object), {})
     let opts = { onSyncDone: jest.fn() }
     let space2 = await box.openSpace('name1', opts)
     expect(space1).toEqual(space2)
@@ -396,22 +449,6 @@ describe('3Box', () => {
 
     await box.close()
   })
-
-  //it.skip('should getProfile correctly (when profile API is not used)', async () => {
-    //// Disabled this for now. I don't think the way we get profiles
-    //// though orbitdb right now makes sense anyway. In the future
-    //// we propbably want to have a stateful api for getting and following
-    //// other users.
-    //await box._rootStore.drop()
-    //// awaitbox2._ruotStore.drop()
-    //const profile = await Box.getProfile('0x12345', Object.assign(boxOpts, {useCacheService: false}))
-    //expect(profile).toEqual({
-      //name: 'oed',
-      //image: 'an awesome selfie'
-    //})
-    //expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-    //expect(mockedUtils.fetchJson).toHaveBeenCalledWith('address-server/odbAddress/0x12345')
-  //})
 
   it('should get profile (when API is used)', async () => {
     delete boxOpts.useCacheService
