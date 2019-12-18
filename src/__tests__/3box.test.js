@@ -503,7 +503,7 @@ describe('3Box', () => {
     verifier.verifyDID.mockImplementationOnce(() => { throw new Error() })
     expect(await Box.getVerifiedAccounts(profile)).toEqual({})
 
-    verifier.verifyDID.mockImplementationOnce(() => userDID)
+    verifier.verifyDID.mockImplementationOnce(() => ({ did: userDID, muport: userDID}))
     verifier.verifyGithub.mockImplementationOnce(() => {
       return { username: 'test', proof: 'some url' }
     })

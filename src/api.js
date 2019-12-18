@@ -229,27 +229,34 @@ class BoxApi {
   static async getVerifiedAccounts (profile) {
     const verifs = {}
     try {
-      const did = await verifier.verifyDID(profile.proof_did)
+      const didVerified = await verifier.verifyDID(profile.proof_did)
 
-      verifs.did = did
+      const dids = [didVerified.did]
+      verifs.did = didVerified.did
+
+      if (didVerified.muport) {
+        verifs.muport = didVerified.muport
+        dids.push(muport)
+      }
 
       if (profile.proof_github) {
         try {
-          verifs.github = await verifier.verifyGithub(did, profile.proof_github)
+          verifs.github = await verifier.verifyGithub(dids, profile.proof_github)
         } catch (err) {
           // Invalid github verification
         }
       }
       if (profile.proof_twitter) {
         try {
-          verifs.twitter = await verifier.verifyTwitter(did, profile.proof_twitter)
+          verifs.twitter = await verifier.verifyTwitter(dids, profile.proof_twitter)
         } catch (err) {
           // Invalid twitter verification
         }
       }
       if (profile.ethereum_proof) {
         try {
-          verifs.ethereum = await verifier.verifyEthereum(profile.ethereum_proof, did)
+          // won't be any proofs here with 3id
+          verifs.ethereum = await verifier.verifyEthereum(profile.ethereum_proof, verifs.did)
         } catch (err) {
           // Invalid eth verification
         }

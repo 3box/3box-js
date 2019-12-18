@@ -156,7 +156,7 @@ class GhostThread extends EventEmitter {
    */
   async _broadcast (message) {
     if (!this._3id) throw new Error('Can not send message if not authenticated')
-    const jwt = await this._3id.signJWT(message, { use3ID: true })
+    const jwt = await this._3id.signJWT(message)
     this._room.broadcast(jwt)
   }
 
@@ -168,7 +168,7 @@ class GhostThread extends EventEmitter {
    */
   async _sendDirect (message, to) {
     if (!this._3id) throw new Error('Can not send message if not authenticated')
-    const jwt = await this._3id.signJWT(message, { use3ID: true })
+    const jwt = await this._3id.signJWT(message)
     to.startsWith('Qm') ? this._room.sendTo(to, jwt)
       : this._room.sendTo(this._threeIdToPeerId(to), jwt)
   }

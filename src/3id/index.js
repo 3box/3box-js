@@ -41,11 +41,9 @@ class ThreeId {
     }
   }
 
-  async signJWT (payload, { use3ID, space, expiresIn } = {}) {
-    let issuer = this.muportDID
-    if (use3ID) {
-      issuer = this.DID
-    } else if (space) {
+  async signJWT (payload, { space, expiresIn } = {}) {
+    let issuer = this.DID
+    if (space) {
       issuer = this._subDIDs[space]
     }
     if (this._has3idProv) {

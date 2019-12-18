@@ -23,10 +23,10 @@ const didResolverMock = async (did) => {
 }
 
 const threeIDMockFactory = (did) => {
-  const signJWT = (payload, { use3ID } = {}) => {
+  const signJWT = (payload) => {
     return didJWT.createJWT(payload, {
       signer: didJWT.SimpleSigner(privKey),
-      issuer: use3ID ? did : did.replace('3', 'muport')
+      issuer: did
     })
   }
 
