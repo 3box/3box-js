@@ -8,7 +8,9 @@ const IdentityWallet = require('identity-wallet')
 
 const utils = require('../../utils/index')
 utils.openBoxConsent = jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234')
-utils.openSpaceConsent = jest.fn(async () => '0x8ab87482987498387634985734987b9834598734597887070702535')
+utils.openSpaceConsent = jest.fn(async (a, b, space) => {
+  return space === 'space1' ? '0x8ab87482987498387634985734987b9834598734597887070702535' : '0x8234be82987498387634985734987b9834598734597887070702535'
+})
 utils.sha256Multihash = jest.fn(str => {
   if (str === 'did:muport:Qmsdsdf87g329') return 'ab8c73d8f'
   return 'b932fe7ab'
@@ -28,7 +30,7 @@ const ADDR_1 = '0x12345'
 const ADDR_2 = '0xabcde'
 const ADDR_3 = '0xlmnop'
 const ADDR_1_STATE_1 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{}}'
-const ADDR_1_STATE_2 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{"space1":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450","space2":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450"}}'
+const ADDR_1_STATE_2 = '{"managementAddress":"0x12345","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{"space1":"0xedfac8a7bcc52f33b88cfb9f310bc533f77800183beecfa49dcdf8d3b4b906502ec46533d9d7fb12eced9b04e0bdebd1c26872cf5fa759331e4c2f97ab95f450","space2":"0x9dcc08a8813362b2188cf40216fbdff577f77c291e7b96cd8f31b60493a6b6a9572eee62b01fcb9a7759c12247cb57cc38e0b4e46e186c23d1d4b26db46108c7"}}'
 const ADDR_2_STATE = '{"managementAddress":"0xabcde","seed":"0xbc95bb0aeb7e5c7a9519ef066d4b60a944373ba1163b0c962a043bebec1579ef33e0ef4f63c0888d7a8ec95df34ada58fb739b2a4d3b44362747e6b193db9af2","spaceSeeds":{}}'
 const ADDR_3_STATE_1 = '{"managementAddress":"0xlmnop","seed":"0xaedd3b597a14ad1c941ca535208fabd0b44a668dd0c8156f68a823ef8d713212d356731839a354ac5b781f4b986ff54aa2cadfa3551846c9e43bfa0122f3d55b","spaceSeeds":{}}'
 const SPACE_1 = 'space1'
@@ -175,6 +177,14 @@ describe('3id', () => {
         expect(await threeId.decrypt(enc1, SPACE_1)).toEqual(null)
       })
 
+      it('should encrypt and decrypt asymmetrically correctly', async () => {
+        const message = 'test message'
+        const { asymEncryptionKey } = await threeId.getPublicKeys(SPACE_1)
+        const enc1 = await threeId.encrypt(message, null, asymEncryptionKey)
+        expect(await threeId.decrypt(enc1, SPACE_1)).toEqual(message)
+        expect(await threeId.decrypt(enc1, SPACE_2)).toEqual(null)
+      })
+
       it('should get identity with spaces automatically initialized', async () => {
         threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs)
         expect(threeId.serializeState()).toEqual(ADDR_1_STATE_2)
@@ -257,6 +267,14 @@ describe('3id', () => {
         const enc2 = await idw3id.encrypt(message, SPACE_1)
         expect(await idw3id.decrypt(enc2, SPACE_1)).toEqual(message)
         await expect(idw3id.decrypt(enc1, SPACE_1)).rejects.toMatchSnapshot()
+      })
+
+      it('should encrypt and decrypt asymmetrically correctly', async () => {
+        const message = 'test message'
+        const { asymEncryptionKey } = await threeId.getPublicKeys(SPACE_1)
+        const enc1 = await threeId.encrypt(message, null, asymEncryptionKey)
+        expect(await threeId.decrypt(enc1, SPACE_1)).toEqual(message)
+        expect(await threeId.decrypt(enc1, SPACE_2)).toEqual(null)
       })
     })
 

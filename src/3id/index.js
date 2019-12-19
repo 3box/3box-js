@@ -226,11 +226,17 @@ class ThreeId {
     return pubkeys
   }
 
-  async encrypt (message, space) {
+  async encrypt (message, space, to) {
     if (this._has3idProv) {
       return utils.callRpc(this._provider, '3id_encrypt', { message, space })
     } else {
-      return this._keyringBySpace(space).symEncrypt(utils.pad(message))
+      const keyring = this._keyringBySpace(space)
+      let paddedMsg = utils.pad(message)
+      if (to) {
+        return keyring.asymEncrypt(paddedMsg, to)
+      } else {
+        return keyring.symEncrypt(paddedMsg)
+      }
     }
   }
 
@@ -238,7 +244,14 @@ class ThreeId {
     if (this._has3idProv) {
       return utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space })
     } else {
-      return utils.unpad(this._keyringBySpace(space).symDecrypt(encObj.ciphertext, encObj.nonce))
+      const keyring = this._keyringBySpace(space)
+      let paddedMsg
+      if (encObj.ephemeralFrom) {
+        paddedMsg = keyring.asymDecrypt(encObj.ciphertext, encObj.ephemeralFrom, encObj.nonce)
+      } else {
+        paddedMsg = keyring.symDecrypt(encObj.ciphertext, encObj.nonce)
+      }
+      return utils.unpad(paddedMsg)
     }
   }
 
