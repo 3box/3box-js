@@ -1,8 +1,27 @@
 const { fetchText, getMessageConsent } = require('./index')
 const didJWT = require('did-jwt')
 const { verifyMessage } = require('@ethersproject/wallet')
+const config = require('../config.js')
+const utils = require('./index')
+const registerResolver = require('3id-resolver')
 require('https-did-resolver').default()
 require('muport-did-resolver')()
+
+const PROFILE_SERVER_URL = config.profile_server_url
+
+// Mocks ipfs obj for 3id resolve, to resolve through api, until ipfs instance is available
+const ipfs = (didServerUrl) => {
+  return {
+    dag: {
+      get: async (cid) => {
+        const req = `${didServerUrl}/did-doc?cid=${encodeURIComponent(cid)}`
+        return utils.fetchJson(req)
+      }
+    }
+  }
+}
+
+registerResolver(ipfs(PROFILE_SERVER_URL), { pin: false })
 
 module.exports = {
   /**

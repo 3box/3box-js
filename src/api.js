@@ -230,13 +230,12 @@ class BoxApi {
     const verifs = {}
     try {
       const didVerified = await verifier.verifyDID(profile.proof_did)
-
       const dids = [didVerified.did]
       verifs.did = didVerified.did
 
       if (didVerified.muport) {
         verifs.muport = didVerified.muport
-        dids.push(muport)
+        dids.push(didVerified.muport)
       }
 
       if (profile.proof_github) {

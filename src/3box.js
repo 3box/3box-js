@@ -287,7 +287,7 @@ class Box extends BoxApi {
    */
   get DID () {
     if (!this._3id) throw new Error('DID: auth required')
-    return this._3id.did
+    return this._3id.DID
   }
 
   /**

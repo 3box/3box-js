@@ -15,9 +15,6 @@ registerMethod('muport', didResolverMock)
 
 const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
 const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
-const DIDMUPORT1 = DID1.replace('3', 'muport')
-const DIDMUPORT2 = DID2.replace('3', 'muport')
-
 
 const randomStr = () => `${Math.floor(Math.random() * 1000000)}`
 
@@ -352,7 +349,7 @@ describe('3Box', () => {
 
     boxWithLinks._readAddressLink = jest.fn(() => {
       return {
-        message: `I agree to stuff,${DIDMUPORT1}`,
+        message: `I agree to stuff,${DID1}`,
         signature: "0xSuchRealSig,0x12345",
         timestamp: 111,
         type: "ethereum-eoa",
@@ -367,7 +364,7 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     // TODO now hwy this second clal as expected??
     expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      message: `I agree to stuff,${DIDMUPORT1}`,
+      message: `I agree to stuff,${DID1}`,
       signature: "0xSuchRealSig,0x12345",
       timestamp: 111,
       type: "ethereum-eoa",
@@ -496,14 +493,15 @@ describe('3Box', () => {
       proof_github: 'github proof url',
       proof_twitter: 'twitter proof claim jwt'
     }
-    const userDID = 'did:muport:Qmsdpuhs'
+    const userMuPort = 'did:muport:Qmsdpuhs'
+    const userDID = 'did:3:zdpuAsaK9Ysqpph'
 
     let verifier = require('../utils/verifier')
 
     verifier.verifyDID.mockImplementationOnce(() => { throw new Error() })
     expect(await Box.getVerifiedAccounts(profile)).toEqual({})
 
-    verifier.verifyDID.mockImplementationOnce(() => ({ did: userDID, muport: userDID}))
+    verifier.verifyDID.mockImplementationOnce(() => ({ did: userDID, muport: userMuPort}))
     verifier.verifyGithub.mockImplementationOnce(() => {
       return { username: 'test', proof: 'some url' }
     })
@@ -515,7 +513,8 @@ describe('3Box', () => {
     expect(verifiedAccounts).toEqual({
       'github': { 'proof': 'some url', 'username': 'test' },
       'twitter': { 'proof': 'some url', 'username': 'test' },
-      'did': userDID
+      'did': userDID,
+      'muport': userMuPort
     })
   })
 
