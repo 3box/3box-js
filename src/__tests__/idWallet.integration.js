@@ -73,11 +73,11 @@ describe('Integration Test: IdentityWallet', () => {
       identityKeysPath: `./tmp/did1`,
       pinningNode: ipfsMultiAddr2
     }
+    pubsub.subscribe(PINNING_ROOM, (topic, data) => {}, () => {})
   })
 
   beforeEach(async () => {
     idWallet = new IdentityWallet(getConsent, { seed: SEED })
-    pubsub.subscribe(PINNING_ROOM, (topic, data) => {}, () => {})
   })
 
   afterAll(async () => {
@@ -111,8 +111,8 @@ describe('Integration Test: IdentityWallet', () => {
 
     expect(box.replicator.rootstore._oplog.values.length).toEqual(3)
     idWallet.addAuthMethod(AUTH_1)
-    await testUtils.delay(800)
-    expect(box.replicator.rootstore._oplog.values.length).toEqual(4)
+    await testUtils.delay(1200)
+    expect(box.replicator.rootstore._oplog.values.length).toEqual(5)
 
     await box.close()
   })
@@ -126,10 +126,10 @@ describe('Integration Test: IdentityWallet', () => {
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
 
-    expect(box.replicator.rootstore._oplog.values.length).toEqual(4)
-    idWallet.addAuthMethod(AUTH_2)
-    await testUtils.delay(800)
     expect(box.replicator.rootstore._oplog.values.length).toEqual(5)
+    idWallet.addAuthMethod(AUTH_2)
+    await testUtils.delay(1200)
+    expect(box.replicator.rootstore._oplog.values.length).toEqual(7)
 
     await box.close()
   })

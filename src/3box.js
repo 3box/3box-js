@@ -375,7 +375,7 @@ class Box extends BoxApi {
   }
 
   async _writeAddressLink (proof) {
-    const validProof = validateLink(proof)
+    const validProof = await validateLink(proof)
     if (!validProof) {
       throw new Error('tried to write invalid link proof', proof)
     }
