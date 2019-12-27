@@ -139,8 +139,9 @@ class BoxApi {
    */
   static async getConfig (address, opts = {}) {
     const serverUrl = opts.profileServer || PROFILE_SERVER_URL
+    const isAddr = address.startsWith('0x') // assume 3ID if not address
     try {
-      return await utils.fetchJson(`${serverUrl}/config?address=${encodeURIComponent(address)}`)
+      return await utils.fetchJson(`${serverUrl}/config?${isAddr ? 'address' : 'did'}=${encodeURIComponent(address)}`)
     } catch (err) {
       throw new Error(err)
     }
