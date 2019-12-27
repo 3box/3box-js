@@ -241,7 +241,7 @@ class ThreeId {
 
   async encrypt (message, space, to) {
     if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_encrypt', { message, space })
+      return utils.callRpc(this._provider, '3id_encrypt', { message, space, to })
     } else {
       const keyring = this._keyringBySpace(space)
       let paddedMsg = utils.pad(message)

@@ -271,10 +271,10 @@ describe('3id', () => {
 
       it('should encrypt and decrypt asymmetrically correctly', async () => {
         const message = 'test message'
-        const { asymEncryptionKey } = await threeId.getPublicKeys(SPACE_1)
-        const enc1 = await threeId.encrypt(message, null, asymEncryptionKey)
-        expect(await threeId.decrypt(enc1, SPACE_1)).toEqual(message)
-        expect(await threeId.decrypt(enc1, SPACE_2)).toEqual(null)
+        const { asymEncryptionKey } = await idw3id.getPublicKeys(SPACE_1)
+        const enc1 = await idw3id.encrypt(message, null, asymEncryptionKey)
+        expect(await idw3id.decrypt(enc1, SPACE_1)).toEqual(message)
+        await expect(idw3id.decrypt(enc1, SPACE_2)).rejects.toMatchSnapshot()
       })
     })
 

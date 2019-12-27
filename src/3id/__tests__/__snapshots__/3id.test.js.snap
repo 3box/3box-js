@@ -152,6 +152,8 @@ Object {
 }
 `;
 
+exports[`3id get 3ID using IdentityWallet keyring logic should encrypt and decrypt asymmetrically correctly 1`] = `[Error: IdentityWallet: Could not decrypt message]`;
+
 exports[`3id get 3ID using IdentityWallet keyring logic should encrypt and decrypt correctly 1`] = `[Error: IdentityWallet: Could not decrypt message]`;
 
 exports[`3id get 3ID using IdentityWallet keyring logic should get public keys correctly 1`] = `
