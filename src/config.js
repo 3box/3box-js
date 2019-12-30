@@ -2,8 +2,8 @@ const Log = require('ipfs-log')
 const IFRAME_STORE_VERSION = '0.0.3'
 
 const RENDEZVOUS_DISABLE = !(
-  !process.env.RENDEZVOUS_DISABLE
-  || ['0','f', 'false', 'no', 'off'].includes(process.env.RENDEZVOUS_DISABLE.toLowerCase())
+  !process.env.RENDEZVOUS_DISABLE ||
+  ['0', 'f', 'false', 'no', 'off'].includes(process.env.RENDEZVOUS_DISABLE.toLowerCase())
 )
 
 module.exports = {
