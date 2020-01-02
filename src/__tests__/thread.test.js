@@ -2,13 +2,13 @@ const utils = require('./testUtils')
 const Thread = require('../thread')
 const OrbitDB = require('orbit-db')
 const {
-  // OdbIdentityProvider,
+  OdbIdentityProvider,
   LegacyIPFS3BoxAccessController,
   ThreadAccessController,
   ModeratorAccessController
 } = require('3box-orbitdb-plugins')
-// const Identities = require('orbit-db-identity-provider')
-// Identities.addIdentityProvider(OdbIdentityProvider)
+const Identities = require('orbit-db-identity-provider')
+Identities.addIdentityProvider(OdbIdentityProvider)
 const AccessControllers = require('orbit-db-access-controllers')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
@@ -49,8 +49,10 @@ describe('Thread', () => {
 
   beforeAll(async () => {
     ipfs = await utils.initIPFS(4)
+    const identity = await Identities.createIdentity({ id: 'nullid' })
     orbitdb = await OrbitDB.createInstance(ipfs, {
-      directory:'./tmp/orbitdb4'
+      directory:'./tmp/orbitdb4',
+      identity
     })
     replicatorMock = {
       _orbitdb: orbitdb,
