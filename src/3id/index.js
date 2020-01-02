@@ -190,7 +190,9 @@ class ThreeId {
         await this._initDID()
       } else {
         for (const space of spaces) {
-          this._subDIDs[space] = await this._init3ID(space)
+          if (!this._subDIDs[space]) {
+            this._subDIDs[space] = await this._init3ID(space)
+          }
         }
       }
     } else {
@@ -201,13 +203,7 @@ class ThreeId {
   }
 
   async isAuthenticated (spaces = []) {
-    if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_isAuthenticated', { spaces })
-    } else {
-      return spaces
-        .map(space => Boolean(this._keyrings[space]))
-        .reduce((acc, val) => acc && val, true)
-    }
+    return spaces.reduce((acc, space) => acc && Object.keys(this._subDIDs).includes(space), true)
   }
 
   async _initKeyringByName (name) {
