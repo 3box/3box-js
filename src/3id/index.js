@@ -41,11 +41,9 @@ class ThreeId {
     }
   }
 
-  async signJWT (payload, { use3ID, space, expiresIn } = {}) {
-    let issuer = this.muportDID
-    if (use3ID) {
-      issuer = this.DID
-    } else if (space) {
+  async signJWT (payload, { space, expiresIn } = {}) {
+    let issuer = this.DID
+    if (space) {
       issuer = this._subDIDs[space]
     }
     if (this._has3idProv) {
@@ -163,13 +161,6 @@ class ThreeId {
     let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
     this._muportDID = 'did:muport:' + docHash
     this.muportFingerprint = utils.sha256Multihash(this.muportDID)
-    const publishToInfura = async () => {
-      const ipfsMini = new IpfsMini(this._muportIpfs)
-      ipfsMini.addJSON(doc, (err, res) => {
-        if (err) console.error(err)
-      })
-    }
-    publishToInfura()
   }
 
   async getAddress () {

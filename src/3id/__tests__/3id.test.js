@@ -187,7 +187,7 @@ describe('3id', () => {
         const jwt = await threeId.signJWT({
           iat: null,
           data: 'some data'
-        }, { use3ID: true })
+        })
         await expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
       })
 
@@ -265,7 +265,7 @@ describe('3id', () => {
         const jwt = await idw3id.signJWT({
           iat: null,
           data: 'some data'
-        }, { use3ID: true })
+        })
         await expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
       })
 

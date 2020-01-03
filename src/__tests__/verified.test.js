@@ -10,7 +10,7 @@ const GITHUB_LINK2_URL = 'https://gist.githubusercontent.com/user1/wrongLink'
 jest.mock('../3box')
 jest.mock('../utils', () => {
   const GITHUB_LINK1_URL = 'https://gist.githubusercontent.com/user1/12345'
-  const GITHUB_LINK1_CONTENT = 'some random text did:muport:0x12345 more random text'
+  const GITHUB_LINK1_CONTENT = 'some random text did:3:0x12345 more random text'
   const GITHUB_LINK2_URL = 'https://gist.githubusercontent.com/user1/wrongLink'
   const GITHUB_LINK2_CONTENT = 'wrong did'
   return {
@@ -78,7 +78,7 @@ describe('Verified', () => {
 
     beforeAll(async () => {
       incorrectClaim = await didJWT.createJWT({
-        sub: 'did:muport:QMasdivuhs',
+        sub: 'did:3:QMasdivuhs',
         iat: 123456789,
         claim: {
           werid_claim: 'some data'
@@ -88,7 +88,7 @@ describe('Verified', () => {
         signer: httpsDidSigner
       })
       correctClaim = await didJWT.createJWT({
-        sub: 'did:muport:0x12345',
+        sub: 'did:3:0x12345',
         iat: 123456789,
         claim: {
           twitter_handle: 'twitterUser',
@@ -113,7 +113,7 @@ describe('Verified', () => {
 
     it('should throw if twitter claim does not contain username and proof', async () => {
       incorrectClaim = await didJWT.createJWT({
-        sub: 'did:muport:0x12345',
+        sub: 'did:3:0x12345',
         iat: 123456789,
         claim: {
           werid_claim: 'some data'
@@ -132,7 +132,7 @@ describe('Verified', () => {
 
     beforeAll(async () => {
       incorrectClaim = await didJWT.createJWT({
-        sub: 'did:muport:QMasdivuhs',
+        sub: 'did:3:QMasdivuhs',
         iat: 123456789,
         claim: {
           werid_claim: 'some data'
@@ -142,7 +142,7 @@ describe('Verified', () => {
         signer: httpsDidSigner
       })
       correctClaim = await didJWT.createJWT({
-        sub: 'did:muport:0x12345',
+        sub: 'did:3:0x12345',
         iat: 123456789,
         claim: {
           email_address: 'user@3box.io',
@@ -166,7 +166,7 @@ describe('Verified', () => {
 
     it('should throw if twitter claim does not contain email_address and proof', async () => {
       incorrectClaim = await didJWT.createJWT({
-        sub: 'did:muport:0x12345',
+        sub: 'did:3:0x12345',
         iat: 123456789,
         claim: {
           werid_claim: 'some data'

@@ -129,7 +129,7 @@ class Replicator {
     this.syncDone = waitForSync()
   }
 
-  async new (rootstoreName, pubkey, did, muportDID) {
+  async new (rootstoreName, pubkey, did) {
     if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
     await this._joinPinningRoom(true)
     const opts = {
@@ -139,7 +139,7 @@ class Replicator {
     opts.accessController.write = [pubkey]
     this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
     this._pinningRoomFilter = []
-    this._publishDB({ odbAddress: this.rootstore.address.toString(), did, muportDID })
+    this._publishDB({ odbAddress: this.rootstore.address.toString(), did })
     await this.rootstore.load()
     this.rootstoreSyncDone = Promise.resolve()
     this.syncDone = Promise.resolve()
@@ -267,7 +267,7 @@ class Replicator {
     }
   }
 
-  async _publishDB ({ odbAddress, did, muportDID, isThread }, unsubscribe) {
+  async _publishDB ({ odbAddress, did, isThread }, unsubscribe) {
     this._joinPinningRoom()
     odbAddress = odbAddress || this.rootstore.address.toString()
     // make sure that the pinning node is in the pubsub room before publishing
@@ -285,7 +285,6 @@ class Replicator {
       type: isThread ? 'SYNC_DB' : 'PIN_DB',
       odbAddress,
       did,
-      muportDID,
       thread: isThread
     })
     this.events.removeAllListeners('pinning-room-peer')

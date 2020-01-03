@@ -1,26 +1,49 @@
 const { fetchText, getMessageConsent } = require('./index')
 const didJWT = require('did-jwt')
 const { verifyMessage } = require('@ethersproject/wallet')
+const config = require('../config.js')
+const utils = require('./index')
+const registerResolver = require('3id-resolver')
 require('https-did-resolver').default()
 require('muport-did-resolver')()
 
+const PROFILE_SERVER_URL = config.profile_server_url
+
+// Mocks ipfs obj for 3id resolve, to resolve through api, until ipfs instance is available
+const ipfs = (didServerUrl) => {
+  return {
+    dag: {
+      get: async (cid) => {
+        const req = `${didServerUrl}/did-doc?cid=${encodeURIComponent(cid)}`
+        return utils.fetchJson(req)
+      }
+    }
+  }
+}
+
+registerResolver(ipfs(PROFILE_SERVER_URL), { pin: false })
+
 module.exports = {
   /**
-   * Verifies that the gist contains the given muportDID and returns the users github username.
+   * Verifies that the gist contains the given 3ID and returns the users github username.
    * Throws an error otherwise.
    *
-   * @param     {String}            did                     The muport DID of the user
+   * @param     {String}            did                     The 3ID of the user (or array of equivalent dids)
    * @param     {Object}            gistUrl                 URL of the proof
    * @return    {Object}                                    Object containing username, and proof
    */
   verifyGithub: async (did, gistUrl) => {
+    const dids = typeof did === 'string' ? [did] : did
+
     if (!gistUrl || gistUrl.trim() === '') {
       return null
     }
 
     let gistFileContent = await fetchText(gistUrl)
 
-    if (gistFileContent.indexOf(did) === -1) {
+    const includeDid = dids.reduce((acc, val) => (acc || gistFileContent.indexOf(val) !== -1), false)
+
+    if (!includeDid) {
       throw new Error('Gist File provided does not contain the correct DID of the user')
     }
 
@@ -32,17 +55,18 @@ module.exports = {
   },
 
   /**
-   * Verifies that the tweet contains the given muportDID and returns the users twitter username.
+   * Verifies that the tweet contains the given 3ID and returns the users twitter username.
    * Throws an error otherwise.
    *
-   * @param     {String}            did             The muport DID of the user
+   * @param     {String}            did             The 3ID of the user (or array of equivalent dids)
    * @param     {String}            claim           A did-JWT with claim
    * @return    {Object}                            Object containing username, proof, and the verifier
    */
   verifyTwitter: async (did, claim) => {
+    const dids = typeof did === 'string' ? [did] : did
     if (!claim) return null
     const verified = await didJWT.verifyJWT(claim)
-    if (verified.payload.sub !== did) {
+    if (!dids.includes(verified.payload.sub)) {
       throw new Error('Verification not valid for given user')
     }
     const claimData = verified.payload.claim
@@ -60,14 +84,15 @@ module.exports = {
    * Verifies that the code entered by the user is the same one that was sent via email.
    * Throws an error otherwise.
    *
-   * @param     {String}            did             The muport DID of the user
+   * @param     {String}            did             The 3ID of the user (or array of equivalent dids)
    * @param     {String}            claim           A did-JWT with claim
    * @return    {Object}                            Object containing username, proof, and the verifier
    */
   verifyEmail: async (did, claim) => {
+    const dids = typeof did === 'string' ? [did] : did
     if (!claim) return null
     const verified = await didJWT.verifyJWT(claim)
-    if (verified.payload.sub !== did) {
+    if (!dids.includes(verified.payload.sub)) {
       throw new Error('Verification not valid for given user')
     }
     const claimData = verified.payload.claim
@@ -88,7 +113,14 @@ module.exports = {
    */
   verifyDID: async (claim) => {
     const verified = await didJWT.verifyJWT(claim)
-    return verified.payload.iss
+    const muport = verified.payload.muport
+    const res = {}
+    if (muport) {
+      const muportDID = await didJWT.verifyJWT(muport).payload.iss
+      res.muport = muportDID
+    }
+    res.did = verified.payload.iss
+    return res
   },
 
   /**
@@ -102,6 +134,7 @@ module.exports = {
    * @return    {String}                                  The ethereum address used to sign the message
    */
   verifyEthereum: async (ethProof, did) => {
+    const dids = typeof did === 'string' ? [did] : did
     // TODO - is this function needed? Can it be removed in
     // favour of proofs that are in the rootstore?
     const consentMsg = ethProof.version ?  ethProof.message : ethProof['consent_msg']
