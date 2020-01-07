@@ -149,11 +149,11 @@ class Box extends BoxApi {
       await this._3id.authenticate(spaces)
     }
     // make sure we are authenticated to threads
-    spaces.forEach(space => {
+    await Promise.all(spaces.map(async space => {
       if (this.spaces[space]) {
-        this.spaces[space]._authThreads(this._3id)
+        await this.spaces[space]._authThreads(this._3id)
       }
-    })
+    }))
   }
 
   /**

@@ -149,7 +149,7 @@ class Space {
     const odbIdentity = await threeId.getOdbId(this._name)
     Object.values(this._activeThreads).forEach(thread => {
       if (thread.isGhost) {
-        thread._set3id(this._3id)
+        thread._set3id(threeId)
       } else {
         thread._setIdentity(odbIdentity)
       }
