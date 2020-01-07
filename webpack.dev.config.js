@@ -14,6 +14,8 @@ module.exports = Object.assign(require('./webpack.config.js'), {
       'ADDRESS_SERVER_URL',
       'PINNING_NODE',
       'PINNING_ROOM',
+      'RENDEZVOUS_DISABLE',
+      'RENDEZVOUS_ADDRESS',
       'IFRAME_STORE_VERSION',
       'IFRAME_STORE_URL',
       'GRAPHQL_SERVER_URL',

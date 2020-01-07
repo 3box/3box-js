@@ -277,6 +277,6 @@ function updateLinksData (box, address) {
 
   box.isAddressLinked({ address }).then(result => {
     addressLinked.innerHTML = result ? 'Yes' : 'No'
-    linkAddress.style.display = result ? 'none' : 'block'
+    linkAddress.style.display = 'block'
   })
 }
