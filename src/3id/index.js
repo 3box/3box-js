@@ -41,11 +41,9 @@ class ThreeId {
     }
   }
 
-  async signJWT (payload, { use3ID, space, expiresIn } = {}) {
-    let issuer = this.muportDID
-    if (use3ID) {
-      issuer = this.DID
-    } else if (space) {
+  async signJWT (payload, { space, expiresIn } = {}) {
+    let issuer = this.DID
+    if (space) {
       issuer = this._subDIDs[space]
     }
     if (this._has3idProv) {
@@ -163,13 +161,6 @@ class ThreeId {
     let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
     this._muportDID = 'did:muport:' + docHash
     this.muportFingerprint = utils.sha256Multihash(this.muportDID)
-    const publishToInfura = async () => {
-      const ipfsMini = new IpfsMini(this._muportIpfs)
-      ipfsMini.addJSON(doc, (err, res) => {
-        if (err) console.error(err)
-      })
-    }
-    publishToInfura()
   }
 
   async getAddress () {
@@ -190,7 +181,9 @@ class ThreeId {
         await this._initDID()
       } else {
         for (const space of spaces) {
-          this._subDIDs[space] = await this._init3ID(space)
+          if (!this._subDIDs[space]) {
+            this._subDIDs[space] = await this._init3ID(space)
+          }
         }
       }
     } else {
@@ -201,13 +194,7 @@ class ThreeId {
   }
 
   async isAuthenticated (spaces = []) {
-    if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_isAuthenticated', { spaces })
-    } else {
-      return spaces
-        .map(space => Boolean(this._keyrings[space]))
-        .reduce((acc, val) => acc && val, true)
-    }
+    return spaces.reduce((acc, space) => acc && Object.keys(this._subDIDs).includes(space), true)
   }
 
   async _initKeyringByName (name) {
@@ -239,11 +226,17 @@ class ThreeId {
     return pubkeys
   }
 
-  async encrypt (message, space) {
+  async encrypt (message, space, to) {
     if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_encrypt', { message, space })
+      return utils.callRpc(this._provider, '3id_encrypt', { message, space, to })
     } else {
-      return this._keyringBySpace(space).symEncrypt(utils.pad(message))
+      const keyring = this._keyringBySpace(space)
+      let paddedMsg = utils.pad(message)
+      if (to) {
+        return keyring.asymEncrypt(paddedMsg, to)
+      } else {
+        return keyring.symEncrypt(paddedMsg)
+      }
     }
   }
 
@@ -251,7 +244,14 @@ class ThreeId {
     if (this._has3idProv) {
       return utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space })
     } else {
-      return utils.unpad(this._keyringBySpace(space).symDecrypt(encObj.ciphertext, encObj.nonce))
+      const keyring = this._keyringBySpace(space)
+      let paddedMsg
+      if (encObj.ephemeralFrom) {
+        paddedMsg = keyring.asymDecrypt(encObj.ciphertext, encObj.ephemeralFrom, encObj.nonce)
+      } else {
+        paddedMsg = keyring.symDecrypt(encObj.ciphertext, encObj.nonce)
+      }
+      return utils.unpad(paddedMsg)
     }
   }
 

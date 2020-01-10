@@ -1,9 +1,9 @@
 class Box {
-  constructor (muportDID, ethereumProvider, opts = {}) {
+  constructor (DID, ethereumProvider, opts = {}) {
     this._publicStore = {}
     this._privateStore = {}
     this._3id = {
-      muportDID: muportDID
+      muportDID: DID.replace('3', 'muport')
     }
     this.public = {
       set: (k, v) => this._publicStore[k] = v,
@@ -13,11 +13,11 @@ class Box {
       set: (k, v) => this._privateStore[k] = v,
       get: (k) => this._privateStore[k]
     }
-    this.DID = muportDID
+    this.DID = DID
   }
 
   static async openBox (address, ethereumProvider, opts = {}) {
-    let did = 'did:muport:' + address
+    let did = 'did:3:' + address
     return new Box(did, ethereumProvider, opts)
   }
 }

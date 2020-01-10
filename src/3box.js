@@ -15,6 +15,7 @@ const config = require('./config.js')
 const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
+const didJWT = require('did-jwt')
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -93,7 +94,7 @@ class Box extends BoxApi {
       await this._3id.authenticate(opts.spaces)
       const rootstoreName = this._3id.muportFingerprint + '.root'
       const key = (await this._3id.getPublicKeys(null, true)).signingKey
-      await this.replicator.new(rootstoreName, key, this._3id.DID, this._3id.muportDID)
+      await this.replicator.new(rootstoreName, key, this._3id.DID)
       this._publishRootStore(this.replicator.rootstore.address.toString())
     }
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
@@ -148,11 +149,11 @@ class Box extends BoxApi {
       await this._3id.authenticate(spaces)
     }
     // make sure we are authenticated to threads
-    spaces.forEach(space => {
+    await Promise.all(spaces.map(async space => {
       if (this.spaces[space]) {
-        this.spaces[space]._authThreads(this._3id)
+        await this.spaces[space]._authThreads(this._3id)
       }
-    })
+    }))
   }
 
   /**
@@ -244,7 +245,7 @@ class Box extends BoxApi {
 
   async _publishRootStore (rootStoreAddress) {
     // Sign rootstoreAddress
-    const addressToken = await this._3id.signJWT({ rootStoreAddress }, { use3ID: true })
+    const addressToken = await this._3id.signJWT({ rootStoreAddress })
     // Store odbAddress on 3box-address-server
     const publish = async token => {
       try {
@@ -286,8 +287,7 @@ class Box extends BoxApi {
    */
   get DID () {
     if (!this._3id) throw new Error('DID: auth required')
-    // TODO - update once verification service supports 3ID
-    return this._3id.muportDID
+    return this._3id.DID
   }
 
   /**
@@ -320,7 +320,7 @@ class Box extends BoxApi {
       type: 'delete-address-link'
     }
     const oneHour = 60 * 60
-    const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour, use3ID: true })
+    const deleteToken = await this._3id.signJWT(payload, { expiresIn: oneHour })
 
     try {
       await utils.fetchJson(this._serverUrl + '/linkdelete', {
@@ -375,7 +375,7 @@ class Box extends BoxApi {
   }
 
   async _writeAddressLink (proof) {
-    const validProof = validateLink(proof)
+    const validProof = await validateLink(proof)
     if (!validProof) {
       throw new Error('tried to write invalid link proof', proof)
     }
@@ -417,7 +417,16 @@ class Box extends BoxApi {
     }
     // Ensure we self-published our did
     // TODO - is this still needed?
-    if (!(await this.public.get('proof_did'))) {
+    const proofdid = await this.public.get('proof_did')
+
+    if (proofdid) {
+      // if prior muport, re publish with 3id including muport
+      const issuer = didJWT.decodeJWT(proofdid).payload.iss
+      if (issuer.includes('muport')) {
+        const jwt = { muport: proofdid }
+        await this.public.set('proof_did', await this._3id.signJWT(jwt), { noLink: true })
+      }
+    } else {
       // we can just sign an empty JWT as a proof that we own this DID
       await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
     }

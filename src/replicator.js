@@ -4,6 +4,7 @@ const Pubsub = require('orbit-db-pubsub')
 const AccessControllers = require('orbit-db-access-controllers')
 const resolveDID = require('did-resolver').default
 const {
+  OdbIdentityProvider,
   LegacyIPFS3BoxAccessController,
   ThreadAccessController,
   ModeratorAccessController
@@ -12,6 +13,8 @@ AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessCo
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 const config = require('./config')
+const Identities = require('orbit-db-identity-provider')
+Identities.addIdentityProvider(OdbIdentityProvider)
 
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
@@ -84,7 +87,9 @@ class Replicator {
 
   async _init (opts) {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
-    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath })
+    // Identity not used, passes ref to 3ID orbit identity provider
+    const identity = await Identities.createIdentity({ id: 'nullid' })
+    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath, identity })
   }
 
   async _joinPinningRoom (firstJoin) {
@@ -124,7 +129,7 @@ class Replicator {
     this.syncDone = waitForSync()
   }
 
-  async new (rootstoreName, pubkey, did, muportDID) {
+  async new (rootstoreName, pubkey, did) {
     if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
     await this._joinPinningRoom(true)
     const opts = {
@@ -134,7 +139,7 @@ class Replicator {
     opts.accessController.write = [pubkey]
     this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
     this._pinningRoomFilter = []
-    this._publishDB({ odbAddress: this.rootstore.address.toString(), did, muportDID })
+    this._publishDB({ odbAddress: this.rootstore.address.toString(), did })
     await this.rootstore.load()
     this.rootstoreSyncDone = Promise.resolve()
     this.syncDone = Promise.resolve()
@@ -262,7 +267,7 @@ class Replicator {
     }
   }
 
-  async _publishDB ({ odbAddress, did, muportDID, isThread }, unsubscribe) {
+  async _publishDB ({ odbAddress, did, isThread }, unsubscribe) {
     this._joinPinningRoom()
     odbAddress = odbAddress || this.rootstore.address.toString()
     // make sure that the pinning node is in the pubsub room before publishing
@@ -280,7 +285,6 @@ class Replicator {
       type: isThread ? 'SYNC_DB' : 'PIN_DB',
       odbAddress,
       did,
-      muportDID,
       thread: isThread
     })
     this.events.removeAllListeners('pinning-room-peer')

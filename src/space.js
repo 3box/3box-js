@@ -1,12 +1,86 @@
 const KeyValueStore = require('./keyValueStore')
 const Thread = require('./thread')
 const GhostThread = require('./ghost')
+const API = require('./api')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
+const resolveDID = require('did-resolver').default
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
 const namesToChatName = (spaceName, chatName) => `3box.ghost.${spaceName}.${chatName}`
+const findSpacePubKey = async (did, spaceName) => {
+  if (did.startsWith('0x')) {
+    // we got an ethereum address
+    did = await API.getSpaceDID(did, spaceName)
+  }
+  let doc = await resolveDID(did)
+  let pubkey = doc.publicKey.find(key => key.id.includes('#subEncryptionKey'))
+  if (!pubkey) {
+    // A root 3ID was passed, get the space 3ID
+    did = await API.getSpaceDID(did, spaceName)
+    doc = await resolveDID(did)
+    pubkey = doc.publicKey.find(key => key.id.includes('#subEncryptionKey'))
+  }
+  return pubkey.publicKeyBase64
+}
+
+/** Class representing a user. */
+class User {
+  constructor (spaceName, threeId) {
+    this._name = spaceName
+    this._3id = threeId
+  }
+
+  /**
+   * @property {String} DID            the DID of the user
+   */
+  get DID () {
+    return this._3id.getSubDID(this._name)
+  }
+
+  /**
+   * Sign a JWT claim
+   *
+   * @param     {Object}    payload                 The payload to sign
+   * @param     {Object}    opts                    Optional parameters
+   *
+   * @return    {String}                            The signed JWT
+   */
+  async signClaim (payload, opts = {}) {
+    return this._3id.signJWT(payload, Object.assign(opts, { space: this._name }))
+  }
+
+  /**
+   * Encrypt a message. By default encrypts messages symmetrically
+   * with the users private key. If the `to` parameter is used,
+   * the message will be asymmetrically encrypted to the recipient.
+   *
+   * @param     {String}    message                 The message to encrypt
+   * @param     {Object}    opts                    Optional parameters
+   * @param     {String}    to                      The receiver of the message, a DID or an ethereum address
+   *
+   * @return    {Object}                            An object containing the encrypted payload
+   */
+  async encrypt (message, { to }) {
+    let toPubkey
+    if (to) {
+      toPubkey = await findSpacePubKey(to, this._name)
+    }
+    return this._3id.encrypt(message, this._name, toPubkey)
+  }
+
+  /**
+   * Decrypts a message if the user owns the correct key to decrypt it.
+   *
+   * @param     {Object}    encryptedObject         The encrypted message to decrypt (as encoded by the `encrypt` method
+   *
+   * @return    {String}                            The clear text message
+   */
+  async decrypt (encryptedObject) {
+    return this._3id.decrypt(encryptedObject, this._name)
+  }
+}
 
 class Space {
   /**
@@ -31,11 +105,17 @@ class Space {
     this.syncDone = null
   }
 
-  /**
-   * @property {String} DID        the did of the user in this space
-   */
   get DID () {
-    return this._3id.getSubDID(this._name)
+    return this.user.DID
+  }
+
+  /**
+   * @property {User} user            access the user object to encrypt data and sign claims
+   */
+  get user () {
+    if (!this._3id) throw new Error('user is not authenticated')
+    this._user = this._user || new User(this._name, this._3id)
+    return this._user
   }
 
   get isOpen () {
@@ -69,7 +149,7 @@ class Space {
     const odbIdentity = await threeId.getOdbId(this._name)
     Object.values(this._activeThreads).forEach(thread => {
       if (thread.isGhost) {
-        thread._set3id(this._3id)
+        thread._set3id(threeId)
       } else {
         thread._setIdentity(odbIdentity)
       }

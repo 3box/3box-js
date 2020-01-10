@@ -8,8 +8,8 @@
   </head>
 
   <body>
-    <!-- Open Box -->
-    <button id="bopen" type="button" class="btn btn-primary" style="margin: 50px 100px;">Open 3box</button>
+    <!-- Auth Box -->
+    <button id="bauth" type="button" class="btn btn-primary" style="margin: 50px 100px;" disabled=true>Auth 3box</button>
 
     <div id="controlls" style="display: none; padding: 5px 100px;">
 
@@ -97,51 +97,54 @@
             <span id="spaceDataPriv"></span>
           </p>
 
-          <h3> Threads: </h3>
-          <input type="text" id="threadName" placeholder="Name or Address"></br>
-          <input type="text" id="threadfirstModerator" placeholder="Thread Root Moderator"></br>
-            <span > Members Only Thread </span>
-          <input type="radio" name="members" id='members' value="true"> </br>
-            <span > Ghost ? </span>
-          <input type="radio" name="ghostCheck" id='ghostCheck' value="true"> </br>
-          <button id="joinThread" type="button" class="btn btn btn-primary" >Join thread</button>  </br></br>
-
-          <div id="threadModeration" style="display: none;">
-            <input type="text" id="threadMod" placeholder="Thread Moderator">
-            <button id="addThreadMod" type="button" class="btn btn btn-primary" >Add Thread Moderator</button></br>
-            <h5> Moderators: </h5>
-            <p>
-              <span id="threadModeratorList"></span>
-            </p>
-          </div>
-          <div id="threadMembers" style="display: none;">
-            <input type="text" id="threadMember" placeholder="Thread Member">
-            <button id="addThreadMember" type="button" class="btn btn btn-primary" >Add Thread Member</button></br>
-            <h5> Members: </h5>
-            <p>
-              <span id="threadMemberList"></span>
-            </p>
-          </div></br>
-
-          <p>
-            <span id="threadACError"></span>
-          </p>
-
-          <div id="posts" style="display: none;">
-            <h4> Posts: </h4>
-            <p>
-              <span id="threadData"></span>
-            </p>
-            <input type="text" id="postMsg" placeholder="Type your message">
-            <button id="postThread" type="button" class="btn btn btn-primary">Post</button>
-          </div>
-
         </div>
       </div>
 
       <!-- Logout -->
       <div style="padding: 25px 0px;">
         <button id="bclose" type="button" class="btn btn-primary">Logout from 3box</button>
+      </div>
+    </div>
+
+    <div style="padding: 0px 0px 25px 100px;">
+      <h3> Threads: </h3>
+      <input type="text" id="threadName" placeholder="Name of thread"></br>
+      <input type="text" id="threadSpaceName" placeholder="Space name"></br>
+      <input type="text" id="threadfirstModerator" placeholder="Thread Root Moderator"></br>
+        <span > Members Only Thread </span>
+      <input type="radio" name="members" id='members' value="true"> </br>
+        <span > Ghost ? </span>
+      <input type="radio" name="ghostCheck" id='ghostCheck' value="true"> </br>
+      <button id="openThread" type="button" class="btn btn btn-primary" disabled=true>Open thread</button>  </br></br>
+
+      <div id="threadModeration" style="display: none;">
+        <input type="text" id="threadMod" placeholder="Thread Moderator">
+        <button id="addThreadMod" type="button" class="btn btn btn-primary" >Add Thread Moderator</button></br>
+        <h5> Moderators: </h5>
+        <p>
+          <span id="threadModeratorList"></span>
+        </p>
+      </div>
+      <div id="threadMembers" style="display: none;">
+        <input type="text" id="threadMember" placeholder="Thread Member">
+        <button id="addThreadMember" type="button" class="btn btn btn-primary" >Add Thread Member</button></br>
+        <h5> Members: </h5>
+        <p>
+          <span id="threadMemberList"></span>
+        </p>
+      </div></br>
+
+      <p>
+        <span id="threadACError"></span>
+      </p>
+
+      <div id="posts" style="display: none;">
+        <h4> Posts: </h4>
+        <p>
+          <span id="threadData"></span>
+        </p>
+        <input type="text" id="postMsg" placeholder="Type your message">
+        <button id="postThread" type="button" class="btn btn btn-primary">Post</button>
       </div>
     </div>
 
