@@ -1,5 +1,16 @@
 # Release Notes
 
+## v1.16.0 - 2020-01-10
+This release brings a few performance updates as well as minor features in preparation for the upcoming Confidential Threads feature.
+
+---
+* feat: support for asymmetric encryption in spaces
+* feat: fully migrate to 3ID, no more references to legacy "muport" DID
+* chore: update OrbitDB for improved performance
+* fix: IdentityWallet now works in a browser context
+* fix: issue with using ghost threads while not authenticated resolved
+* fix: linkAddress now works as expected with externally provided proof
+
 ## v1.15.0 - 2019-12-13
 This release features a new interface for how to create and authenticate to a 3Box, it also adds the ability to open a thread before being authenticated to a space.
 
