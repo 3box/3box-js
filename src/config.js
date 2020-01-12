@@ -13,9 +13,6 @@ module.exports = {
   iframe_store_version: process.env.IFRAME_STORE_VERSION || IFRAME_STORE_VERSION,
   iframe_store_url: process.env.IFRAME_STORE_URL || `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`,
   ipfs_options: {
-    EXPERIMENTAL: {
-      pubsub: true
-    },
     preload: { enabled: false },
     config: {
       Bootstrap: [],

@@ -550,20 +550,15 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
       ipfsRepo = initIPFSRepo()
       ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
     }
-    return new Promise((resolve, reject) => {
-      ipfs = new IPFS(ipfsOptions)
-      ipfs.on('error', error => {
-        console.error(error)
-        reject(error)
-      })
-      ipfs.on('ready', () => {
-        resolve(ipfs)
-        if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {
-          // deletes once db is closed again
-          window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
-        }
-      })
-    })
+
+    ipfs = await IPFS.create(ipfsOptions)
+
+    if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {
+      // deletes once db is closed again
+      window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
+    }
+
+    return ipfs
   }
 }
 
