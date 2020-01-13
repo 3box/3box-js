@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.16.0",
+  "version": "1.16.1",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -62,6 +62,8 @@
     "muport-did-resolver": "^0.3.0",
     "node-fetch": "^2.6.0",
     "orbit-db": "^0.22.1",
+    "orbit-db-cache": "^0.3.0",
+    "orbit-db-storage-adapter": "^0.5.3",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0"
