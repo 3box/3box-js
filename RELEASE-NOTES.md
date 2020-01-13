@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.16.1 - 2020-01-13
+fix: set fixed cache paths, so cache read/writes from same path and local data loaded
+
 ## v1.16.0 - 2020-01-10
 This release brings a few performance updates as well as minor features in preparation for the upcoming Confidential Threads feature.
 
