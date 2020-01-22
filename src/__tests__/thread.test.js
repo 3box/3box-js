@@ -49,7 +49,7 @@ describe('Thread', () => {
 
   beforeAll(async () => {
     ipfs = await utils.initIPFS(4)
-    const identity = await Identities.createIdentity({ id: 'nullid' })
+    const identity = await Identities.createIdentity({ id: 'nullid', identityKeysPath: './tmp/odbIdentityKeys-thread' })
     orbitdb = await OrbitDB.createInstance(ipfs, {
       directory:'./tmp/orbitdb4',
       identity

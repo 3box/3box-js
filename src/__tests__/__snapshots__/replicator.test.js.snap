@@ -77,6 +77,17 @@ Array [
 ]
 `;
 
+exports[`Replicator getAuthData 2`] = `
+Array [
+  Object {
+    "ciphertext": "onezero",
+  },
+  Object {
+    "ciphertext": "bits",
+  },
+]
+`;
+
 exports[`Replicator new rootstore created 1`] = `"/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root"`;
 
 exports[`Replicator new rootstore created 2`] = `"/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root"`;

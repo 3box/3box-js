@@ -86,10 +86,24 @@ jest.mock('../space', () => {
   })
 })
 jest.mock('../replicator', () => {
+  const randInt = max => Math.floor(Math.random() * max)
+
   return {
     create: jest.fn(async () => {
+      const OdbStorage = require('orbit-db-storage-adapter')
+      const OdbKeystore = require('orbit-db-keystore')
+      const path = require('path')
+      const utils = require('../utils/index')
+      const levelDown = OdbStorage(null, {})
+      const keystorePath = path.join('./tmp', `/${randInt(1000000)}`, '/keystore')
+      const keyStorage = await levelDown.createStore(keystorePath)
+      const keystore = new OdbKeystore(keyStorage)
+
       return {
         start: jest.fn(),
+        _orbitdb: {
+          keystore: keystore
+        },
         rootstoreSyncDone: Promise.resolve(),
         syncDone: Promise.resolve(),
         getAuthData: jest.fn(() => []),
@@ -264,7 +278,7 @@ describe('3Box', () => {
 
     await box.auth([space], opts)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(opts.address, prov, boxOpts.ipfs, opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(opts.address, prov, boxOpts.ipfs, box.replicator._orbitdb.keystore, opts)
     expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
@@ -295,7 +309,7 @@ describe('3Box', () => {
     const box = await Box.openBox(addr, prov, opts)
 
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs,  box.replicator._orbitdb.keystore, opts)
     expect(box.replicator).toBeDefined()
     expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
@@ -406,7 +420,7 @@ describe('3Box', () => {
     const box = await Box.openBox(addr, prov, opts)
 
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, box.replicator._orbitdb.keystore, opts)
     expect(box.replicator).toBeDefined()
     expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)

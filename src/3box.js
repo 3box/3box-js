@@ -142,7 +142,7 @@ class Box extends BoxApi {
   async auth (spaces = [], opts = {}) {
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
-      this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, opts)
+      this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, this.replicator._orbitdb.keystore, opts)
       await this._load(Object.assign(opts, { spaces }))
     } else {
       // box already loaded, just authenticate spaces
