@@ -86,7 +86,7 @@ class Box extends BoxApi {
     const address = await this._3id.getAddress()
     const rootstoreAddress = address ? await this._getRootstore(address) : null
     if (rootstoreAddress) {
-      await this.replicator.start(rootstoreAddress, { profile: true })
+      await this.replicator.start(rootstoreAddress, this._3id.DID, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
       await this._3id.authenticate(opts.spaces, { authData })
