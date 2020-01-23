@@ -86,6 +86,7 @@ describe('Replicator', () => {
   })
 
   it('replicates 3box on start, without stores', async () => {
+    const testDID2 = 'did:3:baffds7887fdsd'
     const opts = {
       pinningNode: ipfs1MultiAddr,
       orbitPath: './tmp/orbitdb14',
@@ -94,7 +95,7 @@ describe('Replicator', () => {
     registerMethod('3', didResolverMock)
     const rootstoreAddress = replicator1.rootstore.address.toString()
     const rootstoreNumEntries = replicator1.rootstore._oplog._length
-    await replicator2.start(rootstoreAddress)
+    await replicator2.start(rootstoreAddress, testDID2)
     replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
     await replicator2.rootstoreSyncDone
     await replicator2.syncDone
@@ -116,6 +117,7 @@ describe('Replicator', () => {
       await pubStore.set('name', 'asdfasdf')
       await pubStore.set('emoji', ';P')
     })()
+    const testDID2 = 'did:3:baffds7887fdsd'
     const opts = {
       pinningNode: ipfs1MultiAddr,
       orbitPath: './tmp/orbitdb14',
@@ -126,7 +128,7 @@ describe('Replicator', () => {
     const rootstoreNumEntries = replicator1.rootstore._oplog._length
     await addProfilePromise
     const pubStoreNumEntries = replicator1._stores[pubStoreAddr]._oplog._length
-    await replicator2.start(rootstoreAddress, { profile: true })
+    await replicator2.start(rootstoreAddress, testDID2, { profile: true })
     replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
     replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: pubStoreAddr, numEntries: pubStoreNumEntries })
     await replicator2.rootstoreSyncDone

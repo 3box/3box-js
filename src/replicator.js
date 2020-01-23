@@ -53,6 +53,7 @@ class Replicator {
     this.ipfs.swarm.connect(this._pinningNode, () => {})
     this._stores = {}
     this._storePromises = {}
+    this._did = null
     // TODO - this should only be done in 3box-js. For use in
     // 3box-pinning-node the below code should be disabled
     this._hasPubsubMsgs = {}
@@ -125,7 +126,8 @@ class Replicator {
     return replicator
   }
 
-  async start (rootstoreAddress, opts = {}) {
+  async start (rootstoreAddress, did, opts = {}) {
+    this._did = did
     await this._joinPinningRoom(true)
     this._publishDB({ odbAddress: rootstoreAddress })
 
@@ -147,6 +149,7 @@ class Replicator {
 
   async new (rootstoreName, pubkey, did) {
     if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
+    this._did = did
     await this._joinPinningRoom(true)
     const opts = {
       ...ODB_STORE_OPTS,
@@ -155,7 +158,7 @@ class Replicator {
     opts.accessController.write = [pubkey]
     this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
     this._pinningRoomFilter = []
-    this._publishDB({ odbAddress: this.rootstore.address.toString(), did })
+    this._publishDB({ odbAddress: this.rootstore.address.toString() })
     await this.rootstore.load()
     this.rootstoreSyncDone = Promise.resolve()
     this.syncDone = Promise.resolve()
@@ -283,7 +286,7 @@ class Replicator {
     }
   }
 
-  async _publishDB ({ odbAddress, did, isThread }, unsubscribe) {
+  async _publishDB ({ odbAddress, isThread }, unsubscribe) {
     this._joinPinningRoom()
     odbAddress = odbAddress || this.rootstore.address.toString()
     // make sure that the pinning node is in the pubsub room before publishing
@@ -300,7 +303,7 @@ class Replicator {
     this._pubsub.publish(PINNING_ROOM, {
       type: isThread ? 'SYNC_DB' : 'PIN_DB',
       odbAddress,
-      did,
+      did: this._did,
       thread: isThread
     })
     this.events.removeAllListeners('pinning-room-peer')

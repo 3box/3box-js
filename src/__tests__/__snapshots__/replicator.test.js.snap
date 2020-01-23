@@ -41,6 +41,7 @@ Array [
 
 exports[`Replicator ensureConnected works as expected for store 1`] = `
 Object {
+  "did": "did:3:bafoijqr94",
   "odbAddress": "/orbitdb/QmVL3Dtc7GxYdjXQW6raRoCnA1t8PsPkE832jcZXr2QDP5/rsName.root",
   "thread": false,
   "type": "PIN_DB",
@@ -49,6 +50,7 @@ Object {
 
 exports[`Replicator ensureConnected works as expected for thread 1`] = `
 Object {
+  "did": "did:3:bafoijqr94",
   "odbAddress": "fake address thread",
   "thread": true,
   "type": "SYNC_DB",
