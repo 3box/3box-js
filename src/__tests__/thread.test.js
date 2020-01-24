@@ -459,12 +459,12 @@ describe('Thread', () => {
 
     afterAll(async () => {
       await orbitdb2.stop()
-      await utils.stopIPFS(ipfs2, 5)
+      return utils.stopIPFS(ipfs2, 5)
     })
   })
 
   afterAll(async () => {
     await orbitdb.stop()
-    await utils.stopIPFS(ipfs, 4)
+    return utils.stopIPFS(ipfs, 4)
   })
 })

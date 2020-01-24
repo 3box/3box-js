@@ -28,7 +28,7 @@ describe('Replicator', () => {
     await replicator2.close()
     await pubsub2.disconnect()
     await testUtils.stopIPFS(ipfs1, 7)
-    await testUtils.stopIPFS(ipfs2, 8)
+    return testUtils.stopIPFS(ipfs2, 8)
   })
 
   it('creates replicator correctly', async () => {
@@ -105,7 +105,7 @@ describe('Replicator', () => {
     expect(replicator2.listStoreAddresses()).toEqual(replicator1.listStoreAddresses())
     expect(replicator2.rootstore.iterator({ limit: -1 }).collect()).toEqual(replicator1.rootstore.iterator({ limit: -1 }).collect())
     expect(replicator2._stores).toEqual({})
-    await replicator2.stop()
+    return replicator2.stop()
   })
 
   it('replicates 3box on start, with profile', async () => {
@@ -133,7 +133,7 @@ describe('Replicator', () => {
     await replicator2.syncDone
     expect(replicator2._stores[pubStoreAddr]).toBeDefined()
     expect(replicator2._stores[pubStoreAddr].all).toMatchSnapshot()
-    await replicator2.stop()
+    return replicator2.stop()
   })
 
   const addEntry = async (type, data) => {

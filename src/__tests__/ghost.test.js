@@ -65,13 +65,6 @@ describe('Ghost Chat', () => {
     })
 
     it('creates second chat correctly', async (done) => {
-      chat2 = new GhostThread(CHAT_NAME, { ipfs: ipfs2 });
-      chat2._set3id(THREEID2_MOCK)
-      expect(chat2._name).toEqual(CHAT_NAME)
-      expect(chat2._3id).toEqual(THREEID2_MOCK)
-      expect(chat2.listMembers()).toBeDefined()
-      expect(chat2.getPosts()).toBeDefined()
-
       // checks if chat2 joined properly
       chat.on('user-joined', async (_event, did, peerId) => {
         expect(_event).toEqual('joined')
@@ -81,6 +74,12 @@ describe('Ghost Chat', () => {
         expect(members2).toEqual(expect.arrayContaining([DID1]))
         done()
       })
+      chat2 = new GhostThread(CHAT_NAME, { ipfs: ipfs2 });
+      chat2._set3id(THREEID2_MOCK)
+      expect(chat2._name).toEqual(CHAT_NAME)
+      expect(chat2._3id).toEqual(THREEID2_MOCK)
+      expect(chat2.listMembers()).toBeDefined()
+      expect(chat2.getPosts()).toBeDefined()
     })
 
     it('chat2 should catch broadcasts from chat', async (done) => {
@@ -197,12 +196,12 @@ describe('Ghost Chat', () => {
 
     afterAll(async () => {
       await chat3.close()
-      await utils.stopIPFS(ipfs3, 12)
+      return utils.stopIPFS(ipfs3, 12)
     })
   })
 
   afterAll(async () => {
     await chat1.close()
-    await utils.stopIPFS(ipfs, 11)
+    return utils.stopIPFS(ipfs, 11)
   })
 })
