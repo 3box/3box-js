@@ -53,7 +53,6 @@ class Replicator {
     this.ipfs.swarm.connect(this._pinningNode, () => {})
     this._stores = {}
     this._storePromises = {}
-    this._did = null
     // TODO - this should only be done in 3box-js. For use in
     // 3box-pinning-node the below code should be disabled
     this._hasPubsubMsgs = {}

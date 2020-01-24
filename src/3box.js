@@ -84,9 +84,9 @@ class Box extends BoxApi {
 
   async _load (opts = {}) {
     const address = await this._3id.getAddress()
-    const rootstoreAddress = address ? await this._getRootstore(address) : null
+    const { rootstoreAddress, did } = address ? await this._getLinkedData(address) : {}
     if (rootstoreAddress) {
-      await this.replicator.start(rootstoreAddress, this._3id.DID, { profile: true })
+      await this.replicator.start(rootstoreAddress, did, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
       await this._3id.authenticate(opts.spaces, { authData })
@@ -270,13 +270,13 @@ class Box extends BoxApi {
     return true
   }
 
-  async _getRootstore (ethereumAddress) {
+  async _getLinkedData (ethereumAddress) {
     try {
-      const { rootStoreAddress } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
-      return rootStoreAddress
+      const { rootStoreAddress, did } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
+      return { rootStoreAddress, did }
     } catch (err) {
       if (err.statusCode === 404) {
-        return null
+        return {}
       }
       throw new Error('Error while getting rootstore', err)
     }
