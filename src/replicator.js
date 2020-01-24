@@ -5,6 +5,7 @@ const Pubsub = require('orbit-db-pubsub')
 const AccessControllers = require('orbit-db-access-controllers')
 const OdbStorage = require('orbit-db-storage-adapter')
 const OdbCache = require('orbit-db-cache')
+const OdbKeystore = require('orbit-db-keystore')
 const resolveDID = require('did-resolver').default
 const {
   OdbIdentityProvider,
@@ -90,15 +91,21 @@ class Replicator {
 
   async _init (opts) {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
-    // Identity not used, passes ref to 3ID orbit identity provider
-    const identity = await Identities.createIdentity({ id: 'nullid' })
     // Passes default cache but with fixed path instead of path based on
     // orbitdb/ipfs id which can change on page load
     const cachePath = path.join(opts.orbitPath || './orbitdb', '/cache')
     const levelDown = OdbStorage(null, {})
     const cacheStorage = await levelDown.createStore(cachePath)
     const cache = new OdbCache(cacheStorage)
-    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath, identity, cache })
+
+    const keystorePath = path.join(opts.orbitPath || './orbitdb', '/keystore')
+    const keyStorage = await levelDown.createStore(keystorePath)
+    const keystore = new OdbKeystore(keyStorage)
+
+    // Identity not used, passes ref to 3ID orbit identity provider
+    const identity = await Identities.createIdentity({ id: 'nullid', keystore: keystore })
+
+    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath, identity, cache, keystore })
   }
 
   async _joinPinningRoom (firstJoin) {

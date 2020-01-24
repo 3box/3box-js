@@ -115,7 +115,7 @@ describe('PrivateStore', () => {
     beforeEach(async () => {
       privateStore = new PrivateStore(STORE_NAME, replicatorMock, threeIdMock)
       const storeAddr = await privateStore._load()
-      await privateStore.set('key1', 'value1')
+      return privateStore.set('key1', 'value1')
     })
 
     it('should return array of ALL entries values of log underlying store decrypted', async () => {

@@ -83,7 +83,7 @@ describe('Integration Test: IdentityWallet', () => {
   afterAll(async () => {
     await pubsub.disconnect()
     await testUtils.stopIPFS(ipfs1, 9)
-    await testUtils.stopIPFS(ipfs2, 10)
+    return testUtils.stopIPFS(ipfs2, 10)
   })
 
   it('should create and auth correctly when idWallet is passed', async () => {
@@ -98,7 +98,7 @@ describe('Integration Test: IdentityWallet', () => {
     pubAddr = box.public._db.address.toString()
     privAddr = box.private._db.address.toString()
     pubState = await box.public.all()
-    await box.close()
+    return box.close()
   })
 
   it('should get same state on second open and auth', async () => {
@@ -111,10 +111,10 @@ describe('Integration Test: IdentityWallet', () => {
 
     expect(box.replicator.rootstore._oplog.values.length).toEqual(3)
     idWallet.addAuthMethod(AUTH_1)
-    await testUtils.delay(1200)
+    await testUtils.delay(1500)
     expect(box.replicator.rootstore._oplog.values.length).toEqual(5)
 
-    await box.close()
+    return box.close()
   })
 
   it('should get same state on create and auth with IdentityWallet opened using first authSecret', async () => {
@@ -131,7 +131,7 @@ describe('Integration Test: IdentityWallet', () => {
     await testUtils.delay(1200)
     expect(box.replicator.rootstore._oplog.values.length).toEqual(7)
 
-    await box.close()
+    return box.close()
   })
 
   it('should get same state on create and auth with IdentityWallet opened using second authSecret', async () => {
@@ -142,6 +142,6 @@ describe('Integration Test: IdentityWallet', () => {
     await box.auth([], opts)
     await box.syncDone
     expect(await box.public.all()).toEqual(pubState)
-    await box.close()
+    return box.close()
   })
 })

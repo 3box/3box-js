@@ -86,10 +86,24 @@ jest.mock('../space', () => {
   })
 })
 jest.mock('../replicator', () => {
+  const randInt = max => Math.floor(Math.random() * max)
+
   return {
     create: jest.fn(async () => {
+      const OdbStorage = require('orbit-db-storage-adapter')
+      const OdbKeystore = require('orbit-db-keystore')
+      const path = require('path')
+      const utils = require('../utils/index')
+      const levelDown = OdbStorage(null, {})
+      const keystorePath = path.join('./tmp', `/${randInt(1000000)}`, '/keystore')
+      const keyStorage = await levelDown.createStore(keystorePath)
+      const keystore = new OdbKeystore(keyStorage)
+
       return {
         start: jest.fn(),
+        _orbitdb: {
+          keystore: keystore
+        },
         rootstoreSyncDone: Promise.resolve(),
         syncDone: Promise.resolve(),
         getAuthData: jest.fn(() => []),
@@ -205,20 +219,12 @@ describe('3Box', () => {
     if (!ipfs) ipfs = await testUtils.initIPFS(0)
     const ipfsMultiAddr = (await ipfs.id()).addresses[0]
 
-    const IPFS_OPTIONS = {
-      EXPERIMENTAL: {
-        pubsub: true
-      },
-      repo: './tmp/ipfs1/'
-    }
-
     if (!ipfsBox) {
       ipfsBox = await testUtils.initIPFS(1)
     }
 
     boxOpts = {
       ipfs: ipfsBox,
-      //ipfsOptions: IPFS_OPTIONS,
       orbitPath: './tmp/orbitdb1',
       addressServer: MOCK_HASH_SERVER,
       profileServer: MOCK_PROFILE_SERVER,
@@ -233,7 +239,7 @@ describe('3Box', () => {
 
   afterAll(async () => {
     await testUtils.stopIPFS(ipfs, 0)
-    await testUtils.stopIPFS(ipfsBox, 1)
+    return testUtils.stopIPFS(ipfsBox, 1)
   })
 
   it('Create instance of 3box works as intended', async () => {
@@ -264,7 +270,7 @@ describe('3Box', () => {
 
     await box.auth([space], opts)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(opts.address, prov, boxOpts.ipfs, opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(opts.address, prov, boxOpts.ipfs, box.replicator._orbitdb.keystore, opts)
     expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
@@ -295,7 +301,7 @@ describe('3Box', () => {
     const box = await Box.openBox(addr, prov, opts)
 
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs,  box.replicator._orbitdb.keystore, opts)
     expect(box.replicator).toBeDefined()
     expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
@@ -312,7 +318,7 @@ describe('3Box', () => {
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
     expect(mockedUtils.fetchJson.mock.calls[1][0]).toEqual('address-server/odbAddress')
     expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[1][1].address_token).payload.rootStoreAddress).toEqual('/orbitdb/asdf/rootstore-address')
-    await box.close()
+    return box.close()
   })
 
   it('should handle error and not link profile on first call to _linkProfile', async () => {
@@ -335,7 +341,7 @@ describe('3Box', () => {
       version: 1,
     })
     expect(createLink).toHaveBeenCalledTimes(1)
-    await box.close()
+    return box.close()
   })
 
   it('should not call createLink if ethereum_proof in rootStore on call to _linkProfile', async () => {
@@ -373,7 +379,7 @@ describe('3Box', () => {
     expect(createLink).toHaveBeenCalledTimes(0)
     expect(boxWithLinks.public.set).toHaveBeenCalledTimes(0)
 
-    await boxWithLinks.close()
+    return boxWithLinks.close()
   })
 
   it('should link profile on call to _linkProfile', async () => {
@@ -395,7 +401,7 @@ describe('3Box', () => {
     })
     expect(createLink).toHaveBeenCalledTimes(1)
     expect(box.public.set).toHaveBeenCalledTimes(1) // did proof
-    await box.close()
+    return box.close()
   })
 
   it('should openBox correctly with normal auth flow, for existing accounts', async () => {
@@ -406,7 +412,7 @@ describe('3Box', () => {
     const box = await Box.openBox(addr, prov, opts)
 
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
-    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, opts)
+    expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, box.replicator._orbitdb.keystore, opts)
     expect(box.replicator).toBeDefined()
     expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
@@ -421,7 +427,7 @@ describe('3Box', () => {
     expect(box.private._load).toHaveBeenCalledTimes(1)
     expect(box.private._load).toHaveBeenCalledWith()
     await box.syncDone
-    await box.close()
+    return box.close()
   })
 
   it('should open spaces correctly', async () => {
@@ -444,7 +450,7 @@ describe('3Box', () => {
        name2: space3
      })
 
-    await box.close()
+    return box.close()
   })
 
   it('should get profile (when API is used)', async () => {
@@ -476,7 +482,7 @@ describe('3Box', () => {
     const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
     await box.logout()
     expect(mocked3id.logoutFn).toHaveBeenCalledTimes(1)
-    await box.close()
+    return box.close()
   })
 
   it('should be logged out', async () => {
@@ -484,7 +490,7 @@ describe('3Box', () => {
     await box.logout()
     const isLoggedIn = Box.isLoggedIn('0xabcde')
     expect(isLoggedIn).toEqual(false)
-    await box.close()
+    return box.close()
   })
 
   it('should verify profiles correctly', async () => {
