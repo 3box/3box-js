@@ -16,7 +16,7 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (name, replicator, members, firstModerator, subscribe) {
+  constructor (name, replicator, members, firstModerator, confidential, threeId, subscribe) {
     this._name = name
     this._replicator = replicator
     this._spaceName = name.split('.')[2]
@@ -24,6 +24,12 @@ class Thread {
     this._queuedNewPosts = []
     this._members = Boolean(members)
     this._firstModerator = firstModerator
+
+    this._keyHashId = confidential.keyHashId
+    this._confidential = Boolean(this._keyHashId)
+    //  TODO sym can just be created here, if conf thread with no keyHash
+    this._symKey = confidential.symKey
+    this._3id = threeId
   }
 
   /**
@@ -38,6 +44,12 @@ class Thread {
     this._subscribe(this._address, { firstModerator: this._firstModerator, members: this._members, name: this._name })
     this._replicator.ensureConnected(this._address, true)
     const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
+
+    // TODO if exteneded, could entryp first then call this func
+    if (this._confidential) {
+      message = await this._3id.symEncrypt(this._symKey, JSON.stringify(message))
+    }
+
     return this._db.add({
       message,
       timestamp
@@ -62,14 +74,18 @@ class Thread {
    *
    * @param     {String}    id                      Moderator Id
    */
-  async addModerator (id) {
+  async addModerator (id, ciphertext) {
+    // TODO dont pass ciphtext here, if access, user as sym key, and this func can enc
+    // allthough adding self is different
     this._requireLoad()
     this._requireAuth()
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
+    // TODO if conf thread, also key pub key, and 3id encrypt to pubkey and did
+    // TODO req or throw for ciphertext if confidentials thread
     if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
-    return this._db.access.grant(MODERATOR, id)
+    return this._db.access.grant(MODERATOR, id, ciphertext)
   }
 
   /**
@@ -87,16 +103,19 @@ class Thread {
    *
    * @param     {String}    id                      Member Id
    */
-  async addMember (id) {
+  async addMember (id, ciphertext) {
+      // TODO dont pass ciphtext here, if access, user as sym key, and this func can enc
     this._requireLoad()
     this._requireAuth()
     this._throwIfNotMembers()
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
-    if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
+    // TODO if conf thread, also key pub key, and 3id encrypt to pubkey and did
+    // TODO req or throw for ciphertext if confidentials thread
+    if (!isValid3ID(id)) throw new Error('addMember: must provide valid 3ID')
     this._throwIfNotMembers()
-    return this._db.access.grant(MEMBER, id)
+    return this._db.access.grant(MEMBER, id, ciphertext)
   }
 
   /**
@@ -141,13 +160,20 @@ class Thread {
    * @return    {Array<Object>}                           true if successful
    */
   async getPosts (opts = {}) {
+    const decrypt = async (entry) => {
+      if (!this._confidential) return  entry
+      const message = await this._3id.symDecrypt(this._symKey, entry.message)
+      return {message, timestamp: entry.timestamp}
+    }
+
     this._requireLoad()
     if (!opts.limit) opts.limit = -1
-    return this._db.iterator(opts).collect().map(entry => {
-      const post = entry.payload.value
+    return Promise.all(this._db.iterator(opts).collect().map(async entry => {
+      console.log(entry.payload.value)
+      const post = await decrypt(entry.payload.value)
       const metaData = { postId: entry.hash, author: entry.identity.id }
       return Object.assign(metaData, post)
-    })
+    }))
   }
 
   /**
@@ -191,7 +217,19 @@ class Thread {
     await this._db.load()
     this._address = this._db.address.toString()
     this._replicator.ensureConnected(this._address, true)
+
     return this._address
+  }
+
+  async _initConfidential() {
+    if (this._symKey) {
+      const ciphertext = await this._3id.encrypt(JSON.stringify({symKey: this._symKey}), this._spaceName)
+      await this.addModerator(this._firstModerator, ciphertext)
+      // TODO will throw error if other than first mod is trying to add key for mod, cathch and return clear error
+    } else {
+      const encKey = this._db.access.getEncryptedKey(this._3id.getSubDID(this._spaceName))
+      this._symKey = await this._3id.decrypt(encKey, this._spaceName)
+    }
   }
 
   _requireLoad () {
@@ -223,6 +261,10 @@ class Thread {
       threadName: this._name,
       members: this._members,
       firstModerator: this._firstModerator
+    }
+    // TODO change name, and maybe pass defualt value through so object same, like 'public' if not enc
+    if (this._keyHashId) {
+      this._accessController.keyHashId = this._keyHashId
     }
   }
 }

@@ -10,6 +10,12 @@ Identities.addIdentityProvider(OdbIdentityProvider)
 const utils = require('../utils/index')
 const Keyring = require('./keyring')
 const config = require('../config.js')
+const nacl = require('tweetnacl')
+
+// Redundant key ring
+const randomNonce = () => {
+  return nacl.randomBytes(24)
+}
 
 const DID_METHOD_NAME = '3'
 const STORAGE_KEY = 'serialized3id_'
@@ -25,6 +31,38 @@ class ThreeId {
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
     this._keystore = keystore
+  }
+
+  // TODO probably makes sense somwhere else, maybe keyring, though not part path, maybe utils
+  async newSymKey () {
+    return nacl.box.keyPair().secretKey
+  }
+
+  // TODO keep threads keys anywhere once loaded ?
+  // TODO where key funcs, maybe keyring if keys adde there, otherwise utils
+  async symEncrypt (symKey, message) {
+    let msg = utils.pad(message)
+
+    // TODO below redundant to whats in keyring
+    const nonce = randomNonce()
+    if (typeof msg === 'string') {
+      msg = nacl.util.decodeUTF8(msg)
+    }
+    const ciphertext = nacl.secretbox(msg, nonce, symKey)
+    return {
+      nonce: nacl.util.encodeBase64(nonce),
+      ciphertext: nacl.util.encodeBase64(ciphertext)
+    }
+  }
+
+  // TODO same as above, move to utils or somwhere
+  async symDecrypt (symKey, message) {
+    const ciphertext = nacl.util.decodeBase64(message.ciphertext)
+    const nonce = nacl.util.decodeBase64(message.nonce)
+    const cleartext = nacl.secretbox.open(ciphertext, nonce, symKey)
+    if (!cleartext) return null
+    const paddedMsg = nacl.util.encodeUTF8(cleartext)
+    return utils.unpad(paddedMsg)
   }
 
   startUpdatePolling () {
