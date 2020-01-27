@@ -5,7 +5,6 @@ const API = require('./api')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
 const resolveDID = require('did-resolver').default
-const utils  = require('./utils/index')
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
@@ -63,7 +62,7 @@ class User {
    *
    * @return    {Object}                            An object containing the encrypted payload
    */
-  async encrypt (message, { to }) {
+  async encrypt (message, { to } = {}) {
     let toPubkey
     if (to) {
       toPubkey = await findSpacePubKey(to, this._name)
@@ -164,8 +163,7 @@ class Space {
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
    * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
-   * @param     {Boolean}   opts.confidential       join/create a confidential thread, will create a new confidential thread if not given keyHashId
-   * @param     {Boolean}   opts.keyHashId          join an existing confidential thread, if key id known
+   * @param     {Boolean}   opts.confidential       create a confidential thread with true or join existing confidential thread with encKeyId
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
    * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
@@ -174,8 +172,6 @@ class Space {
    * @return    {Thread}                  An instance of the thread class for the joined thread
    */
   async joinThread (name, opts = {}) {
-    //TODO test, default
-    opts.confidential = true
     if (opts.ghost) {
       const ghostAddress = namesToChatName(this._name, name)
       if (!this._activeThreads[ghostAddress]) {
@@ -192,18 +188,7 @@ class Space {
         opts.firstModerator = this._3id.getSubDID(this._name)
       }
 
-      // TODO Creates new confidential thread, if not given keyHashId, move logic to thread
-      const confidential = {}
-      if (opts.confidential) {
-        if (opts.keyHashId) {
-          confidential.keyHashId = opts.keyHashId
-        } else {
-          confidential.symKey = await this._3id.newSymKey()
-          confidential.keyHashId = utils.sha256(confidential.symKey)
-        }
-      }
-
-      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, confidential, this._3id, subscribeFn)
+      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, opts.confidential, this.user, subscribeFn)
       const address = await thread._getThreadAddress()
       if (this._activeThreads[address]) return this._activeThreads[address]
       await thread._load()

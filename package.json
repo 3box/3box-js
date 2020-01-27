@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
-    "3box-orbitdb-plugins": "3box/3box-orbitdb-plugins#feat/orbit-23",
+    "3box-orbitdb-plugins": "3box/3box-orbitdb-plugins#feat/confidential-thread-acs",
     "3id-blockchain-utils": "^0.3.2",
     "3id-resolver": "^0.0.5",
     "@babel/runtime": "^7.4.5",

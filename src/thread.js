@@ -1,6 +1,8 @@
 const isIPFS = require('is-ipfs')
 const API = require('./api')
 const config = require('./config')
+const { symEncryptBase, symDecryptBase, newSymKey } = require('./3id/utils')
+const utils  = require('./utils/index')
 
 const ORBITDB_OPTS = config.orbitdb_options
 const MODERATOR = 'MODERATOR'
@@ -16,7 +18,7 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (name, replicator, members, firstModerator, confidential, threeId, subscribe) {
+  constructor (name, replicator, members, firstModerator, confidential, user, subscribe) {
     this._name = name
     this._replicator = replicator
     this._spaceName = name.split('.')[2]
@@ -24,12 +26,17 @@ class Thread {
     this._queuedNewPosts = []
     this._members = Boolean(members)
     this._firstModerator = firstModerator
+    this._user = user
 
-    this._keyHashId = confidential.keyHashId
-    this._confidential = Boolean(this._keyHashId)
-    //  TODO sym can just be created here, if conf thread with no keyHash
-    this._symKey = confidential.symKey
-    this._3id = threeId
+    if (confidential) {
+      this._confidential = true
+      if (typeof confidential === 'string') {
+        this._encKeyId = confidential
+      } else {
+        this._symKey = newSymKey()
+        this._encKeyId = utils.sha256(this._symKey)
+      }
+    }
   }
 
   /**
@@ -47,7 +54,7 @@ class Thread {
 
     // TODO if exteneded, could entryp first then call this func
     if (this._confidential) {
-      message = await this._3id.symEncrypt(this._symKey, JSON.stringify(message))
+      message = this._symEncrypt(JSON.stringify(message))
     }
 
     return this._db.add({
@@ -74,17 +81,21 @@ class Thread {
    *
    * @param     {String}    id                      Moderator Id
    */
-  async addModerator (id, ciphertext) {
-    // TODO dont pass ciphtext here, if access, user as sym key, and this func can enc
-    // allthough adding self is different
+  async addModerator (id) {
     this._requireLoad()
     this._requireAuth()
+
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
-    // TODO if conf thread, also key pub key, and 3id encrypt to pubkey and did
-    // TODO req or throw for ciphertext if confidentials thread
+
     if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
+
+    let ciphertext
+    if (this._confidential) {
+      ciphertext = await this._user.encrypt(this._symKey, { to: id})
+    }
+
     return this._db.access.grant(MODERATOR, id, ciphertext)
   }
 
@@ -103,18 +114,20 @@ class Thread {
    *
    * @param     {String}    id                      Member Id
    */
-  async addMember (id, ciphertext) {
-      // TODO dont pass ciphtext here, if access, user as sym key, and this func can enc
+  async addMember (id) {
     this._requireLoad()
     this._requireAuth()
     this._throwIfNotMembers()
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
-    // TODO if conf thread, also key pub key, and 3id encrypt to pubkey and did
-    // TODO req or throw for ciphertext if confidentials thread
     if (!isValid3ID(id)) throw new Error('addMember: must provide valid 3ID')
-    this._throwIfNotMembers()
+
+    let ciphertext
+    if (this._confidential) {
+      ciphertext = await this._user.encrypt(this._symKey, { to: id})
+    }
+
     return this._db.access.grant(MEMBER, id, ciphertext)
   }
 
@@ -160,20 +173,20 @@ class Thread {
    * @return    {Array<Object>}                           true if successful
    */
   async getPosts (opts = {}) {
-    const decrypt = async (entry) => {
+    // TODO if extend class, can just map over payload.message and decrypt
+    const decrypt = (entry) => {
       if (!this._confidential) return  entry
-      const message = await this._3id.symDecrypt(this._symKey, entry.message)
+      const message = this._symDecrypt(entry.message)
       return {message, timestamp: entry.timestamp}
     }
 
     this._requireLoad()
     if (!opts.limit) opts.limit = -1
-    return Promise.all(this._db.iterator(opts).collect().map(async entry => {
-      console.log(entry.payload.value)
-      const post = await decrypt(entry.payload.value)
+    return this._db.iterator(opts).collect().map(entry => {
+      const post = decrypt(entry.payload.value)
       const metaData = { postId: entry.hash, author: entry.identity.id }
       return Object.assign(metaData, post)
-    }))
+    })
   }
 
   /**
@@ -223,12 +236,12 @@ class Thread {
 
   async _initConfidential() {
     if (this._symKey) {
-      const ciphertext = await this._3id.encrypt(JSON.stringify({symKey: this._symKey}), this._spaceName)
-      await this.addModerator(this._firstModerator, ciphertext)
+      const ciphertext = await this._user.encrypt(JSON.stringify({symKey: this._symKey}))
+      await this._db.access.grant(MODERATOR, this._firstModerator, ciphertext)
       // TODO will throw error if other than first mod is trying to add key for mod, cathch and return clear error
     } else {
-      const encKey = this._db.access.getEncryptedKey(this._3id.getSubDID(this._spaceName))
-      this._symKey = await this._3id.decrypt(encKey, this._spaceName)
+      const encryptedKey = this._db.access.getEncryptedKey(this._user.DID)
+      this._symKey = await this._user.decrypt(encryptedKey)
     }
   }
 
@@ -263,9 +276,19 @@ class Thread {
       firstModerator: this._firstModerator
     }
     // TODO change name, and maybe pass defualt value through so object same, like 'public' if not enc
-    if (this._keyHashId) {
-      this._accessController.keyHashId = this._keyHashId
+    if (this._encKeyId) {
+      this._accessController.encKeyId = this._encKeyId
     }
+  }
+
+  _symEncrypt (message) {
+    let msg = utils.pad(message)
+    return symEncryptBase(msg, this._symKey)
+  }
+
+  _symDecrypt (payload) {
+    const paddedMsg = symDecryptBase(payload.ciphertext, this._symKey, payload.nonce)
+    return utils.unpad(paddedMsg)
   }
 }
 
