@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: ~/3box-js
     docker:
-      - image: circleci/node:10
+      - image: circleci/node:10.18.1
     steps:
       - checkout
 
