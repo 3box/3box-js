@@ -2,7 +2,9 @@ const isIPFS = require('is-ipfs')
 const API = require('./api')
 const config = require('./config')
 const { symEncryptBase, symDecryptBase, newSymKey } = require('./3id/utils')
-const utils  = require('./utils/index')
+const utils = require('./utils/index')
+const nacl = {}
+nacl.util = require('tweetnacl-util')
 
 const ORBITDB_OPTS = config.orbitdb_options
 const MODERATOR = 'MODERATOR'
@@ -30,6 +32,7 @@ class Thread {
 
     if (confidential) {
       this._confidential = true
+      this._members = true
       if (typeof confidential === 'string') {
         this._encKeyId = confidential
       } else {
@@ -54,7 +57,7 @@ class Thread {
 
     // TODO if exteneded, could entryp first then call this func
     if (this._confidential) {
-      message = this._symEncrypt(JSON.stringify(message))
+      message = this._symEncrypt(message)
     }
 
     return this._db.add({
@@ -93,7 +96,9 @@ class Thread {
 
     let ciphertext
     if (this._confidential) {
-      ciphertext = await this._user.encrypt(this._symKey, { to: id})
+      ciphertext = await this._user.encrypt(this._symKey, { to: id })
+      // TODO move
+      ciphertext = nacl.util.encodeBase64(ciphertext)
     }
 
     return this._db.access.grant(MODERATOR, id, ciphertext)
@@ -125,7 +130,9 @@ class Thread {
 
     let ciphertext
     if (this._confidential) {
-      ciphertext = await this._user.encrypt(this._symKey, { to: id})
+      ciphertext = await this._user.encrypt(this._symKey, { to: id })
+      // TODO move
+      ciphertext = nacl.util.encodeBase64(ciphertext)
     }
 
     return this._db.access.grant(MEMBER, id, ciphertext)
@@ -175,9 +182,9 @@ class Thread {
   async getPosts (opts = {}) {
     // TODO if extend class, can just map over payload.message and decrypt
     const decrypt = (entry) => {
-      if (!this._confidential) return  entry
+      if (!this._confidential) return entry
       const message = this._symDecrypt(entry.message)
-      return {message, timestamp: entry.timestamp}
+      return { message, timestamp: entry.timestamp }
     }
 
     this._requireLoad()
@@ -234,14 +241,30 @@ class Thread {
     return this._address
   }
 
-  async _initConfidential() {
+  async _initConfidential () {
     if (this._symKey) {
-      const ciphertext = await this._user.encrypt(JSON.stringify({symKey: this._symKey}))
-      await this._db.access.grant(MODERATOR, this._firstModerator, ciphertext)
-      // TODO will throw error if other than first mod is trying to add key for mod, cathch and return clear error
+      const ciphertext = await this._user.encrypt(this._symKey)
+      // TODO maybe move nacl
+      if (this._user.DID !== this._firstModerator) throw new Error('_initConfidential: firstModerator must initialize a confidential thread')
+      await this._db.access.grant(MODERATOR, this._firstModerator, nacl.util.encodeBase64(ciphertext))
     } else {
-      const encryptedKey = this._db.access.getEncryptedKey(this._user.DID)
-      this._symKey = await this._user.decrypt(encryptedKey)
+      let encryptedKey = null
+      try {
+        encryptedKey = this._db.access.getEncryptedKey(this._user.DID)
+      } catch (e) {
+        encryptedKey = await new Promise((resolve, reject) => {
+          this.onNewCapabilities((val) => {
+            let key = null
+            try {
+              key = this._db.access.getEncryptedKey(this._user.DID)
+            } catch (e) { }
+            if (key !== null) resolve(key)
+          })
+          setTimeout(() => resolve(null), 10000)
+        })
+      }
+      if (!encryptedKey) throw new Error(`_initConfidential:  no access for ${this._user.DID}`)
+      this._symKey = await this._user.decrypt(nacl.util.decodeBase64(encryptedKey))
     }
   }
 
@@ -282,7 +305,7 @@ class Thread {
   }
 
   _symEncrypt (message) {
-    let msg = utils.pad(message)
+    const msg = utils.pad(message)
     return symEncryptBase(msg, this._symKey)
   }
 

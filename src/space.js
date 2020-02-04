@@ -187,8 +187,11 @@ class Space {
         if (!this._3id) throw new Error('firstModerator required if not authenticated')
         opts.firstModerator = this._3id.getSubDID(this._name)
       }
-
-      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, opts.confidential, this.user, subscribeFn)
+      if (opts.confidential) {
+        if (!this._3id) throw new Error('confidential threads require user to be authenticated')
+      }
+      const user = this._3id ? this.user : {}
+      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, opts.confidential, user, subscribeFn)
       const address = await thread._getThreadAddress()
       if (this._activeThreads[address]) return this._activeThreads[address]
       await thread._load()
