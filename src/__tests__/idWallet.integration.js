@@ -110,8 +110,19 @@ describe('Integration Test: IdentityWallet', () => {
     expect(await box.public.all()).toEqual(pubState)
 
     expect(box.replicator.rootstore._oplog.values.length).toEqual(3)
+    const writePromise = new Promise(resolve => {
+      let firstWrite = true
+      const writeHandler = () => {
+        if (!firstWrite) {
+          box.replicator.rootstore.events.off('write', writeHandler)
+          resolve()
+        }
+        firstWrite = false
+      }
+      box.replicator.rootstore.events.on('write', writeHandler)
+    })
     idWallet.addAuthMethod(AUTH_1)
-    await testUtils.delay(1500)
+    await writePromise
     expect(box.replicator.rootstore._oplog.values.length).toEqual(5)
 
     return box.close()
@@ -127,8 +138,19 @@ describe('Integration Test: IdentityWallet', () => {
     expect(await box.public.all()).toEqual(pubState)
 
     expect(box.replicator.rootstore._oplog.values.length).toEqual(5)
+    const writePromise = new Promise(resolve => {
+      let firstWrite = true
+      const writeHandler = () => {
+        if (!firstWrite) {
+          box.replicator.rootstore.events.off('write', writeHandler)
+          resolve()
+        }
+        firstWrite = false
+      }
+      box.replicator.rootstore.events.on('write', writeHandler)
+    })
     idWallet.addAuthMethod(AUTH_2)
-    await testUtils.delay(1200)
+    await writePromise
     expect(box.replicator.rootstore._oplog.values.length).toEqual(7)
 
     return box.close()

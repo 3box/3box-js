@@ -183,7 +183,7 @@ jest.mock('../utils/index', () => {
           if (addressMap[lastPart]) {
             return { status: 'success', data: { rootStoreAddress: addressMap[lastPart] } }
           } else if (addressMap[linkmap[lastPart]]) {
-            return { status: 'success', data: { rootStoreAddress: addressMap[linkmap[lastPart]] } }
+            return { status: 'success', data: { rootStoreAddress: addressMap[linkmap[lastPart]], did: linkmap[lastPart] } }
           } else {
             throw {"statusCode": 404, "message": "root store address not found"}
           }
