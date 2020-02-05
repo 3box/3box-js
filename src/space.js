@@ -77,8 +77,8 @@ class User {
    *
    * @return    {String}                            The clear text message
    */
-  async decrypt (encryptedObject) {
-    return this._3id.decrypt(encryptedObject, this._name)
+  async decrypt (encryptedObject, toBuffer) {
+    return this._3id.decrypt(encryptedObject, this._name, toBuffer)
   }
 }
 
@@ -183,12 +183,12 @@ class Space {
       return this._activeThreads[ghostAddress]
     } else {
       const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
+      if (opts.confidential) {
+        if (!this._3id) throw new Error('confidential threads require user to be authenticated')
+      }
       if (!opts.firstModerator) {
         if (!this._3id) throw new Error('firstModerator required if not authenticated')
         opts.firstModerator = this._3id.getSubDID(this._name)
-      }
-      if (opts.confidential) {
-        if (!this._3id) throw new Error('confidential threads require user to be authenticated')
       }
       const user = this._3id ? this.user : {}
       const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, opts.confidential, user, subscribeFn)
@@ -210,6 +210,36 @@ class Space {
   }
 
   /**
+   * Join a confidential thread (throws if access has not been granted)
+   *
+   * @param     {String}    ref                 Address of a confidential thread
+   * @param     {Object}    ref                 Alternatively pass a confidential thread config object
+   * @param     {String}    ref.name            Confidential thread name
+   * @param     {String}    ref.firstModerator  DID or address of firstModerator of confidential thread
+   * @param     {String}    ref.encKeyId        Encryption key id of confidential thread
+   *
+   * @return    {Thread}                        An instance of the thread class for the joined thread
+   */
+  async joinConfidentialThread (ref) {
+    if (typeof ref === 'string ') {
+      return joinThreadByAddress (ref, {condfidential: true})
+    } else {
+      return this.joinThread(ref.name, { confidential: ref.encKeyId, firstModerator: ref.firstModerator})
+    }
+  }
+
+  /**
+   * Create a confidential thread
+   *
+   * @param     {String}    name          The name of the thread
+   *
+   * @return    {Thread}                  An instance of the thread class for the created thread
+   */
+  async createConfidentialThread (name) {
+    return this.joinThread(name, { confidential: true })
+  }
+
+  /**
    * Join a thread by full thread address. Use this to start receiving updates from, and to post in threads
    *
    * @param     {String}    address                 The full address of the thread
@@ -226,8 +256,12 @@ class Space {
     if (threadSpace !== this._name) throw new Error('joinThreadByAddress: attempting to open thread from different space, must open within same space')
     if (this._activeThreads[address]) return this._activeThreads[address]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
-    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
+    const user = this._3id ? this.user : {}
+    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, opts.members, opts.firstModerator, opts.confidential, user, subscribeFn)
     await thread._load(address)
+    if (opts.confidential) {
+      await thread._initConfidential()
+    }
     this._activeThreads[address] = thread
     return thread
   }

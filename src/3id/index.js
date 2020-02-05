@@ -239,7 +239,7 @@ class ThreeId {
       return utils.callRpc(this._provider, '3id_encrypt', { message, space, to })
     } else {
       const keyring = this._keyringBySpace(space)
-      let paddedMsg = utils.pad(message)
+      let paddedMsg = typeof message === 'string' ? utils.pad(message) : message
       if (to) {
         return keyring.asymEncrypt(paddedMsg, to)
       } else {
@@ -248,18 +248,18 @@ class ThreeId {
     }
   }
 
-  async decrypt (encObj, space) {
+  async decrypt (encObj, space, toBuffer) {
     if (this._has3idProv) {
       return utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space })
     } else {
       const keyring = this._keyringBySpace(space)
       let paddedMsg
       if (encObj.ephemeralFrom) {
-        paddedMsg = keyring.asymDecrypt(encObj.ciphertext, encObj.ephemeralFrom, encObj.nonce)
+        paddedMsg = keyring.asymDecrypt(encObj.ciphertext, encObj.ephemeralFrom, encObj.nonce, toBuffer)
       } else {
-        paddedMsg = keyring.symDecrypt(encObj.ciphertext, encObj.nonce)
+        paddedMsg = keyring.symDecrypt(encObj.ciphertext, encObj.nonce, toBuffer)
       }
-      return utils.unpad(paddedMsg)
+      return toBuffer ? paddedMsg : utils.unpad(paddedMsg)
     }
   }
 

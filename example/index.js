@@ -137,6 +137,59 @@ openThread.addEventListener('click', () => {
   }).catch(updateThreadError)
 })
 
+joinConfThread.addEventListener('click', () => {
+  const address = confThreadAddress.value
+
+  let params
+  if (!address) {
+    const name = confThreadJoinName.value
+    const firstModerator = confThreadFirstMod.value
+    const encKeyId =  confThreadEncId.value
+    params = { name , encKeyId, firstModerator }
+  } else {
+    params = address
+  }
+
+  posts.style.display = 'block'
+  threadModeration.style.display = 'block'
+  threadMembers.style.display = 'block'
+  // TODO MOVE
+  box.spaces[window.currentSpace].joinConfidentialThread(params).then(thread => {
+    window.currentThread = thread
+    thread.onUpdate(() => {
+      updateThreadData()
+    })
+    thread.onNewCapabilities(() => {
+      updateThreadCapabilities()
+    })
+    if (window.currentThread._room == undefined) {
+      updateThreadData()
+      updateThreadCapabilities()
+    }
+  })
+})
+
+createConfThread.addEventListener('click', () => {
+  const name = confThreadName.value
+  posts.style.display = 'block'
+  threadModeration.style.display = 'block'
+  threadMembers.style.display = 'block'
+  // TODO MOVE
+  box.spaces[window.currentSpace].createConfidentialThread(name).then(thread => {
+    window.currentThread = thread
+    thread.onUpdate(() => {
+      updateThreadData()
+    })
+    thread.onNewCapabilities(() => {
+      updateThreadCapabilities()
+    })
+    if (window.currentThread._room == undefined) {
+      updateThreadData()
+      updateThreadCapabilities()
+    }
+  })
+})
+
 addThreadMod.addEventListener('click', () => {
   const id = threadMod.value
   window.currentThread.addModerator(id).then(res => {

@@ -295,12 +295,13 @@ class Thread {
 
   async _encryptSymKey(to) {
     if (!this._confidential) return null
-    const ciphertext = await this._user.encrypt(this._symKey, { to })
-    return naclUtil.encodeBase64(ciphertext)
+    return this._user.encrypt(this._symKey, { to })
   }
 
-  async _decryptSymKey(ciphertext) {
-    return this._user.decrypt(naclUtil.decodeBase64(ciphertext))
+  async _decryptSymKey(encKey) {
+    const key = await this._user.decrypt(encKey, true)
+    return new Uint8Array(key)
+
   }
 }
 

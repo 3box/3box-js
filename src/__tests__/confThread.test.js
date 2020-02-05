@@ -15,6 +15,7 @@ AccessControllers.addAccessController({ AccessController: ThreadAccessController
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 const { registerMethod } = require('did-resolver')
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
+const naclUtil = require('tweetnacl-util')
 
 const nacl = {}
 nacl.util = require('tweetnacl-util')
@@ -44,8 +45,16 @@ const subscribeMock = jest.fn()
 
 const Thread = (threadName, replicator, members, firstMod, conf, user, sub) => {
   user = {
-    encrypt: (str) => Promise.resolve(str),
-    decrypt: (str) =>  Promise.resolve(str),
+    encrypt: (msg) => {
+      const obj = {
+        nonce: '123',
+        ciphertext: Buffer.from(msg).toString('base64')
+      }
+      return Promise.resolve(obj)
+    },
+    decrypt: (obj) =>  {
+      return Promise.resolve( Buffer.from(obj.ciphertext, 'base64'))
+    },
     DID: user
   }
   return new ThreadImport(threadName, replicator, members, firstMod, conf || true, user, sub)
@@ -411,13 +420,20 @@ describe('Confidential Thread', () => {
   //   // const posts = await thread1.getPosts()
   //   // const entryId = posts[0].postId
   //
+  //   const threadSpace = thread1Address.split('.')[2]
+  //   const threadNamepull = thread1Address.split('.')[3]
+  //   const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
+  //   // should be able to pass name undefined, and mmembers as well
+  //   const thread2 = new Thread(namesTothreadName(threadSpace, threadNamepull), replicatorMock, true, undefined, undefined, DID2, subscribeMock)
+  //   // await thread._load(address)
+  //
   //   // ie can not pass all configs, just loads from address instead
-  //   const thread2 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID2, subscribeMock)
+  //   // const thread2 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID2, subscribeMock)
   //   await thread2._load(thread1Address)
   //   thread2._setIdentity(await THREEID2_MOCK.getOdbId())
-  //   const thread2Address = thread2.address
   //   await thread2._initConfidential()
-  //   // expect(await thread2.listMembers()).toEqual([DID2, DID3])
+  //   const thread2Address = thread2.address
+  //   expect(thread2Address).toEqual(thread1Address)
   //   // expect(thread1Address).toEqual(thread2Address)
   //   // const posts = await thread2.getPosts()
   //   // console.log(posts)
