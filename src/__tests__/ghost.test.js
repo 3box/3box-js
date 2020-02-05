@@ -64,22 +64,32 @@ describe('Ghost Chat', () => {
       ipfs2 = await utils.initIPFS(12)
     })
 
-    it('creates second chat correctly', async (done) => {
+    it('creates second chat correctly', async () => {
       // checks if chat2 joined properly
-      chat.on('user-joined', async (_event, did, peerId) => {
-        expect(_event).toEqual('joined')
-        const members = await chat.listMembers()
-        const members2 = await chat2.listMembers()
-        expect(members).toEqual(expect.arrayContaining([DID2]))
-        expect(members2).toEqual(expect.arrayContaining([DID1]))
-        done()
+      const c1Promise = new Promise(resolve => {
+        chat.on('user-joined', async (_event, did, peerId) => {
+          expect(_event).toEqual('joined')
+          const members = await chat.listMembers()
+          expect(members).toEqual(expect.arrayContaining([DID2]))
+          resolve()
+        })
       })
       chat2 = new GhostThread(CHAT_NAME, { ipfs: ipfs2 });
+      const c2Promise = new Promise(resolve => {
+        chat2.on('user-joined', async (_event, did, peerId) => {
+          expect(_event).toEqual('joined')
+          const members2 = await chat2.listMembers()
+          expect(members2).toEqual(expect.arrayContaining([DID1]))
+          resolve()
+        })
+      })
       chat2._set3id(THREEID2_MOCK)
       expect(chat2._name).toEqual(CHAT_NAME)
       expect(chat2._3id).toEqual(THREEID2_MOCK)
       expect(chat2.listMembers()).toBeDefined()
       expect(chat2.getPosts()).toBeDefined()
+      await c1Promise
+      await c2Promise
     })
 
     it('chat2 should catch broadcasts from chat', async (done) => {
