@@ -84,9 +84,9 @@ class Box extends BoxApi {
 
   async _load (opts = {}) {
     const address = await this._3id.getAddress()
-    const rootstoreAddress = address ? await this._getRootstore(address) : null
-    if (rootstoreAddress) {
-      await this.replicator.start(rootstoreAddress, { profile: true })
+    const { rootStoreAddress, did } = address ? await this._getLinkedData(address) : {}
+    if (rootStoreAddress) {
+      await this.replicator.start(rootStoreAddress, did, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
       await this._3id.authenticate(opts.spaces, { authData })
@@ -142,7 +142,7 @@ class Box extends BoxApi {
   async auth (spaces = [], opts = {}) {
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
-      this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, opts)
+      this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, this.replicator._orbitdb.keystore, opts)
       await this._load(Object.assign(opts, { spaces }))
     } else {
       // box already loaded, just authenticate spaces
@@ -270,13 +270,13 @@ class Box extends BoxApi {
     return true
   }
 
-  async _getRootstore (ethereumAddress) {
+  async _getLinkedData (ethereumAddress) {
     try {
-      const { rootStoreAddress } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
-      return rootStoreAddress
+      const { rootStoreAddress, did } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
+      return { rootStoreAddress, did }
     } catch (err) {
       if (err.statusCode === 404) {
-        return null
+        return {}
       }
       throw new Error('Error while getting rootstore', err)
     }
@@ -550,20 +550,15 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
       ipfsRepo = initIPFSRepo()
       ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
     }
-    return new Promise((resolve, reject) => {
-      ipfs = new IPFS(ipfsOptions)
-      ipfs.on('error', error => {
-        console.error(error)
-        reject(error)
-      })
-      ipfs.on('ready', () => {
-        resolve(ipfs)
-        if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {
-          // deletes once db is closed again
-          window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
-        }
-      })
-    })
+
+    ipfs = await IPFS.create(ipfsOptions)
+
+    if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {
+      // deletes once db is closed again
+      window.indexedDB.deleteDatabase(ipfsRepo.rootPath)
+    }
+
+    return ipfs
   }
 }
 

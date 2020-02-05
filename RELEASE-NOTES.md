@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.16.2 - 2020-02-05
+* chore: update ipfs & orbitdb
+* fix: Verify legacy muport DID properly
+* fix: Special signature request for authereum
+* ref: Send DID in all pin requests where possible
+
 ## v1.16.1 - 2020-01-13
 fix: set fixed cache paths, so cache read/writes from same path and local data loaded
 

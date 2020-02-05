@@ -5,6 +5,9 @@ const { verifyJWT } = require('did-jwt')
 const resolve = require('did-resolver').default
 const registerResolver = require('3id-resolver')
 const IdentityWallet = require('identity-wallet')
+const OdbStorage = require('orbit-db-storage-adapter')
+const OdbKeystore = require('orbit-db-keystore')
+const path = require('path')
 
 const utils = require('../../utils/index')
 utils.openBoxConsent = jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234')
@@ -44,11 +47,15 @@ const mockedUtils = require('../../utils/index')
 
 describe('3id', () => {
 
-  let threeId, ipfs, idw3id
+  let threeId, ipfs, idw3id, keystore
 
   beforeAll(async () => {
     ipfs = await testUtils.initIPFS(6)
     registerResolver(ipfs)
+    const levelDown = OdbStorage(null, {})
+    const keystorePath = path.join('./tmp', `/${utils.randInt(1000000)}`, '/keystore')
+    const keyStorage = await levelDown.createStore(keystorePath)
+    keystore = new OdbKeystore(keyStorage)
   })
 
   afterAll(async () => {
@@ -63,7 +70,7 @@ describe('3id', () => {
   describe('getIdFromEthAddress', () => {
     it('should create a new identity on first call', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, keystore, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
       expect(threeId.DID).toMatchSnapshot()
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
@@ -73,15 +80,15 @@ describe('3id', () => {
 
     it('should create the same identity given the same address', async () => {
       // did is mocked, so compares serialized state
-      const threeId1 = await ThreeId.getIdFromEthAddress('0xabcde1', ETHEREUM, ipfs)
+      const threeId1 = await ThreeId.getIdFromEthAddress('0xabcde1', ETHEREUM, ipfs, keystore)
       clearLocalStorage3id('0xabcde1')
-      const threeId2 = await ThreeId.getIdFromEthAddress('0xABCDE1', ETHEREUM, ipfs)
+      const threeId2 = await ThreeId.getIdFromEthAddress('0xABCDE1', ETHEREUM, ipfs, keystore)
       expect(threeId1.serializeState()).toEqual(threeId2.serializeState())
     })
 
     it('should create a new identity for other eth addr', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_2, ETHEREUM, ipfs, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_2, ETHEREUM, ipfs, keystore, opts)
       expect(threeId.serializeState()).toEqual(ADDR_2_STATE)
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
@@ -89,7 +96,7 @@ describe('3id', () => {
 
     it('should get identity from storage on subsequent calls to existing identity', async () => {
       const opts = { consentCallback: jest.fn() }
-      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, opts)
+      threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, keystore, opts)
       expect(threeId.serializeState()).toEqual(ADDR_1_STATE_1)
       expect(opts.consentCallback).toHaveBeenCalledWith(false)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
@@ -97,7 +104,7 @@ describe('3id', () => {
 
     it('should create a new identity when passed a contentSignature', async () => {
       const opts = { consentCallback: jest.fn(), contentSignature: CONTENT_SIGNATURE_1 }
-      const contentSignatureThreeId = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      const contentSignatureThreeId = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, keystore, opts)
       expect(contentSignatureThreeId.serializeState()).toEqual(ADDR_3_STATE_1)
       expect(contentSignatureThreeId.DID).toMatchSnapshot()
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
@@ -108,9 +115,9 @@ describe('3id', () => {
     it('should create the same identity given the same address and contentSignature', async () => {
       // did is mocked, so compares serialized state
       const opts = { contentSignature: CONTENT_SIGNATURE_1 }
-      const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, keystore, opts)
       clearLocalStorage3id(ADDR_3)
-      const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, keystore, opts)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
       expect(threeId1.serializeState()).toEqual(threeId2.serializeState())
     })
@@ -118,9 +125,9 @@ describe('3id', () => {
     it('should NOT create the same identity given the same address but a different contentSignature', async () => {
       // did is mocked, so compares serialized state
       const opts = { contentSignature: NOT_CONTENT_SIGNATURE_1 }
-      const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      const threeId1 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, keystore, opts)
       clearLocalStorage3id(ADDR_3)
-      const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, opts)
+      const threeId2 = await ThreeId.getIdFromEthAddress(ADDR_3, ETHEREUM, ipfs, keystore, opts)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
       expect(threeId1.serializeState()).not.toEqual(threeId2.serializeState())
     })
@@ -186,7 +193,7 @@ describe('3id', () => {
       })
 
       it('should get identity with spaces automatically initialized', async () => {
-        threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs)
+        threeId = await ThreeId.getIdFromEthAddress(ADDR_1, ETHEREUM, ipfs, keystore)
         expect(threeId.serializeState()).toEqual(ADDR_1_STATE_2)
         expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
       })
@@ -226,7 +233,7 @@ describe('3id', () => {
     it('instantiate threeId with IdentityWallet', async () => {
       const idWallet = new IdentityWallet(() => true, { seed: ID_WALLET_SEED })
       const provider = idWallet.get3idProvider()
-      idw3id = await ThreeId.getIdFromEthAddress(null, provider, ipfs)
+      idw3id = await ThreeId.getIdFromEthAddress(null, provider, ipfs, keystore)
       expect(idw3id.DID).toBeUndefined()
       await idw3id.authenticate()
       expect(idw3id.DID).toMatchSnapshot()

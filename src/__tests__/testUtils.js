@@ -3,9 +3,6 @@ const fs = require('fs')
 
 const genConf = id => {
   return {
-    EXPERIMENTAL: {
-      pubsub: true
-    },
     repo: `./tmp/ipfs${id}/`,
     config: {
       Addresses: {
@@ -23,11 +20,7 @@ const genConf = id => {
 
 module.exports = {
   initIPFS: async (useAltConf) => {
-    return new Promise((resolve, reject) => {
-      let ipfs = new IPFS(genConf(useAltConf))
-      ipfs.on('error', reject)
-      ipfs.on('ready', () => resolve(ipfs))
-    })
+    return IPFS.create(genConf(useAltConf))
   },
   stopIPFS: async (ipfs, useAltConf) => {
     // seems to be an issue with the api file not being present when trying to close ipfs

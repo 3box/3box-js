@@ -116,7 +116,7 @@ module.exports = {
     const muport = verified.payload.muport
     const res = {}
     if (muport) {
-      const muportDID = await didJWT.verifyJWT(muport).payload.iss
+      const muportDID = (await didJWT.verifyJWT(muport)).payload.iss
       res.muport = muportDID
     }
     res.did = verified.payload.iss

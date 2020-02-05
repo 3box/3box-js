@@ -5,6 +5,7 @@ const Pubsub = require('orbit-db-pubsub')
 const AccessControllers = require('orbit-db-access-controllers')
 const OdbStorage = require('orbit-db-storage-adapter')
 const OdbCache = require('orbit-db-cache')
+const OdbKeystore = require('orbit-db-keystore')
 const resolveDID = require('did-resolver').default
 const {
   OdbIdentityProvider,
@@ -90,15 +91,21 @@ class Replicator {
 
   async _init (opts) {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
-    // Identity not used, passes ref to 3ID orbit identity provider
-    const identity = await Identities.createIdentity({ id: 'nullid' })
     // Passes default cache but with fixed path instead of path based on
     // orbitdb/ipfs id which can change on page load
     const cachePath = path.join(opts.orbitPath || './orbitdb', '/cache')
     const levelDown = OdbStorage(null, {})
     const cacheStorage = await levelDown.createStore(cachePath)
     const cache = new OdbCache(cacheStorage)
-    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath, identity, cache })
+
+    const keystorePath = path.join(opts.orbitPath || './orbitdb', '/keystore')
+    const keyStorage = await levelDown.createStore(keystorePath)
+    const keystore = new OdbKeystore(keyStorage)
+
+    // Identity not used, passes ref to 3ID orbit identity provider
+    const identity = await Identities.createIdentity({ id: 'nullid', keystore: keystore })
+
+    this._orbitdb = await OrbitDB.createInstance(this.ipfs, { directory: opts.orbitPath, identity, cache, keystore })
   }
 
   async _joinPinningRoom (firstJoin) {
@@ -118,7 +125,8 @@ class Replicator {
     return replicator
   }
 
-  async start (rootstoreAddress, opts = {}) {
+  async start (rootstoreAddress, did, opts = {}) {
+    this._did = did
     await this._joinPinningRoom(true)
     this._publishDB({ odbAddress: rootstoreAddress })
 
@@ -140,6 +148,7 @@ class Replicator {
 
   async new (rootstoreName, pubkey, did) {
     if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
+    this._did = did
     await this._joinPinningRoom(true)
     const opts = {
       ...ODB_STORE_OPTS,
@@ -148,7 +157,7 @@ class Replicator {
     opts.accessController.write = [pubkey]
     this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
     this._pinningRoomFilter = []
-    this._publishDB({ odbAddress: this.rootstore.address.toString(), did })
+    this._publishDB({ odbAddress: this.rootstore.address.toString() })
     await this.rootstore.load()
     this.rootstoreSyncDone = Promise.resolve()
     this.syncDone = Promise.resolve()
@@ -276,7 +285,7 @@ class Replicator {
     }
   }
 
-  async _publishDB ({ odbAddress, did, isThread }, unsubscribe) {
+  async _publishDB ({ odbAddress, isThread }, unsubscribe) {
     this._joinPinningRoom()
     odbAddress = odbAddress || this.rootstore.address.toString()
     // make sure that the pinning node is in the pubsub room before publishing
@@ -293,7 +302,7 @@ class Replicator {
     this._pubsub.publish(PINNING_ROOM, {
       type: isThread ? 'SYNC_DB' : 'PIN_DB',
       odbAddress,
-      did,
+      did: this._did,
       thread: isThread
     })
     this.events.removeAllListeners('pinning-room-peer')

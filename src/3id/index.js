@@ -17,13 +17,14 @@ const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_po
 const POLL_INTERVAL = 500
 
 class ThreeId {
-  constructor (provider, ipfs, opts = {}) {
+  constructor (provider, ipfs, keystore, opts = {}) {
     this.events = new EventEmitter()
     this._provider = provider
     this._has3idProv = Boolean(opts.has3idProv)
     this._ipfs = ipfs
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
+    this._keystore = keystore
   }
 
   startUpdatePolling () {
@@ -75,7 +76,8 @@ class ThreeId {
     return Identities.createIdentity({
       type: '3ID',
       threeId: this,
-      space
+      space,
+      keystore: this._keystore
     })
   }
 
@@ -276,10 +278,10 @@ class ThreeId {
     return Boolean(localstorage.get(STORAGE_KEY + address.toLowerCase()))
   }
 
-  static async getIdFromEthAddress (address, provider, ipfs, opts = {}) {
+  static async getIdFromEthAddress (address, provider, ipfs, keystore, opts = {}) {
     opts.has3idProv = Boolean(provider.is3idProvider)
     if (opts.has3idProv) {
-      return new ThreeId(provider, ipfs, opts)
+      return new ThreeId(provider, ipfs, keystore, opts)
     } else {
       const normalizedAddress = address.toLowerCase()
       let serialized3id = localstorage.get(STORAGE_KEY + normalizedAddress)
@@ -302,7 +304,7 @@ class ThreeId {
           spaceSeeds: {}
         })
       }
-      const threeId = new ThreeId(provider, ipfs, opts)
+      const threeId = new ThreeId(provider, ipfs, keystore, opts)
       threeId._initKeys(serialized3id)
       await threeId._initDID()
       return threeId
