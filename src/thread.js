@@ -3,7 +3,7 @@ const API = require('./api')
 const config = require('./config')
 const { symEncryptBase, symDecryptBase, newSymKey } = require('./3id/utils')
 const utils = require('./utils/index')
-const naclUtil = require('tweetnacl-util')
+const orbitAddress = require('orbit-db/src/orbit-db-address')
 
 const ORBITDB_OPTS = config.orbitdb_options
 const MODERATOR = 'MODERATOR'
@@ -22,7 +22,7 @@ class Thread {
   constructor (name, replicator, members, firstModerator, confidential, user, subscribe) {
     this._name = name
     this._replicator = replicator
-    this._spaceName = name.split('.')[2]
+    this._spaceName = name ? name.split('.')[2] : undefined
     this._subscribe = subscribe
     this._queuedNewPosts = []
     this._members = Boolean(members)
@@ -67,7 +67,9 @@ class Thread {
   }
 
   async _getThreadAddress () {
-    await this._initConfigs()
+    // TODO WORKS?
+    if (this._address) return this._address
+    await this._initAcConfigs()
     const address = (await this._replicator._orbitdb._determineAddress(this._name, 'feed', {
       accessController: this._accessController
     }, false)).toString()
@@ -209,13 +211,27 @@ class Thread {
     })
   }
 
-  async _load (odbAddress) {
-    await this._initConfigs()
-    this._db = await this._replicator._orbitdb.feed(odbAddress || this._name, {
+  // Loads by orbitdb address or db name
+  async _load (dbString) {
+    const loadByAddress = dbString && orbitAddress.isValid(dbString)
+    if (!loadByAddress) await this._initAcConfigs()
+
+    this._db = await this._replicator._orbitdb.feed(dbString || this._name, {
       ...ORBITDB_OPTS,
       accessController: this._accessController
     })
+
     await this._db.load()
+
+    if (loadByAddress) {
+      this._firstModerator = this._db.access._firstModerator
+      this._members = this._db.access._members
+      this._encKeyId = this._db.access._encKeyId
+      this._confidential = Boolean(this._db.access._encKeyId)
+      this._name = this._db.address.path
+      this._spaceName = this._name.split('.')[2]
+    }
+
     this._address = this._db.address.toString()
     this._replicator.ensureConnected(this._address, true)
 
@@ -260,13 +276,17 @@ class Thread {
     await this._db.close()
   }
 
-  _setIdentity (odbId) {
+  async _setIdentity (odbId) {
     this._db.setIdentity(odbId)
     this._db.access._db.setIdentity(odbId)
     this._authenticated = true
+    // TODO not too clear hear, but does require auth, and to be after load
+    if (this._confidential) {
+      await this._initConfidential()
+    }
   }
 
-  async _initConfigs () {
+  async _initAcConfigs () {
     if (this._accessController) return
     if (this._firstModerator.startsWith('0x')) {
       this._firstModerator = await API.getSpaceDID(this._firstModerator, this._spaceName)
@@ -293,15 +313,14 @@ class Thread {
     return utils.unpad(paddedMsg)
   }
 
-  async _encryptSymKey(to) {
+  async _encryptSymKey (to) {
     if (!this._confidential) return null
     return this._user.encrypt(this._symKey, { to })
   }
 
-  async _decryptSymKey(encKey) {
+  async _decryptSymKey (encKey) {
     const key = await this._user.decrypt(encKey, true)
     return new Uint8Array(key)
-
   }
 }
 

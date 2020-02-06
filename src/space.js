@@ -196,14 +196,8 @@ class Space {
       if (this._activeThreads[address]) return this._activeThreads[address]
       await thread._load()
       if (this._3id) {
-        thread._setIdentity(await this._3id.getOdbId(this._name))
+        await thread._setIdentity(await this._3id.getOdbId(this._name))
       }
-
-      // TODO Cant add mod in load, should it be added here, seems like part of thread though...
-      if (opts.confidential) {
-        await thread._initConfidential()
-      }
-
       this._activeThreads[address] = thread
       return thread
     }
@@ -221,10 +215,10 @@ class Space {
    * @return    {Thread}                        An instance of the thread class for the joined thread
    */
   async joinConfidentialThread (ref) {
-    if (typeof ref === 'string ') {
-      return joinThreadByAddress (ref, {condfidential: true})
+    if (typeof ref === 'string') {
+      return this.joinThreadByAddress(ref, { condfidential: true })
     } else {
-      return this.joinThread(ref.name, { confidential: ref.encKeyId, firstModerator: ref.firstModerator})
+      return this.joinThread(ref.name, { confidential: ref.encKeyId, firstModerator: ref.firstModerator })
     }
   }
 
@@ -257,10 +251,10 @@ class Space {
     if (this._activeThreads[address]) return this._activeThreads[address]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
     const user = this._3id ? this.user : {}
-    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, opts.members, opts.firstModerator, opts.confidential, user, subscribeFn)
+    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, undefined, undefined, undefined, user, subscribeFn)
     await thread._load(address)
-    if (opts.confidential) {
-      await thread._initConfidential()
+    if (this._3id) {
+      await thread._setIdentity(await this._3id.getOdbId(this._name))
     }
     this._activeThreads[address] = thread
     return thread

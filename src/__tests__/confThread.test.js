@@ -43,21 +43,24 @@ const THREEID3_MOCK = threeIDMockFactory(DID3)
 
 const subscribeMock = jest.fn()
 
+const userMock = (did) => {
+  return {
+      encrypt: (msg) => {
+        const obj = {
+          nonce: '123',
+          ciphertext: Buffer.from(msg).toString('base64')
+        }
+        return Promise.resolve(obj)
+      },
+      decrypt: (obj) =>  {
+        return Promise.resolve( Buffer.from(obj.ciphertext, 'base64'))
+      },
+      DID: did
+    }
+}
+
 const Thread = (threadName, replicator, members, firstMod, conf, user, sub) => {
-  user = {
-    encrypt: (msg) => {
-      const obj = {
-        nonce: '123',
-        ciphertext: Buffer.from(msg).toString('base64')
-      }
-      return Promise.resolve(obj)
-    },
-    decrypt: (obj) =>  {
-      return Promise.resolve( Buffer.from(obj.ciphertext, 'base64'))
-    },
-    DID: user
-  }
-  return new ThreadImport(threadName, replicator, members, firstMod, conf || true, user, sub)
+  return new ThreadImport(threadName, replicator, members, firstMod, conf || true, userMock(user), sub)
 }
 
 describe('Confidential Thread', () => {
@@ -108,14 +111,12 @@ describe('Confidential Thread', () => {
   })
 
   it('should start with an empty db on load', async () => {
-    thread._setIdentity(await THREEID1_MOCK.getOdbId())
+    await thread._setIdentity(await THREEID1_MOCK.getOdbId())
     expect(storeAddr.split('/')[3]).toEqual(THREAD1_NAME)
     expect(await thread.getPosts()).toEqual([])
   })
 
   it('adding posts works as expected', async () => {
-
-    await thread._initConfidential()
 
     await thread.post(MSG1)
     let posts = await thread.getPosts()
@@ -144,40 +145,27 @@ describe('Confidential Thread', () => {
   })
 
   it('root moderator can add another moderator', async () => {
-    const threadMods = new Thread(THREAD3_NAME, replicatorMock, false, DID1, undefined, undefined, subscribeMock)
-    await threadMods._load()
-    threadMods._setIdentity(await THREEID1_MOCK.getOdbId())
-    await thread._initConfidential()
+    const threadName = randomThreadName()
+    const threadMod1 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
+    await threadMod1._load()
+    await threadMod1._setIdentity(await THREEID1_MOCK.getOdbId())
 
-    expect(await threadMods.listModerators()).toEqual([DID1])
-    await threadMods.addModerator(DID2)
-    expect(await threadMods.listModerators()).toEqual([DID1, DID2])
-  })
-
-  it('user who is not moderator can NOT add a moderator', async () => {
-    const threadMods = new Thread(THREAD3_NAME, replicatorMock, false, DID2, undefined, undefined, subscribeMock)
-    await threadMods._load()
-    threadMods._setIdentity(await THREEID1_MOCK.getOdbId())
-    await thread._initConfidential()
-
-    expect(await threadMods.listModerators()).toEqual([DID2])
-    await expect(threadMods.addModerator(DID3)).rejects.toThrow(/can not be granted/)
-    expect(await threadMods.listModerators()).toEqual([DID2])
+    expect(await threadMod1.listModerators()).toEqual([DID1])
+    await threadMod1.addModerator(DID2)
+    expect(await threadMod1.listModerators()).toEqual([DID1, DID2])
   })
 
   it('a moderator can add another moderator', async () => {
     const threadName = randomThreadName()
     const threadMod1 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod1._load()
-    threadMod1._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod1._initConfidential()
+    await threadMod1._setIdentity(await THREEID1_MOCK.getOdbId())
     expect(await threadMod1.listModerators()).toEqual([DID1])
     await threadMod1.addModerator(DID2)
     expect(await threadMod1.listModerators()).toEqual([DID1, DID2])
     const threadMod2 = new Thread(threadName, replicatorMock, false, DID1, threadMod1._encKeyId, DID2, subscribeMock)
     await threadMod2._load()
-    threadMod2._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMod2._initConfidential()
+    await threadMod2._setIdentity(await THREEID2_MOCK.getOdbId())
     await threadMod2.addModerator(DID3)
     expect(await threadMod2.listModerators()).toEqual([DID1, DID2, DID3])
   })
@@ -186,9 +174,7 @@ describe('Confidential Thread', () => {
     const threadName = randomThreadName()
     const threadMembers = new Thread(threadName, replicatorMock, true, DID1, undefined, DID1, subscribeMock)
     await threadMembers._load()
-    threadMembers._setIdentity(await THREEID1_MOCK.getOdbId())
-
-    await threadMembers._initConfidential()
+    await threadMembers._setIdentity(await THREEID1_MOCK.getOdbId())
 
     expect(await threadMembers.listMembers()).toEqual([])
     await threadMembers.addMember(DID2)
@@ -200,14 +186,12 @@ describe('Confidential Thread', () => {
     // Mod creates thread
     const threadMod1 = new Thread(threadName, replicatorMock, true, DID1, undefined, DID1, subscribeMock)
     await threadMod1._load()
-    threadMod1._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod1._initConfidential()
+    await threadMod1._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod1.addMember(DID2)
     // member opens and tries to add member
     const threadMembers = new Thread(threadName, replicatorMock, true, DID1, threadMod1._encKeyId, DID2, subscribeMock)
     await threadMembers._load()
-    threadMembers._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMembers._initConfidential()
+    await threadMembers._setIdentity(await THREEID2_MOCK.getOdbId())
 
     await expect(threadMembers.addMember(DID3)).rejects.toThrow(/can not be granted/)
     expect(await threadMembers.listMembers()).toEqual([DID2])
@@ -218,16 +202,14 @@ describe('Confidential Thread', () => {
     // create thread by mod, with members
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
     await threadMod.addModerator(DID3)
 
     // user 1, member adds post
     const threadUser1 = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadUser1._load()
-    threadUser1._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadUser1._initConfidential()
+    await threadUser1._setIdentity(await THREEID2_MOCK.getOdbId())
     await threadUser1.post(MSG1)
     const posts = await threadUser1.getPosts()
     const entryId = posts[0].postId
@@ -235,8 +217,7 @@ describe('Confidential Thread', () => {
     // user 2, a mod, deletes post by user 1
     const threadMod2 = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMod2._load()
-    threadMod2._setIdentity(await THREEID3_MOCK.getOdbId())
-    await threadMod2._initConfidential()
+    await threadMod2._setIdentity(await THREEID3_MOCK.getOdbId())
     await threadMod2.deletePost(entryId)
     expect(await threadMod2.getPosts()).toEqual([])
   })
@@ -246,16 +227,14 @@ describe('Confidential Thread', () => {
     // create thread by mod, with members
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
     await threadMod.addMember(DID3)
 
     // user 1, member adds post
     const threadUser1 = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadUser1._load()
-    threadUser1._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadUser1._initConfidential()
+    await threadUser1._setIdentity(await THREEID2_MOCK.getOdbId())
     await threadUser1.post(MSG1)
     const posts = await threadUser1.getPosts()
     const entryId = posts[0].postId
@@ -263,8 +242,7 @@ describe('Confidential Thread', () => {
     // user 2, member tries to delete post
     const threadUser2 = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadUser2._load()
-    threadUser2._setIdentity(await THREEID3_MOCK.getOdbId())
-    await threadUser2._initConfidential()
+    await threadUser2._setIdentity(await THREEID3_MOCK.getOdbId())
     await expect(threadUser2.deletePost(entryId)).rejects.toThrow(/not append entry/)
   })
 
@@ -273,15 +251,13 @@ describe('Confidential Thread', () => {
     // create thread by mod, with member
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
 
     // member write post
     const threadMember = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMember._load()
-    threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMember._initConfidential()
+    await threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
     await threadMember.post(MSG1)
 
     //Member delete their own post
@@ -297,14 +273,12 @@ describe('Confidential Thread', () => {
     // create thread by mod, no members
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
 
     // Non member try to post
     const threadMember = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMember._load()
-    threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
-    await expect(threadMember._initConfidential()).rejects.toThrow(/no access/)
+    await expect(threadMember._setIdentity(await THREEID2_MOCK.getOdbId())).rejects.toThrow(/no access/)
   })
 
   it('a member can post in a confidential thread', async () => {
@@ -313,15 +287,13 @@ describe('Confidential Thread', () => {
     // create thread by mod, with member
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
 
     // member write post
     const threadMember = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMember._load()
-    threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMember._initConfidential()
+    await threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
     await threadMember.post(MSG1)
     const posts = await threadMember.getPosts()
     await expect(posts[0].message).toEqual(MSG1)
@@ -333,15 +305,13 @@ describe('Confidential Thread', () => {
     // create thread by mod, with member
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
 
     // member tries to add member
     const threadMember = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMember._load()
-    threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMember._initConfidential()
+    await threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
     await expect(threadMember.addMember(DID3)).rejects.toThrow(/can not be granted/)
     expect(await threadMember.listMembers()).toEqual([DID2])
   })
@@ -352,15 +322,13 @@ describe('Confidential Thread', () => {
     // create thread by mod, with member
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
 
     // member tries to add member
     const threadMember = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMember._load()
-    threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMember._initConfidential()
+    await threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
     await expect(threadMember.addModerator(DID3)).rejects.toThrow(/can not be granted/)
     expect(await threadMember.listModerators()).toEqual([DID1])
   })
@@ -372,16 +340,14 @@ describe('Confidential Thread', () => {
     // create thread by mod, with member
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
     await threadMod.addModerator(DID2)
 
     //now mod, adds mod
     const threadMember = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMember._load()
-    threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMember._initConfidential()
+    await threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
     await threadMember.addModerator(DID3)
     expect(await threadMember.listModerators()).toEqual([DID1, DID2, DID3])
   })
@@ -392,70 +358,38 @@ describe('Confidential Thread', () => {
     // create thread by mod, with member
     const threadMod = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
     await threadMod._load()
-    threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
-    await threadMod._initConfidential()
+    await threadMod._setIdentity(await THREEID1_MOCK.getOdbId())
     await threadMod.addMember(DID2)
     await threadMod.addModerator(DID2)
 
     //now mod, adds members
     const threadMember = new Thread(threadName, replicatorMock, false, DID1, threadMod._encKeyId, DID2, subscribeMock)
     await threadMember._load()
-    threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
-    await threadMember._initConfidential()
+    await threadMember._setIdentity(await THREEID2_MOCK.getOdbId())
     await threadMember.addMember(DID3)
     expect(await threadMember.listMembers()).toEqual([DID2, DID3])
   })
 
-  // it('a thread can be loaded by its address only', async () => {
-  //
-  //   const threadName = randomThreadName()
-  //   const thread1 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
-  //   await thread1._load()
-  //   thread1._setIdentity(await THREEID1_MOCK.getOdbId())
-  //   await thread1._initConfidential()
-  //   await thread1.addMember(DID2)
-  //
-  //   const thread1Address = thread1.address
-  //   await thread1.post(MSG1)
-  //   // const posts = await thread1.getPosts()
-  //   // const entryId = posts[0].postId
-  //
-  //   const threadSpace = thread1Address.split('.')[2]
-  //   const threadNamepull = thread1Address.split('.')[3]
-  //   const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
-  //   // should be able to pass name undefined, and mmembers as well
-  //   const thread2 = new Thread(namesTothreadName(threadSpace, threadNamepull), replicatorMock, true, undefined, undefined, DID2, subscribeMock)
-  //   // await thread._load(address)
-  //
-  //   // ie can not pass all configs, just loads from address instead
-  //   // const thread2 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID2, subscribeMock)
-  //   await thread2._load(thread1Address)
-  //   thread2._setIdentity(await THREEID2_MOCK.getOdbId())
-  //   await thread2._initConfidential()
-  //   const thread2Address = thread2.address
-  //   expect(thread2Address).toEqual(thread1Address)
-  //   // expect(thread1Address).toEqual(thread2Address)
-  //   // const posts = await thread2.getPosts()
-  //   // console.log(posts)
-  //
-  //   // await expect(posts[0].message).toEqual(MSG1)
-  //
-  //   // TODO NEED TO IMPROVE OR MOVE TO MULTI USER
-  //   // const threadName = randomThreadName()
-  //   // const thread1 = new Thread(threadName, replicatorMock, false, DID1, undefined, undefined, subscribeMock)
-  //   // await thread1._load()
-  //   // thread1._setIdentity(await THREEID1_MOCK.getOdbId())
-  //   // const thread1Address = thread1.address
-  //   // await thread1.post(MSG1)
-  //   // const posts = await thread1.getPosts()
-  //   // const entryId = posts[0].postId
-  //   // const thread2 = new Thread(threadName, replicatorMock, undefined, DID1, undefined, undefined, subscribeMock)
-  //   // await thread2._load(thread1Address)
-  //   // thread2._setIdentity(await THREEID2_MOCK.getOdbId())
-  //   // const thread2Address = thread2.address
-  //   // expect(thread1Address).toEqual(thread2Address)
-  //   // await expect(posts[0].message).toEqual(MSG1)
-  // })
+  it('a thread can be loaded by its address only', async () => {
+    const threadName = randomThreadName()
+    const thread1 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
+    await thread1._load()
+    await thread1._setIdentity(await THREEID1_MOCK.getOdbId())
+    await thread1._initConfidential()
+    await thread1.addMember(DID2)
+
+    const thread1Address = thread1.address
+    await thread1.post(MSG1)
+
+    const thread2 = new ThreadImport(undefined, replicatorMock, undefined, undefined, undefined, userMock(DID2), subscribeMock)
+    await thread2._load(thread1Address)
+    await thread2._setIdentity(await THREEID2_MOCK.getOdbId())
+    const thread2Address = thread2.address
+    expect(thread2Address).toEqual(thread1Address)
+    const posts = await thread2.getPosts()
+
+    await expect(posts[0].message).toEqual(MSG1)
+  })
 
   describe('multi user interaction', () => {
     let threadUser1
@@ -477,15 +411,13 @@ describe('Confidential Thread', () => {
     it('syncs thread between users', async () => {
       threadUser1 = new Thread(THREAD2_NAME, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
       await threadUser1._load()
-      threadUser1._setIdentity(await THREEID1_MOCK.getOdbId())
-      await threadUser1._initConfidential()
+      await threadUser1._setIdentity(await THREEID1_MOCK.getOdbId())
       await threadUser1.addMember(DID2)
 
 
       threadUser2 = new Thread(THREAD2_NAME, replicatorMock2, false, DID1, threadUser1._encKeyId, DID2, subscribeMock)
       await threadUser2._load()
-      threadUser2._setIdentity(await THREEID2_MOCK.getOdbId())
-      await threadUser2._initConfidential()
+      await threadUser2._setIdentity(await THREEID2_MOCK.getOdbId())
 
       // user1 posts and user2 receives
       // done needed to not catch the write event
@@ -533,14 +465,12 @@ describe('Confidential Thread', () => {
 
       threadUser1 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
       await threadUser1._load()
-      threadUser1._setIdentity(await THREEID1_MOCK.getOdbId())
-      await threadUser1._initConfidential()
+      await threadUser1._setIdentity(await THREEID1_MOCK.getOdbId())
       await threadUser1.addMember(DID2)
 
       threadUser2 = new Thread(threadName, replicatorMock2, false, DID1, threadUser1._encKeyId, DID2, subscribeMock)
       await threadUser2._load()
-      threadUser2._setIdentity(await THREEID2_MOCK.getOdbId())
-      await threadUser2._initConfidential()
+      await threadUser2._setIdentity(await THREEID2_MOCK.getOdbId())
 
       // user two tries to add a moderator and fails
       await expect(threadUser2.addModerator(DID3)).rejects.toThrow(/can not be granted/)
@@ -567,17 +497,15 @@ describe('Confidential Thread', () => {
       const threadName = randomThreadName()
       threadUser1 = new Thread(threadName, replicatorMock, false, DID1, undefined, DID1, subscribeMock)
       await threadUser1._load()
-      threadUser1._setIdentity(await THREEID1_MOCK.getOdbId())
-      await threadUser1._initConfidential()
+      await threadUser1._setIdentity(await THREEID1_MOCK.getOdbId())
 
       threadUser2 = new Thread(threadName, replicatorMock2, false, DID1, threadUser1._encKeyId, DID2, subscribeMock)
       await threadUser2._load()
-      threadUser2._setIdentity(await THREEID2_MOCK.getOdbId())
-      await expect(threadUser2._initConfidential()).rejects.toThrow(/no access/)
+      await expect(threadUser2._setIdentity(await THREEID2_MOCK.getOdbId())).rejects.toThrow(/no access/)
 
       // user one adds user 2 as member
       await threadUser1.addMember(DID2)
-      await threadUser2._initConfidential()
+      await threadUser2._setIdentity(await THREEID2_MOCK.getOdbId())
       expect(await threadUser2.listMembers()).toEqual([DID2])
       expect(await threadUser1.listMembers()).toEqual([DID2])
 
