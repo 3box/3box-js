@@ -204,25 +204,6 @@ class Space {
   }
 
   /**
-   * Join a confidential thread (throws if access has not been granted)
-   *
-   * @param     {String}    ref                 Address of a confidential thread
-   * @param     {Object}    ref                 Alternatively pass a confidential thread config object
-   * @param     {String}    ref.name            Confidential thread name
-   * @param     {String}    ref.firstModerator  DID or address of firstModerator of confidential thread
-   * @param     {String}    ref.encKeyId        Encryption key id of confidential thread
-   *
-   * @return    {Thread}                        An instance of the thread class for the joined thread
-   */
-  async joinConfidentialThread (ref) {
-    if (typeof ref === 'string') {
-      return this.joinThreadByAddress(ref, { condfidential: true })
-    } else {
-      return this.joinThread(ref.name, { confidential: ref.encKeyId, firstModerator: ref.firstModerator })
-    }
-  }
-
-  /**
    * Create a confidential thread
    *
    * @param     {String}    name          The name of the thread

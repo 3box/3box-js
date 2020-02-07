@@ -128,19 +128,8 @@ openThread.addEventListener('click', () => {
 
 joinConfThread.addEventListener('click', () => {
   const address = confThreadAddress.value
-
-  let params
-  if (!address) {
-    const name = confThreadJoinName.value
-    const firstModerator = confThreadFirstMod.value
-    const encKeyId =  confThreadEncId.value
-    params = { name , encKeyId, firstModerator }
-  } else {
-    params = address
-  }
-
   displayThread(true)
-  box.spaces[window.currentSpace].joinConfidentialThread(params)
+  box.spaces[window.currentSpace].joinThreadByAddress(address)
      .then(registerThreadEvents)
      .catch(updateThreadError)
 })
