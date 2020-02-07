@@ -195,8 +195,9 @@ However if applications want to add interactivity to the thread, such as allowin
 
 #### Interacting with a Thread
 
-##### 1. Creating and joining a thread
-To post in a thread, a user must first join the thread. This will implicitly use the moderation options where the current user is the `firstModerator` and `members` is false. If you are the first to join a public thread it will be created at that point.
+##### 1.a Creating a Public Thread
+
+To create and join a public thread, you can simply join the thread. This will implicitly use the moderation options where the current user is the `firstModerator` and `members` is false.
 
 ```js
 const thread = await space.joinThread('myThread')
@@ -208,43 +209,54 @@ A thread can also be given the moderation options when joining. You can pass `fi
 const thread = await space.joinThread('myThread', { firstModerator: 'some3ID', members: true })
 ```
 
-To create and join a confidential thread. At creation you will likely want to add other members so that they can read and write messages to the thread.
+##### 1.b Creating a Confidential Thread
+
+To create and join a confidential thread.
 
 ```js
 const thread = await space.createConfidentialThread('myConfThread')
 ```
 
-Lastly an existing thread can be joined by its address. Confidential threads are best referenced by their address. While public threads can be joined by address or known configs as shown above.
+At creation you will likely want to add other members so that they can read and write messages to the thread, as shown below.
+
+##### 2. Joining a Thread
+
+An existing public or confidential thread can be joined by its address. Confidential threads are best referenced by their address.
 
 ```js
 const thread = await space.joinThreadByAddress('/orbitdb/zdpuAp5QpBKR4BBVTvqe3KXVcNgo4z8Rkp9C5eK38iuEZj3jq/3box.thread.testSpace.testThread')
 ```
 
-An address of a thread can be found as follows once joined.
+While public threads can be joined by address or by passing known configs (same as above).
 
+```js
+const publicThread = await space.joinThread('myThread', { firstModerator: 'some3ID', members: true })
+```
+
+An address of a thread can be found as follows once joined.
 
 ```js
 const threadAddress = thread.address
 ```
 
-##### 2. Posting to a thread
+##### 3. Posting to a thread
 This allows the user to add a message to the thread. The author of the message will be the user's 3Box DID. When a user posts in a thread, they are automatically subscribed to the thread and it is saved in the space used by the application under the key `thread-threadName`.
 ```js
 await thread.post('hello world')
 ```
-##### 3. Getting all posts in a thread
+##### 4. Getting all posts in a thread
 This allows applications to get the posts in a thread.
 ```js
 const posts = await thread.getPosts()
 console.log(posts)
 ```
-##### 4. Listening for updates in thread
+##### 5. Listening for updates in thread
 This allows applications to listen for new posts in the thread, and perform an action when this occurs, such as adding the new message to the application's UI.
 ```js
 thread.onUpdate(myCallbackFunction)
 ```
 
-##### 5. Handling moderation and capabilities
+##### 6. Handling moderation and capabilities
 
 Add a moderator and list all existing moderators
 ```js
