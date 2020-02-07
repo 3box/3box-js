@@ -67,6 +67,7 @@ bauth.addEventListener('click', event => {
           spacePub.innerHTML = `Public data in ${name}:`
           spacePriv.innerHTML = `Private data in ${name}:`
           spaceCtrl.style.display = 'block'
+          confidentialThreads.style.display = 'block'
           updateSpaceData()
         })
       })
@@ -116,25 +117,13 @@ openThread.addEventListener('click', () => {
   const membersBool = members.checked
   const ghostBool = ghostCheck.checked
   console.log('ghost?', ghostBool);
-  posts.style.display = 'block'
-  threadModeration.style.display = 'block'
-  if (members.checked) threadMembers.style.display = 'block'
+  displayThread(false)
   if (ghostCheck.checked) {
     addThreadMod.disabled = true
   }
-  box.openThread(space, name, {firstModerator, members: membersBool, ghost: ghostBool}).then(thread => {
-    window.currentThread = thread
-    thread.onUpdate(() => {
-      updateThreadData()
-    })
-    thread.onNewCapabilities(() => {
-      updateThreadCapabilities()
-    })
-    if (window.currentThread._room == undefined) {
-      updateThreadData()
-      updateThreadCapabilities()
-    }
-  }).catch(updateThreadError)
+  box.openThread(space, name, {firstModerator, members: membersBool, ghost: ghostBool})
+     .then(registerThreadEvents)
+     .catch(updateThreadError)
 })
 
 joinConfThread.addEventListener('click', () => {
@@ -150,44 +139,18 @@ joinConfThread.addEventListener('click', () => {
     params = address
   }
 
-  posts.style.display = 'block'
-  threadModeration.style.display = 'block'
-  threadMembers.style.display = 'block'
-  // TODO MOVE
-  box.spaces[window.currentSpace].joinConfidentialThread(params).then(thread => {
-    window.currentThread = thread
-    thread.onUpdate(() => {
-      updateThreadData()
-    })
-    thread.onNewCapabilities(() => {
-      updateThreadCapabilities()
-    })
-    if (window.currentThread._room == undefined) {
-      updateThreadData()
-      updateThreadCapabilities()
-    }
-  })
+  displayThread(true)
+  box.spaces[window.currentSpace].joinConfidentialThread(params)
+     .then(registerThreadEvents)
+     .catch(updateThreadError)
 })
 
 createConfThread.addEventListener('click', () => {
   const name = confThreadName.value
-  posts.style.display = 'block'
-  threadModeration.style.display = 'block'
-  threadMembers.style.display = 'block'
-  // TODO MOVE
-  box.spaces[window.currentSpace].createConfidentialThread(name).then(thread => {
-    window.currentThread = thread
-    thread.onUpdate(() => {
-      updateThreadData()
-    })
-    thread.onNewCapabilities(() => {
-      updateThreadCapabilities()
-    })
-    if (window.currentThread._room == undefined) {
-      updateThreadData()
-      updateThreadCapabilities()
-    }
-  })
+  displayThread(true)
+  box.spaces[window.currentSpace].createConfidentialThread(name)
+     .then(registerThreadEvents)
+     .catch(updateThreadError)
 })
 
 addThreadMod.addEventListener('click', () => {
@@ -210,12 +173,33 @@ window.deletePost = (el) => {
   }).catch(updateThreadError)
 }
 
+const registerThreadEvents = (thread) => {
+  window.currentThread = thread
+  thread.onUpdate(() => {
+    updateThreadData()
+  })
+  thread.onNewCapabilities(() => {
+    updateThreadCapabilities()
+  })
+  if (window.currentThread._room == undefined) {
+    updateThreadData()
+    updateThreadCapabilities()
+  }
+}
+
+const displayThread = (members) => {
+  posts.style.display = 'block'
+  threadModeration.style.display = 'block'
+  if (members) threadMembers.style.display = 'block'
+}
+
 const updateThreadError = (e = '') => {
   threadACError.innerHTML = e
 }
 
 const updateThreadData = () => {
   threadData.innerHTML = ''
+  threadAddress.innerHTML = window.currentThread.address
   updateThreadError()
   window.currentThread.getPosts().then(posts => {
     posts.map(post => {

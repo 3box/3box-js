@@ -174,13 +174,13 @@ const config = await space.private.get('dapp-config')
 ```
 
 ## Threads API (Messaging)
-### Add message threads to your app
-Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, in the same space, and same moderation configs) will be able to communicate in that thread.
+### Add public and confidential message threads to your app
+Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, space, moderation configs, and access configs) will be able to communicate in that thread.
 
 For the fully detailed spec, view the [documentation](https://github.com/3box/3box/blob/master/3IPs/3ip-2.md).
 
-#### Viewing a Thread
-You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. A thread can be referenced by all its configuration options or by its address.
+#### Viewing a Public Thread
+You can get all posts made in a public thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. A thread can be referenced by all its configuration options or by its address.
 ```js
 const posts = await Box.getThread(spaceName, threadName, firstModerator, membersThread)
 console.log(posts)
@@ -191,12 +191,13 @@ Threads can also be viewed without opening space, or authenticating by calling t
 const posts = await Box.getThreadByAddress(threadAddress)
 console.log(posts)
 ```
-However if applications want to add interactivity to the thread, such as allowing the user to post in a thread or follow updates in a thread, you will need to open their space to enable additional functionality.
+However if applications want to add interactivity to the thread, such as allowing the user to post in a thread or follow updates in a thread, you will need to open their space to enable additional functionality. Same is true for a confidential thread, which requires you autheticate to get access to view the posts in a confidential thread.
 
 #### Interacting with a Thread
 
-##### 1. Joining a thread
-To post in a thread, a user must first join the thread. This will implicitly use the moderation options where the current user is the `firstModerator` and `members` is false.
+##### 1. Creating and joining a thread
+To post in a thread, a user must first join the thread. This will implicitly use the moderation options where the current user is the `firstModerator` and `members` is false. If you are the first to join a public thread it will be created at that point.
+
 ```js
 const thread = await space.joinThread('myThread')
 ```
@@ -207,10 +208,23 @@ A thread can also be given the moderation options when joining. You can pass `fi
 const thread = await space.joinThread('myThread', { firstModerator: 'some3ID', members: true })
 ```
 
-Lastly a thread can be joined by its address.
+To create and join a confidential thread. At creation you will likely want to add other members so that they can read and write messages to the thread.
+
+```js
+const thread = await space.createConfidentialThread('myConfThread')
+```
+
+Lastly an existing thread can be joined by its address. Confidential threads are best referenced by their address. While public threads can be joined by address or known configs as shown above.
 
 ```js
 const thread = await space.joinThreadByAddress('/orbitdb/zdpuAp5QpBKR4BBVTvqe3KXVcNgo4z8Rkp9C5eK38iuEZj3jq/3box.thread.testSpace.testThread')
+```
+
+An address of a thread can be found as follows once joined.
+
+
+```js
+const threadAddress = thread.address
 ```
 
 ##### 2. Posting to a thread
