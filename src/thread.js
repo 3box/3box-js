@@ -67,7 +67,6 @@ class Thread {
   }
 
   async _getThreadAddress () {
-    // TODO WORKS?
     if (this._address) return this._address
     await this._initAcConfigs()
     const address = (await this._replicator._orbitdb._determineAddress(this._name, 'feed', {
@@ -304,13 +303,13 @@ class Thread {
   }
 
   _symEncrypt (message) {
-    const msg = utils.pad(message)
+    const msg = utils.pad(JSON.stringify(message))
     return symEncryptBase(msg, this._symKey)
   }
 
   _symDecrypt (payload) {
     const paddedMsg = symDecryptBase(payload.ciphertext, this._symKey, payload.nonce)
-    return utils.unpad(paddedMsg)
+    return JSON.parse(utils.unpad(paddedMsg))
   }
 
   async _encryptSymKey (to) {

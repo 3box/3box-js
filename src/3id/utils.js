@@ -28,7 +28,7 @@ const symDecryptBase = (ciphertext, symKey, nonce, toBuffer) => {
 }
 
 const newSymKey = () => {
-  return nacl.box.keyPair().secretKey
+  return nacl.randomBytes(32)
 }
 
 

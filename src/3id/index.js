@@ -11,11 +11,7 @@ const utils = require('../utils/index')
 const Keyring = require('./keyring')
 const config = require('../config.js')
 const nacl = require('tweetnacl')
-
-// Redundant key ring
-const randomNonce = () => {
-  return nacl.randomBytes(24)
-}
+const { randomNonce }  = require('./utils')
 
 const DID_METHOD_NAME = '3'
 const STORAGE_KEY = 'serialized3id_'

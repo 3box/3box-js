@@ -37,6 +37,8 @@ const MSG2 = 'message2'
 const MSG3 = 'message3'
 const MSG4 = 'message4'
 
+const MSGObj = { "greetings": "hello" }
+
 const THREEID1_MOCK = threeIDMockFactory(DID1)
 const THREEID2_MOCK = threeIDMockFactory(DID2)
 const THREEID3_MOCK = threeIDMockFactory(DID3)
@@ -142,6 +144,18 @@ describe('Confidential Thread', () => {
     expect(subscribeMock).toHaveBeenCalledTimes(3)
     expect(replicatorMock.ensureConnected).toHaveBeenCalledTimes(3)
     expect(replicatorMock.ensureConnected).toHaveBeenNthCalledWith(3, storeAddr, true)
+  })
+
+  it('adding object posts works as expected', async () => {
+    const threadName = randomThreadName()
+    const thread = new Thread(threadName, replicatorMock, true, DID1, undefined, DID1, subscribeMock)
+    await thread._load()
+    await thread._setIdentity(await THREEID1_MOCK.getOdbId())
+
+    await thread.post(MSGObj)
+    let posts = await thread.getPosts()
+    expect(posts[0].author).toEqual(THREEID1_MOCK.DID)
+    expect(posts[0].message).toEqual(MSGObj)
   })
 
   it('root moderator can add another moderator', async () => {
