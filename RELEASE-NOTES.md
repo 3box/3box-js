@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.16.3 - 2020-02-13
+* fix: getIPFS called same time or from different closures in browser
+* fix: ghost chat member list, with no auth opens
+
 ## v1.16.2 - 2020-02-05
 * chore: update ipfs & orbitdb
 * fix: Verify legacy muport DID properly
