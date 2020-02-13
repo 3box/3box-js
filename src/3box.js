@@ -21,7 +21,7 @@ const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 
-let globalIPFS // , ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS, globalIPFSPromise // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
 /*
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -509,8 +509,20 @@ class Box extends BoxApi {
    * @return    {IPFS}                           the ipfs instance
    */
   static async getIPFS (opts = {}) {
-    const ipfs = globalIPFS || await initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
-    globalIPFS = ipfs
+    if (typeof window !== 'undefined') {
+      globalIPFS = window.globalIPFS
+      globalIPFSPromise = window.globalIPFSPromise
+    }
+
+    if (!globalIPFS && !globalIPFSPromise) {
+      globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+    }
+    if (typeof window !== 'undefined') window.globalIPFSPromise = globalIPFSPromise
+
+    if (!globalIPFS) globalIPFS = await globalIPFSPromise
+    if (typeof window !== 'undefined') window.globalIPFS = globalIPFS
+
+    const ipfs = globalIPFS
     const pinningNode = opts.pinningNode || PINNING_NODE
     ipfs.swarm.connect(pinningNode, () => {})
     return ipfs
