@@ -73,8 +73,8 @@ class GhostThread extends EventEmitter {
     this._3id = threeId
     // announce to other peers that we are online
     this.listMembers().then(members => {
-      members.map(({ id }) => {
-        this._announce(this._threeIdToPeerId(id))
+      this._room.getPeers().map(id => {
+        this._announce(id)
       })
     })
   }
@@ -228,7 +228,7 @@ class GhostThread extends EventEmitter {
    */
   async _userJoined (did, peerID) {
     const members = await this.listMembers()
-    if (!members.includes(did) && (this._3id && this._3id.DID !== did)) {
+    if (!members.includes(did) && (!this._3id || this._3id.DID !== did)) {
       this._members[did] = peerID
       this._members[peerID] = did
       this.emit('user-joined', 'joined', did, peerID)
