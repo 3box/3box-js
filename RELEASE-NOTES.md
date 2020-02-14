@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.17.0 - 2020-02-13
+* feat: confidential threads 🔒📫
+
+Confidential threads are encrypted member only threads, used for private dms, group messages, etc
+
 ## v1.16.3 - 2020-02-13
 * fix: getIPFS called same time or from different closures in browser
 * fix: ghost chat member list, with no auth opens
