@@ -62,7 +62,7 @@ class User {
    *
    * @return    {Object}                            An object containing the encrypted payload
    */
-  async encrypt (message, { to }) {
+  async encrypt (message, { to } = {}) {
     let toPubkey
     if (to) {
       toPubkey = await findSpacePubKey(to, this._name)
@@ -77,8 +77,8 @@ class User {
    *
    * @return    {String}                            The clear text message
    */
-  async decrypt (encryptedObject) {
-    return this._3id.decrypt(encryptedObject, this._name)
+  async decrypt (encryptedObject, toBuffer) {
+    return this._3id.decrypt(encryptedObject, this._name, toBuffer)
   }
 }
 
@@ -163,6 +163,7 @@ class Space {
    * @param     {Object}    opts                    Optional parameters
    * @param     {String}    opts.firstModerator     DID of first moderator of a thread, by default, user is first moderator
    * @param     {Boolean}   opts.members            join a members only thread, which only members can post in, defaults to open thread
+   * @param     {Boolean}   opts.confidential       create a confidential thread with true or join existing confidential thread with an encKeyId string
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
    * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
@@ -182,20 +183,35 @@ class Space {
       return this._activeThreads[ghostAddress]
     } else {
       const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
+      if (opts.confidential) {
+        if (!this._3id) throw new Error('confidential threads require user to be authenticated')
+      }
       if (!opts.firstModerator) {
         if (!this._3id) throw new Error('firstModerator required if not authenticated')
         opts.firstModerator = this._3id.getSubDID(this._name)
       }
-      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, subscribeFn)
+      const user = this._3id ? this.user : {}
+      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, opts.confidential, user, subscribeFn)
       const address = await thread._getThreadAddress()
       if (this._activeThreads[address]) return this._activeThreads[address]
       await thread._load()
       if (this._3id) {
-        thread._setIdentity(await this._3id.getOdbId(this._name))
+        await thread._setIdentity(await this._3id.getOdbId(this._name))
       }
       this._activeThreads[address] = thread
       return thread
     }
+  }
+
+  /**
+   * Create a confidential thread
+   *
+   * @param     {String}    name          The name of the thread
+   *
+   * @return    {Thread}                  An instance of the thread class for the created thread
+   */
+  async createConfidentialThread (name) {
+    return this.joinThread(name, { confidential: true })
   }
 
   /**
@@ -215,8 +231,12 @@ class Space {
     if (threadSpace !== this._name) throw new Error('joinThreadByAddress: attempting to open thread from different space, must open within same space')
     if (this._activeThreads[address]) return this._activeThreads[address]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
-    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, this._3id, opts.members, opts.firstModerator, subscribeFn)
+    const user = this._3id ? this.user : {}
+    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, undefined, undefined, undefined, user, subscribeFn)
     await thread._load(address)
+    if (this._3id) {
+      await thread._setIdentity(await this._3id.getOdbId(this._name))
+    }
     this._activeThreads[address] = thread
     return thread
   }

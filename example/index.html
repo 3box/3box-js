@@ -117,6 +117,16 @@
       <input type="radio" name="ghostCheck" id='ghostCheck' value="true"> </br>
       <button id="openThread" type="button" class="btn btn btn-primary" disabled=true>Open thread</button>  </br></br>
 
+      <div id="confidentialThreads" style="display: none;">
+        <h3> Confidential Threads: </h3>
+        <h6> Create: </h6>
+        <input type="text" id="confThreadName" placeholder="Name of thread"></br>
+        <button id="createConfThread" type="button" class="btn btn btn-primary">Create thread</button>  </br></br>
+        <h6> Join By Address: </h6>
+        <input type="text" id="confThreadAddress" placeholder="Address of thread"></br>
+        <button id="joinConfThread" type="button" class="btn btn btn-primary" >Join thread</button>  </br></br>
+      </div>
+
       <div id="threadModeration" style="display: none;">
         <input type="text" id="threadMod" placeholder="Thread Moderator">
         <button id="addThreadMod" type="button" class="btn btn btn-primary" >Add Thread Moderator</button></br>
@@ -136,6 +146,10 @@
 
       <p>
         <span id="threadACError"></span>
+      </p>
+      <h6> Thread Address: </h6>
+      <p>
+        <span id="threadAddress"></span>
       </p>
 
       <div id="posts" style="display: none;">

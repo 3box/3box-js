@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.16.3",
+  "version": "1.17.0",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
-    "3box-orbitdb-plugins": "3box/3box-orbitdb-plugins#feat/orbit-23",
+    "3box-orbitdb-plugins": "^1.1.0",
     "3id-blockchain-utils": "^0.3.2",
     "3id-resolver": "^0.0.5",
     "@babel/runtime": "^7.4.5",
