@@ -5,6 +5,7 @@ const SimpleSigner = require('did-jwt').SimpleSigner
 const { sha256 } = require('../utils/index')
 const EC = require('elliptic').ec
 const ec = new EC('secp256k1')
+const { randomNonce, symEncryptBase, symDecryptBase }  = require('./utils')
 
 const BASE_PATH = "m/7696500'/0'/0'"
 const MM_PATH = "m/44'/60'/0'/0"
@@ -86,32 +87,6 @@ class Keyring {
   static uncompress (key) {
     return ec.keyFromPublic(Buffer.from(key, 'hex')).getPublic(false, 'hex')
   }
-}
-
-const randomNonce = () => {
-  return nacl.randomBytes(24)
-}
-
-const symEncryptBase = (msg, symKey, nonce) => {
-  nonce = nonce || randomNonce()
-  if (typeof msg === 'string') {
-    msg = nacl.util.decodeUTF8(msg)
-  }
-  const ciphertext = nacl.secretbox(msg, nonce, symKey)
-  return {
-    nonce: nacl.util.encodeBase64(nonce),
-    ciphertext: nacl.util.encodeBase64(ciphertext)
-  }
-}
-
-const symDecryptBase = (ciphertext, symKey, nonce, toBuffer) => {
-  ciphertext = nacl.util.decodeBase64(ciphertext)
-  nonce = nacl.util.decodeBase64(nonce)
-  const cleartext = nacl.secretbox.open(ciphertext, nonce, symKey)
-  if (toBuffer) {
-    return cleartext ? Buffer.from(cleartext) : null
-  }
-  return cleartext ? nacl.util.encodeUTF8(cleartext) : null
 }
 
 module.exports = Keyring
