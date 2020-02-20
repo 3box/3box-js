@@ -51,7 +51,7 @@ module.exports = {
 
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
-    if (ethereum.isAuthereum) return ethereum.signMessageWithAdminKey(text)
+    if (ethereum.isAuthereum) return ethereum.signMessageWithSigningKey(text)
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
@@ -60,7 +60,7 @@ module.exports = {
 
   openSpaceConsent: (fromAddress, ethereum, name) => {
     const text = `Allow this app to open your ${name} space.`
-    if (ethereum.isAuthereum) return ethereum.signMessageWithAdminKey(text)
+    if (ethereum.isAuthereum) return ethereum.signMessageWithSigningKey(text)
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
