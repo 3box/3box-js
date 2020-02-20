@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.17.1 - 2020-02-20
+* fix: Use authereum signing key (#733)
+
 ## v1.17.0 - 2020-02-13
 * feat: confidential threads 🔒📫
 
