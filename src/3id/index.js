@@ -37,7 +37,7 @@ class ThreeId {
           this.events.emit(event, data)
         })
       }
-      setInterval(() => {
+      this._pollInterval = setInterval(() => {
         poll('3id_newAuthMethodPoll', 'new-auth-method')
         poll('3id_newLinkPoll', 'new-link-proof')
       }, POLL_INTERVAL)
@@ -274,6 +274,9 @@ class ThreeId {
 
   logout () {
     localstorage.remove(STORAGE_KEY + this.managementAddress)
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval)
+    }
   }
 
   static isLoggedIn (address) {
