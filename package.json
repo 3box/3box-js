@@ -24,7 +24,7 @@
     "fs": false,
     "child_process": false
   },
-  "jest": {
+  "jest": { 
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
       "node_modules",
@@ -49,6 +49,7 @@
     "@babel/runtime": "^7.4.5",
     "@ethersproject/hdnode": "^5.0.0-beta.133",
     "@ethersproject/wallet": "^5.0.0-beta.133",
+    "@portis/web3": "^2.0.0-beta.54",
     "did-jwt": "^0.2.0",
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
@@ -70,7 +71,8 @@
     "orbit-db-storage-adapter": "^0.5.3",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
-    "tweetnacl-util": "^0.15.0"
+    "tweetnacl-util": "^0.15.0",
+    "web3": "^1.2.6"
   },
   "devDependencies": {
     "@babel/cli": "^7.4.4",

@@ -1,189 +1,192 @@
 <!doctype html>
 
 <html>
-  <head>
-    <title>3box Demo</title>
 
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  </head>
+<head>
+  <title>3box Demo</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@portis/web3@2.0.0-beta.10/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.34/dist/web3.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
 
-  <body>
-    <!-- Auth Box -->
-    <button id="bauth" type="button" class="btn btn-primary" style="margin: 50px 100px;" disabled=true>Auth 3box</button>
+<body>
+  <!-- Auth Box -->
+  <button id="bauth" type="button" class="btn btn-primary" style="margin: 50px 100px;" disabled=true>Auth 3box</button>
 
-    <div id="controlls" style="display: none; padding: 5px 100px;">
+  <div id="controlls" style="display: none; padding: 5px 100px;">
 
-      <div style="padding: 0px 0px 25px 0px;">
-        <h2> Identity </h2>
-        <h5 style="padding: 20px 0px 10px 0px"> DID: </h5>
-        <p>
-          <span id="didInfo"></span>
-        </p>
-
-        <h3> Address Links </h3>
-        <p>
-          <span id="addressLinks"></span>
-        </p>
-
-        <h5> Current address linked? </h5>
-        <p>
-          <span id="addressLinked"></span>
-        </p>
-        <button id="linkAddress" type="button" class="btn btn-primary">Link address</button>
-      </div>
-
-      <!-- Public Store Div -->
-      <div style="padding: 0px 0px 25px 0px;">
-        <h2> Public Store </h2>
-
-        <input type="text" id="prkey" placeholder="Profile Key" >
-        <input type="text" id="prvalue" placeholder="Profile Value" >
-        <button id="setProfile" type="button" class="btn btn-primary">Set Profile Data</button>
-
-        <h3> Verified Accounts </h3>
-        <p>
-          <span id="verifiedAccounts"></span>
-        </p>
-        <input type="text" id="gisturl" placeholder="Gist URL" >
-        <button id="verifyGithub" type="button" class="btn btn-primary">Verify Github</button>
-
-        <p><b>Verified Github:</b>
-          <span id="githubUser"></span>
-        </p>
-
-        <h5 style="padding: 20px 0px 10px 0px"> Profile: </h5>
-        <p>
-          <span id="profileData"></span>
-        </p>
-      </div>
-
-      <!-- Private Store Div -->
-      <div>
-        <h2> Private Store </h2>
-        <input type="text" id="pskey" placeholder="Private Store Key">
-        <input type="text" id="psvalue" placeholder="Private Store Value">
-        <button id="setPrivateStore" type="button" class="btn btn btn-primary"> Set Private Store Data</button>
-
-        <h5 style="padding: 20px 0px 10px 0px" >Private Store Data : (Key must be known to get value)</h5>
-        <input type="text" id="getpskey" placeholder="Private Store Key">
-        <button id="getPrivateStore" type="button" class="btn btn btn-primary" >Get Private Store Value</button>
-
-        <p style="padding: 20px 0px 10px 0px">
-          <span id="privateStoreData"></span>
-        </p>
-      </div>
-
-      <div>
-        <h2> Spaces </h2>
-
-        <input type="text" id="spaceName" placeholder="Open space by name">
-        <button id="openSpace" type="button" class="btn btn btn-primary" >Open space</button>
-
-        <div id="spaceCtrl" style="display: none;">
-          <h3> Public data: </h3>
-          <input type="text" id="spkey" placeholder="Key" >
-          <input type="text" id="spvalue" placeholder="Value" >
-          <button id="setSpacePub" type="button" class="btn btn-primary">Set Space Data</button>
-          <h5 style="padding: 20px 0px 10px 0px" id="spacePub"> </h5>
-          <p>
-            <span id="spaceDataPub"></span>
-          </p>
-          <h3> Private data: </h3>
-          <input type="text" id="sskey" placeholder="Key" >
-          <input type="text" id="ssvalue" placeholder="Value" >
-          <button id="setSpacePriv" type="button" class="btn btn-primary">Set Space Data</button>
-          <h5 style="padding: 20px 0px 10px 0px" id="spacePriv"> </h5>
-          <p>
-            <span id="spaceDataPriv"></span>
-          </p>
-
-        </div>
-      </div>
-
-      <!-- Logout -->
-      <div style="padding: 25px 0px;">
-        <button id="bclose" type="button" class="btn btn-primary">Logout from 3box</button>
-      </div>
-    </div>
-
-    <div style="padding: 0px 0px 25px 100px;">
-      <h3> Threads: </h3>
-      <input type="text" id="threadName" placeholder="Name of thread"></br>
-      <input type="text" id="threadSpaceName" placeholder="Space name"></br>
-      <input type="text" id="threadfirstModerator" placeholder="Thread Root Moderator"></br>
-        <span > Members Only Thread </span>
-      <input type="radio" name="members" id='members' value="true"> </br>
-        <span > Ghost ? </span>
-      <input type="radio" name="ghostCheck" id='ghostCheck' value="true"> </br>
-      <button id="openThread" type="button" class="btn btn btn-primary" disabled=true>Open thread</button>  </br></br>
-
-      <div id="confidentialThreads" style="display: none;">
-        <h3> Confidential Threads: </h3>
-        <h6> Create: </h6>
-        <input type="text" id="confThreadName" placeholder="Name of thread"></br>
-        <button id="createConfThread" type="button" class="btn btn btn-primary">Create thread</button>  </br></br>
-        <h6> Join By Address: </h6>
-        <input type="text" id="confThreadAddress" placeholder="Address of thread"></br>
-        <button id="joinConfThread" type="button" class="btn btn btn-primary" >Join thread</button>  </br></br>
-      </div>
-
-      <div id="threadModeration" style="display: none;">
-        <input type="text" id="threadMod" placeholder="Thread Moderator">
-        <button id="addThreadMod" type="button" class="btn btn btn-primary" >Add Thread Moderator</button></br>
-        <h5> Moderators: </h5>
-        <p>
-          <span id="threadModeratorList"></span>
-        </p>
-      </div>
-      <div id="threadMembers" style="display: none;">
-        <input type="text" id="threadMember" placeholder="Thread Member">
-        <button id="addThreadMember" type="button" class="btn btn btn-primary" >Add Thread Member</button></br>
-        <h5> Members: </h5>
-        <p>
-          <span id="threadMemberList"></span>
-        </p>
-      </div></br>
-
+    <div style="padding: 0px 0px 25px 0px;">
+      <h2> Identity </h2>
+      <h5 style="padding: 20px 0px 10px 0px"> DID: </h5>
       <p>
-        <span id="threadACError"></span>
-      </p>
-      <h6> Thread Address: </h6>
-      <p>
-        <span id="threadAddress"></span>
+        <span id="didInfo"></span>
       </p>
 
-      <div id="posts" style="display: none;">
-        <h4> Posts: </h4>
+      <h3> Address Links </h3>
+      <p>
+        <span id="addressLinks"></span>
+      </p>
+
+      <h5> Current address linked? </h5>
+      <p>
+        <span id="addressLinked"></span>
+      </p>
+      <button id="linkAddress" type="button" class="btn btn-primary">Link address</button>
+    </div>
+
+    <!-- Public Store Div -->
+    <div style="padding: 0px 0px 25px 0px;">
+      <h2> Public Store </h2>
+
+      <input type="text" id="prkey" placeholder="Profile Key">
+      <input type="text" id="prvalue" placeholder="Profile Value">
+      <button id="setProfile" type="button" class="btn btn-primary">Set Profile Data</button>
+
+      <h3> Verified Accounts </h3>
+      <p>
+        <span id="verifiedAccounts"></span>
+      </p>
+      <input type="text" id="gisturl" placeholder="Gist URL">
+      <button id="verifyGithub" type="button" class="btn btn-primary">Verify Github</button>
+
+      <p><b>Verified Github:</b>
+        <span id="githubUser"></span>
+      </p>
+
+      <h5 style="padding: 20px 0px 10px 0px"> Profile: </h5>
+      <p>
+        <span id="profileData"></span>
+      </p>
+    </div>
+
+    <!-- Private Store Div -->
+    <div>
+      <h2> Private Store </h2>
+      <input type="text" id="pskey" placeholder="Private Store Key">
+      <input type="text" id="psvalue" placeholder="Private Store Value">
+      <button id="setPrivateStore" type="button" class="btn btn btn-primary"> Set Private Store Data</button>
+
+      <h5 style="padding: 20px 0px 10px 0px">Private Store Data : (Key must be known to get value)</h5>
+      <input type="text" id="getpskey" placeholder="Private Store Key">
+      <button id="getPrivateStore" type="button" class="btn btn btn-primary">Get Private Store Value</button>
+
+      <p style="padding: 20px 0px 10px 0px">
+        <span id="privateStoreData"></span>
+      </p>
+    </div>
+
+    <div>
+      <h2> Spaces </h2>
+
+      <input type="text" id="spaceName" placeholder="Open space by name">
+      <button id="openSpace" type="button" class="btn btn btn-primary">Open space</button>
+
+      <div id="spaceCtrl" style="display: none;">
+        <h3> Public data: </h3>
+        <input type="text" id="spkey" placeholder="Key">
+        <input type="text" id="spvalue" placeholder="Value">
+        <button id="setSpacePub" type="button" class="btn btn-primary">Set Space Data</button>
+        <h5 style="padding: 20px 0px 10px 0px" id="spacePub"> </h5>
         <p>
-          <span id="threadData"></span>
+          <span id="spaceDataPub"></span>
         </p>
-        <input type="text" id="postMsg" placeholder="Type your message">
-        <button id="postThread" type="button" class="btn btn btn-primary">Post</button>
+        <h3> Private data: </h3>
+        <input type="text" id="sskey" placeholder="Key">
+        <input type="text" id="ssvalue" placeholder="Value">
+        <button id="setSpacePriv" type="button" class="btn btn-primary">Set Space Data</button>
+        <h5 style="padding: 20px 0px 10px 0px" id="spacePriv"> </h5>
+        <p>
+          <span id="spaceDataPriv"></span>
+        </p>
+
       </div>
     </div>
 
-    <hr />
-    <div style="padding: 5px 100px;">
-      <!-- Get Profile Div -->
-      <div style="padding: 0px 0px 25px 0px;">
-        <h2> Get Profile </h2>
+    <!-- Logout -->
+    <div style="padding: 25px 0px;">
+      <button id="bclose" type="button" class="btn btn-primary">Logout from 3box</button>
+    </div>
+  </div>
 
-        <input type="text" id="ethAddr" placeholder="Ethereum Address" >
-        <button id="getProfile" type="button" class="btn btn-primary">Get Profile Data</button>
+  <div style="padding: 0px 0px 25px 100px;">
+    <h3> Threads: </h3>
+    <input type="text" id="threadName" placeholder="Name of thread"></br>
+    <input type="text" id="threadSpaceName" placeholder="Space name"></br>
+    <input type="text" id="threadfirstModerator" placeholder="Thread Root Moderator"></br>
+    <span> Members Only Thread </span>
+    <input type="radio" name="members" id='members' value="true"> </br>
+    <span> Ghost ? </span>
+    <input type="radio" name="ghostCheck" id='ghostCheck' value="true"> </br>
+    <button id="openThread" type="button" class="btn btn btn-primary" disabled=true>Open thread</button> </br></br>
 
-        <h5 style="padding: 20px 0px 10px 0px"> Profile: </h5>
-        <p>
-          <span id="getProfileData"></span>
-        </p>
-      </div>
+    <div id="confidentialThreads" style="display: none;">
+      <h3> Confidential Threads: </h3>
+      <h6> Create: </h6>
+      <input type="text" id="confThreadName" placeholder="Name of thread"></br>
+      <button id="createConfThread" type="button" class="btn btn btn-primary">Create thread</button> </br></br>
+      <h6> Join By Address: </h6>
+      <input type="text" id="confThreadAddress" placeholder="Address of thread"></br>
+      <button id="joinConfThread" type="button" class="btn btn btn-primary">Join thread</button> </br></br>
     </div>
 
-    <div style="padding: 5px 100px; width: 100%;">
-      <!-- Get Profile GraphQL Div -->
-      <div style="padding: 0px 0px 25px 0px;">
-        <h2> Get Profile GraphQL </h2>
-        <div style="width: 100%;">
-          <textarea id="profileGraphQLQuery" rows="9" cols="70">
+    <div id="threadModeration" style="display: none;">
+      <input type="text" id="threadMod" placeholder="Thread Moderator">
+      <button id="addThreadMod" type="button" class="btn btn btn-primary">Add Thread Moderator</button></br>
+      <h5> Moderators: </h5>
+      <p>
+        <span id="threadModeratorList"></span>
+      </p>
+    </div>
+    <div id="threadMembers" style="display: none;">
+      <input type="text" id="threadMember" placeholder="Thread Member">
+      <button id="addThreadMember" type="button" class="btn btn btn-primary">Add Thread Member</button></br>
+      <h5> Members: </h5>
+      <p>
+        <span id="threadMemberList"></span>
+      </p>
+    </div></br>
+
+    <p>
+      <span id="threadACError"></span>
+    </p>
+    <h6> Thread Address: </h6>
+    <p>
+      <span id="threadAddress"></span>
+    </p>
+
+    <div id="posts" style="display: none;">
+      <h4> Posts: </h4>
+      <p>
+        <span id="threadData"></span>
+      </p>
+      <input type="text" id="postMsg" placeholder="Type your message">
+      <button id="postThread" type="button" class="btn btn btn-primary">Post</button>
+    </div>
+  </div>
+
+  <hr />
+  <div style="padding: 5px 100px;">
+    <!-- Get Profile Div -->
+    <div style="padding: 0px 0px 25px 0px;">
+      <h2> Get Profile </h2>
+
+      <input type="text" id="ethAddr" placeholder="Ethereum Address">
+      <button id="getProfile" type="button" class="btn btn-primary">Get Profile Data</button>
+
+      <h5 style="padding: 20px 0px 10px 0px"> Profile: </h5>
+      <p>
+        <span id="getProfileData"></span>
+      </p>
+    </div>
+  </div>
+
+  <div style="padding: 5px 100px; width: 100%;">
+    <!-- Get Profile GraphQL Div -->
+    <div style="padding: 0px 0px 25px 0px;">
+      <h2> Get Profile GraphQL </h2>
+      <div style="width: 100%;">
+        <textarea id="profileGraphQLQuery" rows="9" cols="70">
             {
               profile(id: "PUT_AN_ADDRESS_HERE") {
                 name
@@ -193,18 +196,18 @@
               }
             }
           </textarea>
-        </div>
-
-        <button id="profileGraphQL" type="button" class="btn btn-primary">Query Profiles </button>
-
-        <h5 style="padding: 20px 0px 10px 0px"> Profile: </h5>
-        <p>
-          <span id="profileGraphQLData"></span>
-        </p>
       </div>
+
+      <button id="profileGraphQL" type="button" class="btn btn-primary">Query Profiles </button>
+
+      <h5 style="padding: 20px 0px 10px 0px"> Profile: </h5>
+      <p>
+        <span id="profileGraphQLData"></span>
+      </p>
     </div>
-  </body>
-  <script type="text/javascript" src="../dist/3box.js"></script>
-  <script type="text/javascript" src="index.js"></script>
+  </div>
+</body>
+<script type="text/javascript" src="../dist/3box.js"></script>
+<script type="text/javascript" src="index.js"></script>
 
 </html>

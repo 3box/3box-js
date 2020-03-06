@@ -1,18 +1,23 @@
+const portis = new window.Portis('8f5cf962-ad62-4861-ab0c-7b234b6e6cff', 'mainnet');
+const web3 = new window.Web3(portis.provider);
+console.log('web3web3', web3)
+
 const syncComplete = (res) => {
   console.log('Sync Complete')
   updateProfileData(window.box)
 }
 
-Box.create(window.ethereum).then(box => {
+Box.create(web3.currentProvider).then(box => {
   window.box = box
   bauth.disabled = false
   openThread.disabled = false
 })
 
 bauth.addEventListener('click', event => {
-
-  window.ethereum.enable().then(addresses => {
-    window.box.auth([], { address: addresses[0] }).then(() => {
+  web3.eth.getAccounts((error, addresses) => {
+    window.box.auth([], {
+      address: addresses[0]
+    }).then(() => {
       box.onSyncDone(syncComplete)
       console.log('authed')
 
@@ -21,7 +26,9 @@ bauth.addEventListener('click', event => {
       updateLinksData(box, addresses[0])
 
       linkAddress.addEventListener('click', () => {
-        box.linkAddress().then(() => { updateLinksData(box, addresses[0]) })
+        box.linkAddress().then(() => {
+          updateLinksData(box, addresses[0])
+        })
       })
 
       setProfile.addEventListener('click', () => {
@@ -121,25 +128,29 @@ openThread.addEventListener('click', () => {
   if (ghostCheck.checked) {
     addThreadMod.disabled = true
   }
-  box.openThread(space, name, {firstModerator, members: membersBool, ghost: ghostBool})
-     .then(registerThreadEvents)
-     .catch(updateThreadError)
+  box.openThread(space, name, {
+      firstModerator,
+      members: membersBool,
+      ghost: ghostBool
+    })
+    .then(registerThreadEvents)
+    .catch(updateThreadError)
 })
 
 joinConfThread.addEventListener('click', () => {
   const address = confThreadAddress.value
   displayThread(true)
   box.spaces[window.currentSpace].joinThreadByAddress(address)
-     .then(registerThreadEvents)
-     .catch(updateThreadError)
+    .then(registerThreadEvents)
+    .catch(updateThreadError)
 })
 
 createConfThread.addEventListener('click', () => {
   const name = confThreadName.value
   displayThread(true)
   box.spaces[window.currentSpace].createConfidentialThread(name)
-     .then(registerThreadEvents)
-     .catch(updateThreadError)
+    .then(registerThreadEvents)
+    .catch(updateThreadError)
 })
 
 addThreadMod.addEventListener('click', () => {
@@ -192,7 +203,7 @@ const updateThreadData = () => {
   updateThreadError()
   window.currentThread.getPosts().then(posts => {
     posts.map(post => {
-      threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
+      threadData.innerHTML += post.author + ': <br />' + post.message + '<br /><br />'
       threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
     })
   })
@@ -204,21 +215,21 @@ const updateThreadCapabilities = () => {
   if (window.currentThread._peerId) {
     window.currentThread.listMembers().then(members => {
       members.map(member => {
-          threadMemberList.innerHTML += member + '<br />'
+        threadMemberList.innerHTML += member + '<br />'
       })
     })
   } else {
     if (window.currentThread._members) {
       window.currentThread.listMembers().then(members => {
         members.map(member => {
-            threadMemberList.innerHTML += member + '<br />'
+          threadMemberList.innerHTML += member + '<br />'
         })
       })
     }
     threadModeratorList.innerHTML = ''
     window.currentThread.listModerators().then(moderators => {
       moderators.map(moderator => {
-          threadModeratorList.innerHTML += moderator  +  '<br />'
+        threadModeratorList.innerHTML += moderator + '<br />'
       })
     })
   }
@@ -246,12 +257,12 @@ profileGraphQL.addEventListener('click', () => {
     profileGraphQLData.innerHTML = ''
     if (res.profile) {
       Object.entries(res.profile).map(kv => {
-        profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+        profileGraphQLData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
       })
     } else if (res.profiles) {
       res.profiles.map(profile => {
         Object.entries(profile).map(kv => {
-          profileGraphQLData.innerHTML +=kv[0] + ': ' + kv[1] + '<br />'
+          profileGraphQLData.innerHTML += kv[0] + ': ' + kv[1] + '<br />'
         })
         profileGraphQLData.innerHTML += '<hr />'
       })
@@ -271,12 +282,12 @@ function updateProfileData(box) {
   updateGithubUser(box)
 }
 
-function updatePrivateData (key, value) {
+function updatePrivateData(key, value) {
   privateStoreData.innerHTML = ''
   privateStoreData.innerHTML = key + ': ' + value
 }
 
-function logout (box) {
+function logout(box) {
   box.logout().then(() => {
     privateStoreData.innerHTML = ''
     profileData.innerHTML = ''
@@ -284,7 +295,7 @@ function logout (box) {
   })
 }
 
-function updateGithubUser (box) {
+function updateGithubUser(box) {
   githubUser.innerHTML = ''
   box.verified.github().then(res => {
     console.log(res.username)
@@ -294,7 +305,7 @@ function updateGithubUser (box) {
   })
 }
 
-function updateLinksData (box, address) {
+function updateLinksData(box, address) {
   didInfo.innerHTML = box.DID
 
   addressLinks.innerHTML = ''
@@ -308,7 +319,9 @@ function updateLinksData (box, address) {
     })
   })
 
-  box.isAddressLinked({ address }).then(result => {
+  box.isAddressLinked({
+    address
+  }).then(result => {
     addressLinked.innerHTML = result ? 'Yes' : 'No'
     linkAddress.style.display = 'block'
   })
