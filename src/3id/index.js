@@ -246,7 +246,8 @@ class ThreeId {
 
   async decrypt (encObj, space, toBuffer) {
     if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space })
+      const res = await utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space, buffer: toBuffer })
+      return toBuffer ? Buffer.from(res) : res
     } else {
       const keyring = this._keyringBySpace(space)
       let paddedMsg
