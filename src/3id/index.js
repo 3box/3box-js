@@ -177,7 +177,7 @@ class ThreeId {
   async authenticate (spaces, opts = {}) {
     spaces = spaces || []
     if (this._has3idProv) {
-      const pubkeys = await utils.callRpc(this._provider, '3id_authenticate', { spaces, authData: opts.authData })
+      const pubkeys = await utils.callRpc(this._provider, '3id_authenticate', { spaces, authData: opts.authData, address: opts.address })
       this._pubkeys.main = pubkeys.main
       this._pubkeys.spaces = Object.assign(this._pubkeys.spaces, pubkeys.spaces)
       if (!this.DID) {

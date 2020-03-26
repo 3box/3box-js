@@ -16,29 +16,18 @@ const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
+const IdentityWalletIframe = require('../../3box-account/src/identityWalletIframe.js').default // TODO
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
+const IFRAME_STORE_URL = 'http://127.0.0.1:30001/' //TODO
 
-let globalIPFS, globalIPFSPromise // , ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS, globalIPFSPromise, identityWalletIframe
 
-/*
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  const iframe = document.createElement('iframe')
-  iframe.src = IFRAME_STORE_URL
-  iframe.style = 'width:0; height:0; border:0; border:none !important'
-
-  iframeLoadedPromise = new Promise((resolve, reject) => {
-    iframe.onload = () => { resolve() }
-  })
-
-  document.body.appendChild(iframe)
-  // Create proxy clients that talks to the iframe
-  const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
-  ipfsProxy = createProxyClient({ postMessage })
-  cacheProxy = OrbitDBCacheProxy({ postMessage })
-} */
+  identityWalletIframe = new IdentityWalletIframe(IFRAME_STORE_URL)
+}
 
 /**
  * @extends BoxApi
@@ -83,15 +72,15 @@ class Box extends BoxApi {
   }
 
   async _load (opts = {}) {
-    const address = await this._3id.getAddress()
+    const address = opts.address || await this._3id.getAddress()
     const { rootStoreAddress, did } = address ? await this._getLinkedData(address) : {}
     if (rootStoreAddress) {
       await this.replicator.start(rootStoreAddress, did, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
-      await this._3id.authenticate(opts.spaces, { authData })
+      await this._3id.authenticate(opts.spaces, { authData, address })
     } else {
-      await this._3id.authenticate(opts.spaces)
+      await this._3id.authenticate(opts.spaces, { address})
       const rootstoreName = this._3id.muportFingerprint + '.root'
       const key = (await this._3id.getPublicKeys(null, true)).signingKey
       await this.replicator.new(rootstoreName, key, this._3id.DID)
@@ -140,13 +129,18 @@ class Box extends BoxApi {
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    */
   async auth (spaces = [], opts = {}) {
+    this._3idEthAddress = opts.address
+    if (!this._provider.is3idProvider) {
+      this._provider = await identityWalletIframe.get3idProvider()
+    }
+
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
       this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, this.replicator._orbitdb.keystore, opts)
       await this._load(Object.assign(opts, { spaces }))
     } else {
-      // box already loaded, just authenticate spaces
-      await this._3id.authenticate(spaces)
+      // TODO throw without address
+      await this._3id.authenticate(spaces, { address: opts.address})
     }
     // make sure we are authenticated to threads
     await Promise.all(spaces.map(async space => {
@@ -186,6 +180,7 @@ class Box extends BoxApi {
    * @return    {Space}                                     the Space instance for the given space name
    */
   async openSpace (name, opts = {}) {
+    opts = Object.assign(opts, {address: this._3idEthAddress})
     if (name.includes('.')) throw new Error('Invalid name: character "." not allowed')
     if (!this._3id) throw new Error('openSpace: auth required')
     if (!this.spaces[name]) {

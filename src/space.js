@@ -128,7 +128,7 @@ class Space {
       this._3id = threeId
       const authenticated = await this._3id.isAuthenticated([this._name])
       if (!authenticated) {
-        await this._3id.authenticate([this._name])
+        await this._3id.authenticate([this._name], opts)
       }
       if (opts.consentCallback) opts.consentCallback(!authenticated, this._name)
       await this._store._load(this._3id)
