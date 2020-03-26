@@ -17,28 +17,13 @@ const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
 
+const SharedCache = require('3box-shared-cache')
+
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 
 let globalIPFS, globalIPFSPromise // , ipfsProxy, cacheProxy, iframeLoadedPromise
-
-/*
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  const iframe = document.createElement('iframe')
-  iframe.src = IFRAME_STORE_URL
-  iframe.style = 'width:0; height:0; border:0; border:none !important'
-
-  iframeLoadedPromise = new Promise((resolve, reject) => {
-    iframe.onload = () => { resolve() }
-  })
-
-  document.body.appendChild(iframe)
-  // Create proxy clients that talks to the iframe
-  const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
-  ipfsProxy = createProxyClient({ postMessage })
-  cacheProxy = OrbitDBCacheProxy({ postMessage })
-} */
 
 /**
  * @extends BoxApi
@@ -515,8 +500,9 @@ class Box extends BoxApi {
     }
 
     if (!globalIPFS && !globalIPFSPromise) {
-      globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+      globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeCache, opts.ipfsOptions)
     }
+
     if (typeof window !== 'undefined') window.globalIPFSPromise = globalIPFSPromise
 
     if (!globalIPFS) globalIPFS = await globalIPFSPromise
@@ -529,7 +515,23 @@ class Box extends BoxApi {
   }
 }
 
-function initIPFSRepo () {
+function createIframeCache () {
+
+  const iframe = document.createElement('iframe')
+
+  iframe.src = process.env.CACHE_IFRAME_URL
+  iframe.style = 'width:0; height:0; border:0; border:none !important'
+
+  const iframeLoaded = new Promise((resolve, reject) => {
+    iframe.onload = () => { resolve() }
+  })
+  
+  document.body.appendChild(iframe)
+
+  return iframeLoaded
+}
+
+function initIPFSRepo (iframeCache) {
   let repoOpts = {}
   let ipfsRootPath
 
@@ -537,8 +539,29 @@ function initIPFSRepo () {
   if (typeof window !== 'undefined' && window.indexedDB) {
     const sessionID = utils.randInt(10000)
     ipfsRootPath = 'ipfs/root/' + sessionID
+   
     const levelInstance = new LevelStore(ipfsRootPath)
-    repoOpts = { storageBackends: { root: () => levelInstance } }
+
+    repoOpts = {
+      storageBackends: {
+        root: () => levelInstance,
+      },
+    }
+
+    if (iframeCache) {
+      const iframe = document.querySelector('iframe')
+
+      const ipfsRepoStorageProxy = SharedCache.createIpfsStorageProxy({
+        postMessage: (data, origin) => iframe.contentWindow.postMessage(data, "*")
+      })
+      
+      repoOpts.storageBackendOptions = {
+        blocks: {
+          db: ipfsRepoStorageProxy,
+        }
+      }
+    }
+
   }
 
   const repo = new IPFSRepo('ipfs', repoOpts)
@@ -549,17 +572,22 @@ function initIPFSRepo () {
   }
 }
 
-async function initIPFS (ipfs, iframeStore, ipfsOptions) {
-  // if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
-  if (!!ipfs && iframeStore) console.warn('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
+async function initIPFS (ipfs, iframeCache, ipfsOptions) {
+  // if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+
+  if (!!ipfs && iframeCache) console.warn('Warning: Caching in iframe is true, but the given ipfs object that is being used may not be using the iframe cache')
   if (ipfs) {
     return ipfs
   } else {
-    // await iframeLoadedPromise
-    // return ipfsProxy
+    if (ipfsOptions && iframeCache) console.warn("Warning: Caching in iframe is true, but received ipfs options which may not include the proper repo configuration for using the iframe cache")
+    
     let ipfsRepo
     if (!ipfsOptions) {
-      ipfsRepo = initIPFSRepo()
+      if (iframeCache) {
+        await createIframeCache()
+      }
+
+      ipfsRepo = initIPFSRepo(iframeCache)
       ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
     }
 

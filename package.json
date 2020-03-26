@@ -44,6 +44,7 @@
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
     "3box-orbitdb-plugins": "^1.1.0",
+    "3box-shared-cache": "git+https://github.com/3box/3box-shared-cache.git#feat/client",
     "3id-blockchain-utils": "^0.3.3",
     "3id-resolver": "^0.0.5",
     "@babel/runtime": "^7.4.5",

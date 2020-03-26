@@ -18,6 +18,8 @@ AccessControllers.addAccessController({ AccessController: ThreadAccessController
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 const config = require('./config')
 const Identities = require('orbit-db-identity-provider')
+const SharedCache = require('3box-shared-cache')
+
 Identities.addIdentityProvider(OdbIdentityProvider)
 
 const PINNING_NODE = config.pinning_node
@@ -93,15 +95,27 @@ class Replicator {
     this._pubsub = new Pubsub(this.ipfs, (await this.ipfs.id()).id)
     // Passes default cache but with fixed path instead of path based on
     // orbitdb/ipfs id which can change on page load
-    const cachePath = path.join(opts.orbitPath || './orbitdb', '/cache')
-    const levelDown = OdbStorage(null, {})
-    const cacheStorage = await levelDown.createStore(cachePath)
-    const cache = new OdbCache(cacheStorage)
 
+    const levelDown = OdbStorage(null, {})
     const keystorePath = path.join(opts.orbitPath || './orbitdb', '/keystore')
     const keyStorage = await levelDown.createStore(keystorePath)
     const keystore = new OdbKeystore(keyStorage)
+    
+    let cache
+    const cachePath = path.join(opts.orbitPath || './orbitdb', '/cache')
 
+    if (opts.iframeCache) {
+      const iframe = document.querySelector('iframe')
+      const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
+  
+      const cacheStorageProxy = await SharedCache.createOrbitStorageProxy(cachePath, { postMessage })
+
+      cache = new OdbCache(cacheStorageProxy)
+    } else {
+      const cacheStorage = await levelDown.createStore(cachePath)
+      cache = new OdbCache(cacheStorage)
+    }
+    
     // Identity not used, passes ref to 3ID orbit identity provider
     const identity = await Identities.createIdentity({ id: 'nullid', keystore: keystore })
 
@@ -129,7 +143,6 @@ class Replicator {
     this._did = did
     await this._joinPinningRoom(true)
     this._publishDB({ odbAddress: rootstoreAddress })
-
     this.rootstore = await this._orbitdb.feed(rootstoreAddress, ODB_STORE_OPTS)
     await this.rootstore.load()
     this.rootstoreSyncDone = this.syncDB(this.rootstore)
