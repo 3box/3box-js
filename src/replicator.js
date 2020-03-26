@@ -100,14 +100,14 @@ class Replicator {
     const keystorePath = path.join(opts.orbitPath || './orbitdb', '/keystore')
     const keyStorage = await levelDown.createStore(keystorePath)
     const keystore = new OdbKeystore(keyStorage)
-    
+
     let cache
     const cachePath = path.join(opts.orbitPath || './orbitdb', '/cache')
 
     if (opts.iframeCache) {
       const iframe = document.querySelector('iframe')
       const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
-  
+
       const cacheStorageProxy = await SharedCache.createOrbitStorageProxy(cachePath, { postMessage })
 
       cache = new OdbCache(cacheStorageProxy)
@@ -115,7 +115,7 @@ class Replicator {
       const cacheStorage = await levelDown.createStore(cachePath)
       cache = new OdbCache(cacheStorage)
     }
-    
+
     // Identity not used, passes ref to 3ID orbit identity provider
     const identity = await Identities.createIdentity({ id: 'nullid', keystore: keystore })
 

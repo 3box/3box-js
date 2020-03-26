@@ -516,7 +516,6 @@ class Box extends BoxApi {
 }
 
 function createIframeCache () {
-
   const iframe = document.createElement('iframe')
 
   iframe.src = process.env.CACHE_IFRAME_URL
@@ -525,7 +524,7 @@ function createIframeCache () {
   const iframeLoaded = new Promise((resolve, reject) => {
     iframe.onload = () => { resolve() }
   })
-  
+
   document.body.appendChild(iframe)
 
   return iframeLoaded
@@ -539,29 +538,28 @@ function initIPFSRepo (iframeCache) {
   if (typeof window !== 'undefined' && window.indexedDB) {
     const sessionID = utils.randInt(10000)
     ipfsRootPath = 'ipfs/root/' + sessionID
-   
+
     const levelInstance = new LevelStore(ipfsRootPath)
 
     repoOpts = {
       storageBackends: {
-        root: () => levelInstance,
-      },
+        root: () => levelInstance
+      }
     }
 
     if (iframeCache) {
       const iframe = document.querySelector('iframe')
 
       const ipfsRepoStorageProxy = SharedCache.createIpfsStorageProxy({
-        postMessage: (data, origin) => iframe.contentWindow.postMessage(data, "*")
+        postMessage: (data, origin) => iframe.contentWindow.postMessage(data, '*')
       })
-      
+
       repoOpts.storageBackendOptions = {
         blocks: {
-          db: ipfsRepoStorageProxy,
+          db: ipfsRepoStorageProxy
         }
       }
     }
-
   }
 
   const repo = new IPFSRepo('ipfs', repoOpts)
@@ -579,8 +577,8 @@ async function initIPFS (ipfs, iframeCache, ipfsOptions) {
   if (ipfs) {
     return ipfs
   } else {
-    if (ipfsOptions && iframeCache) console.warn("Warning: Caching in iframe is true, but received ipfs options which may not include the proper repo configuration for using the iframe cache")
-    
+    if (ipfsOptions && iframeCache) console.warn('Warning: Caching in iframe is true, but received ipfs options which may not include the proper repo configuration for using the iframe cache')
+
     let ipfsRepo
     if (!ipfsOptions) {
       if (iframeCache) {
