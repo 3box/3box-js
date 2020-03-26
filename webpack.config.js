@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack')
 
 module.exports = {
   entry: './src/3box.js',
@@ -29,6 +30,11 @@ module.exports = {
       }
     ]
   },
+  plugins: [
+    new webpack.EnvironmentPlugin([
+      'CACHE_IFRAME_URL',
+    ])
+  ],
   node: {
     console: false,
     fs: 'empty',
