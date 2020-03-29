@@ -174,6 +174,12 @@ class ThreeId {
     }
   }
 
+  async linkManagementAddress () {
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_linkManagementKey')
+    }
+  }
+
   async authenticate (spaces, opts = {}) {
     spaces = spaces || []
     if (this._has3idProv) {
