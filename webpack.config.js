@@ -32,7 +32,7 @@ module.exports = {
   },
   plugins: [
     new webpack.EnvironmentPlugin([
-      'CACHE_IFRAME_URL',
+      'IFRAME_CACHE_URL',
     ])
   ],
   node: {
