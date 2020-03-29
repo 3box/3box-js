@@ -18,7 +18,6 @@ AccessControllers.addAccessController({ AccessController: ThreadAccessController
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
 const config = require('./config')
 const Identities = require('orbit-db-identity-provider')
-const SharedCache = require('3box-shared-cache')
 
 Identities.addIdentityProvider(OdbIdentityProvider)
 
@@ -101,20 +100,12 @@ class Replicator {
     const keyStorage = await levelDown.createStore(keystorePath)
     const keystore = new OdbKeystore(keyStorage)
 
-    let cache
     const cachePath = path.join(opts.orbitPath || './orbitdb', '/cache')
+    const cacheProxy = opts.cacheProxy
+      ? await opts.cacheProxy(cachePath)
+      : await levelDown.createStore(cachePath)
 
-    if (opts.iframeCache) {
-      const iframe = document.querySelector('iframe')
-      const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
-
-      const cacheStorageProxy = await SharedCache.createOrbitStorageProxy(cachePath, { postMessage })
-
-      cache = new OdbCache(cacheStorageProxy)
-    } else {
-      const cacheStorage = await levelDown.createStore(cachePath)
-      cache = new OdbCache(cacheStorage)
-    }
+    const cache = new OdbCache(cacheProxy)
 
     // Identity not used, passes ref to 3ID orbit identity provider
     const identity = await Identities.createIdentity({ id: 'nullid', keystore: keystore })

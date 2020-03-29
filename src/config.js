@@ -9,7 +9,7 @@ module.exports = {
   address_server_url: process.env.ADDRESS_SERVER_URL || 'https://beta.3box.io/address-server',
   pinning_node: process.env.PINNING_NODE || '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC',
   pinning_room: process.env.PINNING_ROOM || '3box-pinning',
-  iframe_cache_url: process.env.IFRAME_CACHE_URL || `https://iframe.3box.io/iframe.html`,
+  iframe_cache_url: process.env.IFRAME_CACHE_URL || 'https://iframe.3box.io/iframe.html',
   ipfs_options: {
     preload: { enabled: false },
     config: {
@@ -29,5 +29,5 @@ module.exports = {
   profile_server_url: process.env.PROFILE_SERVER_URL || 'https://ipfs.3box.io',
   muport_ipfs_host: process.env.MUPORT_IPFS_HOST || 'ipfs.infura.io',
   muport_ipfs_port: process.env.MUPORT_IPFS_PORT || 5001,
-  muport_ipfs_protocol: process.env.MUPORT_IPFS_PROTOCOL || 'https',
+  muport_ipfs_protocol: process.env.MUPORT_IPFS_PROTOCOL || 'https'
 }

@@ -3,7 +3,7 @@ const syncComplete = (res) => {
   updateProfileData(window.box)
 }
 
-Box.create(window.ethereum, { iframeCache: true }).then(box => {
+Box.create(window.ethereum).then(box => {
   window.box = box
   bauth.disabled = false
   openThread.disabled = false
