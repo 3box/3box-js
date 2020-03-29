@@ -28,5 +28,5 @@ module.exports = {
   profile_server_url: process.env.PROFILE_SERVER_URL || 'https://ipfs.3box.io',
   muport_ipfs_host: process.env.MUPORT_IPFS_HOST || 'ipfs.infura.io',
   muport_ipfs_port: process.env.MUPORT_IPFS_PORT || 5001,
-  muport_ipfs_protocol: process.env.MUPORT_IPFS_PROTOCOL || 'https',
+  muport_ipfs_protocol: process.env.MUPORT_IPFS_PROTOCOL || 'https'
 }

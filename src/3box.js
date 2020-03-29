@@ -19,7 +19,7 @@ const didJWT = require('did-jwt')
 const { ThreeIdConnect } = require('3id-connect')
 
 const SharedCache = require('3box-shared-cache')
-const { iframe_cache_url } = require("./config")
+const { iframe_cache_url } = require('./config') // eslint-disable-line
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -72,7 +72,13 @@ class Box extends BoxApi {
   }
 
   async _init (opts) {
-    this.replicator = await Replicator.create(this._ipfs, opts)
+    const replicatorOpts = { ...opts }
+
+    if (opts.iframeCache !== false) {
+      replicatorOpts.cacheProxy = getOrbitStorageProxyFactory()
+    }
+
+    this.replicator = await Replicator.create(this._ipfs, replicatorOpts)
 
     if (opts.ghostPinbot) {
       this._ghostPinbot = opts.ghostPinbot
@@ -574,7 +580,7 @@ class Box extends BoxApi {
     }
 
     if (!globalIPFS && !globalIPFSPromise) {
-      globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeCache, opts.ipfsOptions)
+      globalIPFSPromise = initIPFS(opts.ipfs, opts.ipfsOptions, opts.iframeCache)
     }
 
     if (browserHuh) window.globalIPFSPromise = globalIPFSPromise
@@ -598,7 +604,7 @@ class Box extends BoxApi {
 function createIframeCache () {
   const iframe = document.createElement('iframe')
 
-  iframe.src = iframe_cache_url
+  iframe.src = iframe_cache_url//eslint-disable-line
   iframe.style = 'width:0; height:0; border:0; border:none !important'
 
   const iframeLoaded = new Promise((resolve, reject) => {
@@ -608,6 +614,27 @@ function createIframeCache () {
   document.body.appendChild(iframe)
 
   return iframeLoaded
+}
+
+function getIframe () {
+  return document.querySelector('iframe')
+}
+
+function getOrbitStorageProxyFactory () {
+  const iframe = getIframe()
+  const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
+
+  const createCacheProxy = (path) => SharedCache.createOrbitStorageProxy(path, { postMessage })
+
+  return createCacheProxy
+}
+
+function getIpfsStorageProxy () {
+  const iframe = getIframe()
+
+  return SharedCache.createIpfsStorageProxy({
+    postMessage: (data, origin) => iframe.contentWindow.postMessage(data, '*')
+  })
 }
 
 function initIPFSRepo (iframeCache) {
@@ -627,12 +654,8 @@ function initIPFSRepo (iframeCache) {
       }
     }
 
-    if (iframeCache) {
-      const iframe = document.querySelector('iframe')
-
-      const ipfsRepoStorageProxy = SharedCache.createIpfsStorageProxy({
-        postMessage: (data, origin) => iframe.contentWindow.postMessage(data, '*')
-      })
+    if (iframeCache !== false) {
+      const ipfsRepoStorageProxy = getIpfsStorageProxy()
 
       repoOpts.storageBackendOptions = {
         blocks: {
@@ -650,18 +673,18 @@ function initIPFSRepo (iframeCache) {
   }
 }
 
-async function initIPFS (ipfs, iframeCache, ipfsOptions) {
+async function initIPFS (ipfs, ipfsOptions, iframeCache) {
   // if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
-  if (!!ipfs && iframeCache) console.warn('Warning: Caching in iframe is true, but the given ipfs object that is being used may not be using the iframe cache')
+  if (!!ipfs && iframeCache !== false) console.warn('Warning: Caching in iframe is true, but the given ipfs object that is being used may not be using the iframe cache')
   if (ipfs) {
     return ipfs
   } else {
-    if (ipfsOptions && iframeCache) console.warn('Warning: Caching in iframe is true, but received ipfs options which may not include the proper repo configuration for using the iframe cache')
+    if (ipfsOptions && iframeCache !== false) console.warn('Warning: Caching in iframe is true, but received ipfs options which may not include the proper repo configuration for using the iframe cache')
 
     let ipfsRepo
     if (!ipfsOptions) {
-      if (iframeCache) {
+      if (iframeCache !== false) {
         await createIframeCache()
       }
 
