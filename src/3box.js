@@ -19,6 +19,7 @@ const didJWT = require('did-jwt')
 const { ThreeIdConnect } = require('3id-connect')
 
 const SharedCache = require('3box-shared-cache')
+const { iframe_cache_url } = require("./config")
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -597,7 +598,7 @@ class Box extends BoxApi {
 function createIframeCache () {
   const iframe = document.createElement('iframe')
 
-  iframe.src = process.env.CACHE_IFRAME_URL
+  iframe.src = iframe_cache_url
   iframe.style = 'width:0; height:0; border:0; border:none !important'
 
   const iframeLoaded = new Promise((resolve, reject) => {

@@ -1,5 +1,4 @@
 const Log = require('ipfs-log')
-const IFRAME_STORE_VERSION = '0.0.3'
 
 const RENDEZVOUS_DISABLE = !(
   !process.env.RENDEZVOUS_DISABLE ||
@@ -13,7 +12,7 @@ module.exports = {
   pinning_room: process.env.PINNING_ROOM || '3box-pinning',
   rendezvous_address: RENDEZVOUS_DISABLE ? '' : (process.env.RENDEZVOUS_ADDRESS || '/dns4/p2p.3box.io/tcp/9091/wss/p2p-webrtc-star/'),
   iframe_store_version: process.env.IFRAME_STORE_VERSION || IFRAME_STORE_VERSION,
-  iframe_store_url: process.env.IFRAME_STORE_URL || `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`,
+  iframe_cache_url: process.env.IFRAME_CACHE_URL || `https://iframe.3box.io/iframe.html`,
   ipfs_options: {
     preload: { enabled: false },
     config: {
@@ -29,5 +28,5 @@ module.exports = {
   profile_server_url: process.env.PROFILE_SERVER_URL || 'https://ipfs.3box.io',
   muport_ipfs_host: process.env.MUPORT_IPFS_HOST || 'ipfs.infura.io',
   muport_ipfs_port: process.env.MUPORT_IPFS_PORT || 5001,
-  muport_ipfs_protocol: process.env.MUPORT_IPFS_PROTOCOL || 'https'
+  muport_ipfs_protocol: process.env.MUPORT_IPFS_PROTOCOL || 'https',
 }
