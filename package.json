@@ -53,7 +53,7 @@
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
     "https-did-resolver": "^0.1.0",
-    "ipfs": "^0.40.0",
+    "ipfs": "^0.42.0",
     "ipfs-did-document": "^1.2.3",
     "ipfs-log": "^4.5.4",
     "ipfs-mini": "^1.1.5",
