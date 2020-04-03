@@ -10,6 +10,8 @@ Identities.addIdentityProvider(OdbIdentityProvider)
 const utils = require('../utils/index')
 const Keyring = require('./keyring')
 const config = require('../config.js')
+const nacl = require('tweetnacl')
+const { randomNonce }  = require('./utils')
 
 const DID_METHOD_NAME = '3'
 const STORAGE_KEY = 'serialized3id_'
@@ -17,13 +19,14 @@ const MUPORT_IPFS = { host: config.muport_ipfs_host, port: config.muport_ipfs_po
 const POLL_INTERVAL = 500
 
 class ThreeId {
-  constructor (provider, ipfs, opts = {}) {
+  constructor (provider, ipfs, keystore, opts = {}) {
     this.events = new EventEmitter()
     this._provider = provider
     this._has3idProv = Boolean(opts.has3idProv)
     this._ipfs = ipfs
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
+    this._keystore = keystore
   }
 
   startUpdatePolling () {
@@ -34,18 +37,16 @@ class ThreeId {
           this.events.emit(event, data)
         })
       }
-      setInterval(() => {
+      this._pollInterval = setInterval(() => {
         poll('3id_newAuthMethodPoll', 'new-auth-method')
         poll('3id_newLinkPoll', 'new-link-proof')
       }, POLL_INTERVAL)
     }
   }
 
-  async signJWT (payload, { use3ID, space, expiresIn } = {}) {
-    let issuer = this.muportDID
-    if (use3ID) {
-      issuer = this.DID
-    } else if (space) {
+  async signJWT (payload, { space, expiresIn } = {}) {
+    let issuer = this.DID
+    if (space) {
       issuer = this._subDIDs[space]
     }
     if (this._has3idProv) {
@@ -77,7 +78,8 @@ class ThreeId {
     return Identities.createIdentity({
       type: '3ID',
       threeId: this,
-      space
+      space,
+      keystore: this._keystore
     })
   }
 
@@ -163,13 +165,6 @@ class ThreeId {
     let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
     this._muportDID = 'did:muport:' + docHash
     this.muportFingerprint = utils.sha256Multihash(this.muportDID)
-    const publishToInfura = async () => {
-      const ipfsMini = new IpfsMini(this._muportIpfs)
-      ipfsMini.addJSON(doc, (err, res) => {
-        if (err) console.error(err)
-      })
-    }
-    publishToInfura()
   }
 
   async getAddress () {
@@ -190,7 +185,9 @@ class ThreeId {
         await this._initDID()
       } else {
         for (const space of spaces) {
-          this._subDIDs[space] = await this._init3ID(space)
+          if (!this._subDIDs[space]) {
+            this._subDIDs[space] = await this._init3ID(space)
+          }
         }
       }
     } else {
@@ -201,13 +198,7 @@ class ThreeId {
   }
 
   async isAuthenticated (spaces = []) {
-    if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_isAuthenticated', { spaces })
-    } else {
-      return spaces
-        .map(space => Boolean(this._keyrings[space]))
-        .reduce((acc, val) => acc && val, true)
-    }
+    return spaces.reduce((acc, space) => acc && Object.keys(this._subDIDs).includes(space), true)
   }
 
   async _initKeyringByName (name) {
@@ -239,19 +230,32 @@ class ThreeId {
     return pubkeys
   }
 
-  async encrypt (message, space) {
+  async encrypt (message, space, to) {
     if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_encrypt', { message, space })
+      return utils.callRpc(this._provider, '3id_encrypt', { message, space, to })
     } else {
-      return this._keyringBySpace(space).symEncrypt(utils.pad(message))
+      const keyring = this._keyringBySpace(space)
+      let paddedMsg = typeof message === 'string' ? utils.pad(message) : message
+      if (to) {
+        return keyring.asymEncrypt(paddedMsg, to)
+      } else {
+        return keyring.symEncrypt(paddedMsg)
+      }
     }
   }
 
-  async decrypt (encObj, space) {
+  async decrypt (encObj, space, toBuffer) {
     if (this._has3idProv) {
       return utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space })
     } else {
-      return utils.unpad(this._keyringBySpace(space).symDecrypt(encObj.ciphertext, encObj.nonce))
+      const keyring = this._keyringBySpace(space)
+      let paddedMsg
+      if (encObj.ephemeralFrom) {
+        paddedMsg = keyring.asymDecrypt(encObj.ciphertext, encObj.ephemeralFrom, encObj.nonce, toBuffer)
+      } else {
+        paddedMsg = keyring.symDecrypt(encObj.ciphertext, encObj.nonce, toBuffer)
+      }
+      return toBuffer ? paddedMsg : utils.unpad(paddedMsg)
     }
   }
 
@@ -270,16 +274,19 @@ class ThreeId {
 
   logout () {
     localstorage.remove(STORAGE_KEY + this.managementAddress)
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval)
+    }
   }
 
   static isLoggedIn (address) {
     return Boolean(localstorage.get(STORAGE_KEY + address.toLowerCase()))
   }
 
-  static async getIdFromEthAddress (address, provider, ipfs, opts = {}) {
+  static async getIdFromEthAddress (address, provider, ipfs, keystore, opts = {}) {
     opts.has3idProv = Boolean(provider.is3idProvider)
     if (opts.has3idProv) {
-      return new ThreeId(provider, ipfs, opts)
+      return new ThreeId(provider, ipfs, keystore, opts)
     } else {
       const normalizedAddress = address.toLowerCase()
       let serialized3id = localstorage.get(STORAGE_KEY + normalizedAddress)
@@ -302,7 +309,7 @@ class ThreeId {
           spaceSeeds: {}
         })
       }
-      const threeId = new ThreeId(provider, ipfs, opts)
+      const threeId = new ThreeId(provider, ipfs, keystore, opts)
       threeId._initKeys(serialized3id)
       await threeId._initDID()
       return threeId

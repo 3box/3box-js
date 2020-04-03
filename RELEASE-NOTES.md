@@ -1,5 +1,37 @@
 # Release Notes
 
+## v1.17.1 - 2020-02-20
+* fix: Use authereum signing key (#733)
+
+## v1.17.0 - 2020-02-13
+* feat: confidential threads 🔒📫
+
+Confidential threads are encrypted member only threads, used for private dms, group messages, etc
+
+## v1.16.3 - 2020-02-13
+* fix: getIPFS called same time or from different closures in browser
+* fix: ghost chat member list, with no auth opens
+
+## v1.16.2 - 2020-02-05
+* chore: update ipfs & orbitdb
+* fix: Verify legacy muport DID properly
+* fix: Special signature request for authereum
+* ref: Send DID in all pin requests where possible
+
+## v1.16.1 - 2020-01-13
+fix: set fixed cache paths, so cache read/writes from same path and local data loaded
+
+## v1.16.0 - 2020-01-10
+This release brings a few performance updates as well as minor features in preparation for the upcoming Confidential Threads feature.
+
+---
+* feat: support for asymmetric encryption in spaces
+* feat: fully migrate to 3ID, no more references to legacy "muport" DID
+* chore: update OrbitDB for improved performance
+* fix: IdentityWallet now works in a browser context
+* fix: issue with using ghost threads while not authenticated resolved
+* fix: linkAddress now works as expected with externally provided proof
+
 ## v1.15.0 - 2019-12-13
 This release features a new interface for how to create and authenticate to a 3Box, it also adds the ability to open a thread before being authenticated to a space.
 

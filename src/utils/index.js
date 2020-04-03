@@ -35,14 +35,15 @@ const safeSend = (provider, data) => {
   })
 }
 
-const encodeRpcCall = (method, params) => ({
+const encodeRpcCall = (method, params, fromAddress) => ({
   jsonrpc: '2.0',
   id: 1,
   method,
-  params
+  params,
+  fromAddress
 })
 
-const callRpc = async (provider, method, params) => safeSend(provider, encodeRpcCall(method, params))
+const callRpc = async (provider, method, params, fromAddress) => safeSend(provider, encodeRpcCall(method, params, fromAddress))
 
 module.exports = {
   getMessageConsent,
@@ -50,30 +51,20 @@ module.exports = {
 
   openBoxConsent: (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
+    if (ethereum.isAuthereum) return ethereum.signMessageWithSigningKey(text)
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return safeSend(ethereum, {
-      jsonrpc: '2.0',
-      id: 0,
-      method,
-      params,
-      fromAddress
-    })
+    return callRpc(ethereum, method, params, fromAddress)
   },
 
   openSpaceConsent: (fromAddress, ethereum, name) => {
     const text = `Allow this app to open your ${name} space.`
+    if (ethereum.isAuthereum) return ethereum.signMessageWithSigningKey(text)
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return safeSend(ethereum, {
-      jsonrpc: '2.0',
-      id: 0,
-      method,
-      params,
-      fromAddress
-    })
+    return callRpc(ethereum, method, params, fromAddress)
   },
 
   fetchJson: async (url, body) => {

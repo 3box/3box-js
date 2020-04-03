@@ -61,7 +61,7 @@ describe('Space', () => {
     //expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
     expect(threeIdMock.isAuthenticated).toHaveBeenCalledWith([NAME1])
     expect(threeIdMock.authenticate).toHaveBeenCalledWith([NAME1])
-    await syncDonePromise
+    return syncDonePromise
   })
 
   it('should return directly if space already opened', async () => {
@@ -213,7 +213,7 @@ describe('Space', () => {
       expect(t1._setIdentity).toHaveBeenCalledTimes(1)
       expect(t1._setIdentity).toHaveBeenCalledWith('odbid')
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][4](threadAddress)
+      await Thread.mock.calls[0][6](threadAddress)
       expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
 
@@ -231,7 +231,7 @@ describe('Space', () => {
       expect(t1._setIdentity).toHaveBeenCalledTimes(1)
       expect(t1._setIdentity).toHaveBeenCalledWith('odbid')
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][4](threadAddress2)
+      await Thread.mock.calls[0][6](threadAddress2)
       expect(await space.subscribedThreads()).toEqual([{address: threadAddress}])
     })
 
@@ -252,7 +252,7 @@ describe('Space', () => {
       expect(t1._load).toHaveBeenCalledTimes(1)
       expect(t1._setIdentity).toHaveBeenCalledTimes(0)
       // function for autosubscribing works as intended
-      await Thread.mock.calls[0][4](threadAddress)
+      return Thread.mock.calls[0][6](threadAddress)
     })
   })
 })

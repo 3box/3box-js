@@ -1,6 +1,11 @@
 const Log = require('ipfs-log')
 const IFRAME_STORE_VERSION = '0.0.3'
 
+const RENDEZVOUS_DISABLE = !(
+  !process.env.RENDEZVOUS_DISABLE ||
+  ['0', 'f', 'false', 'no', 'off'].includes(process.env.RENDEZVOUS_DISABLE.toLowerCase())
+)
+
 module.exports = {
   address_server_url: process.env.ADDRESS_SERVER_URL || 'https://beta.3box.io/address-server',
   pinning_node: process.env.PINNING_NODE || '/dnsaddr/ipfs.3box.io/tcp/443/wss/ipfs/QmZvxEpiVNjmNbEKyQGvFzAY1BwmGuuvdUTmcTstQPhyVC',
@@ -8,15 +13,12 @@ module.exports = {
   iframe_store_version: process.env.IFRAME_STORE_VERSION || IFRAME_STORE_VERSION,
   iframe_store_url: process.env.IFRAME_STORE_URL || `https://iframe.3box.io/${IFRAME_STORE_VERSION}/iframe.html`,
   ipfs_options: {
-    EXPERIMENTAL: {
-      pubsub: true
-    },
     preload: { enabled: false },
     config: {
       Bootstrap: [],
       Addresses: {
-        Swarm: [
-          '/dns4/p2p.3box.io/tcp/9090/wss/p2p-websocket-star/'
+        Swarm: RENDEZVOUS_DISABLE ? [] : [
+          process.env.RENDEZVOUS_ADDRESS || '/dns4/p2p.3box.io/tcp/9090/wss/p2p-websocket-star/'
         ]
       }
     }

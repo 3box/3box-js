@@ -1,6 +1,9 @@
 const isIPFS = require('is-ipfs')
 const API = require('./api')
 const config = require('./config')
+const { symEncryptBase, symDecryptBase, newSymKey } = require('./3id/utils')
+const utils = require('./utils/index')
+const orbitAddress = require('orbit-db/src/orbit-db-address')
 
 const ORBITDB_OPTS = config.orbitdb_options
 const MODERATOR = 'MODERATOR'
@@ -16,14 +19,26 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (name, replicator, members, firstModerator, subscribe) {
+  constructor (name, replicator, members, firstModerator, confidential, user, subscribe) {
     this._name = name
     this._replicator = replicator
-    this._spaceName = name.split('.')[2]
+    this._spaceName = name ? name.split('.')[2] : undefined
     this._subscribe = subscribe
     this._queuedNewPosts = []
     this._members = Boolean(members)
     this._firstModerator = firstModerator
+    this._user = user
+
+    if (confidential) {
+      this._confidential = true
+      this._members = true
+      if (typeof confidential === 'string') {
+        this._encKeyId = confidential
+      } else {
+        this._symKey = newSymKey()
+        this._encKeyId = utils.sha256(this._symKey)
+      }
+    }
   }
 
   /**
@@ -38,6 +53,9 @@ class Thread {
     this._subscribe(this._address, { firstModerator: this._firstModerator, members: this._members, name: this._name })
     this._replicator.ensureConnected(this._address, true)
     const timestamp = Math.floor(new Date().getTime() / 1000) // seconds
+
+    if (this._confidential) message = this._symEncrypt(message)
+
     return this._db.add({
       message,
       timestamp
@@ -49,7 +67,8 @@ class Thread {
   }
 
   async _getThreadAddress () {
-    await this._initConfigs()
+    if (this._address) return this._address
+    await this._initAcConfigs()
     const address = (await this._replicator._orbitdb._determineAddress(this._name, 'feed', {
       accessController: this._accessController
     }, false)).toString()
@@ -65,11 +84,14 @@ class Thread {
   async addModerator (id) {
     this._requireLoad()
     this._requireAuth()
+
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
+
     if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
-    return this._db.access.grant(MODERATOR, id)
+
+    return this._db.access.grant(MODERATOR, id, await this._encryptSymKey(id))
   }
 
   /**
@@ -94,9 +116,9 @@ class Thread {
     if (id.startsWith('0x')) {
       id = await API.getSpaceDID(id, this._spaceName)
     }
-    if (!isValid3ID(id)) throw new Error('addModerator: must provide valid 3ID')
-    this._throwIfNotMembers()
-    return this._db.access.grant(MEMBER, id)
+    if (!isValid3ID(id)) throw new Error('addMember: must provide valid 3ID')
+
+    return this._db.access.grant(MEMBER, id, await this._encryptSymKey(id))
   }
 
   /**
@@ -141,10 +163,16 @@ class Thread {
    * @return    {Array<Object>}                           true if successful
    */
   async getPosts (opts = {}) {
+    const decrypt = (entry) => {
+      if (!this._confidential) return entry
+      const message = this._symDecrypt(entry.message)
+      return { message, timestamp: entry.timestamp }
+    }
+
     this._requireLoad()
     if (!opts.limit) opts.limit = -1
     return this._db.iterator(opts).collect().map(entry => {
-      const post = entry.payload.value
+      const post = decrypt(entry.payload.value)
       const metaData = { postId: entry.hash, author: entry.identity.id }
       return Object.assign(metaData, post)
     })
@@ -182,16 +210,56 @@ class Thread {
     })
   }
 
-  async _load (odbAddress) {
-    await this._initConfigs()
-    this._db = await this._replicator._orbitdb.feed(odbAddress || this._name, {
+  // Loads by orbitdb address or db name
+  async _load (dbString) {
+    const loadByAddress = dbString && orbitAddress.isValid(dbString)
+    if (!loadByAddress) await this._initAcConfigs()
+
+    this._db = await this._replicator._orbitdb.feed(dbString || this._name, {
       ...ORBITDB_OPTS,
       accessController: this._accessController
     })
+
     await this._db.load()
+
+    if (loadByAddress) {
+      this._firstModerator = this._db.access._firstModerator
+      this._members = this._db.access._members
+      this._encKeyId = this._db.access._encKeyId
+      this._confidential = Boolean(this._db.access._encKeyId)
+      this._name = this._db.address.path
+      this._spaceName = this._name.split('.')[2]
+    }
+
     this._address = this._db.address.toString()
     this._replicator.ensureConnected(this._address, true)
+
     return this._address
+  }
+
+  async _initConfidential () {
+    if (this._symKey) {
+      if (this._user.DID !== this._firstModerator) throw new Error('_initConfidential: firstModerator must initialize a confidential thread')
+      await this._db.access.grant(MODERATOR, this._firstModerator, await this._encryptSymKey())
+    } else {
+      let encryptedKey = null
+      try {
+        encryptedKey = this._db.access.getEncryptedKey(this._user.DID)
+      } catch (e) {
+        encryptedKey = await new Promise((resolve, reject) => {
+          this.onNewCapabilities((val) => {
+            let key = null
+            try {
+              key = this._db.access.getEncryptedKey(this._user.DID)
+            } catch (e) { }
+            if (key !== null) resolve(key)
+          })
+          setTimeout(() => resolve(null), 10000)
+        })
+      }
+      if (!encryptedKey) throw new Error(`_initConfidential:  no access for ${this._user.DID}`)
+      this._symKey = await this._decryptSymKey(encryptedKey)
+    }
   }
 
   _requireLoad () {
@@ -207,13 +275,17 @@ class Thread {
     await this._db.close()
   }
 
-  _setIdentity (odbId) {
+  async _setIdentity (odbId) {
     this._db.setIdentity(odbId)
     this._db.access._db.setIdentity(odbId)
     this._authenticated = true
+    // TODO not too clear hear, but does require auth, and to be after load
+    if (this._confidential) {
+      await this._initConfidential()
+    }
   }
 
-  async _initConfigs () {
+  async _initAcConfigs () {
     if (this._accessController) return
     if (this._firstModerator.startsWith('0x')) {
       this._firstModerator = await API.getSpaceDID(this._firstModerator, this._spaceName)
@@ -224,6 +296,30 @@ class Thread {
       members: this._members,
       firstModerator: this._firstModerator
     }
+
+    if (this._encKeyId) {
+      this._accessController.encKeyId = this._encKeyId
+    }
+  }
+
+  _symEncrypt (message) {
+    const msg = utils.pad(JSON.stringify(message))
+    return symEncryptBase(msg, this._symKey)
+  }
+
+  _symDecrypt (payload) {
+    const paddedMsg = symDecryptBase(payload.ciphertext, this._symKey, payload.nonce)
+    return JSON.parse(utils.unpad(paddedMsg))
+  }
+
+  async _encryptSymKey (to) {
+    if (!this._confidential) return null
+    return this._user.encrypt(this._symKey, { to })
+  }
+
+  async _decryptSymKey (encKey) {
+    const key = await this._user.decrypt(encKey, true)
+    return new Uint8Array(key)
   }
 }
 

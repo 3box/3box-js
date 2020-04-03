@@ -54,7 +54,7 @@ console.log(profile)
 3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first authenticate the user's 3Box by calling the `auth` method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
 #### 1. Create a 3Box instance
-To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to joinThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)).
+To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to openThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)).
 ```js
 const box = await Box.create(provider)
 ```
@@ -72,7 +72,7 @@ When you first authenticate the box in your dapp all data might not be synced fr
 ```js
 await box.syncDone
 ```
-This will allow you to know when all the user's data is available to you. We advise against *setting* any data before this sync has happened. However, reading data before the sync is complete is fine and encouraged - just remember to check for updates once the sync is finished!
+This will allow you to know when all the user's data is available to you. We advise against *setting* any data before this sync has happened. However, reading data before the sync is complete is fine and encouraged - just remember to check for updates once the sync is finished! Please note, `box.syncDone` can only be called once the user has been authenticated, it is  not possible if only the `Box.create` method has been called.
 
 If you prefer to not use promises you can add a callback using the `onSyncDone` method.
 
@@ -113,11 +113,12 @@ await box.private.setMultiple(privateFields, privateValues)
 ```
 
 ##### Open a thread
-Once you have created a 3Box session you can open a thread to view data in it. This can be done before you authenticate the user to be able to post in the thread.
+Once you have created a 3Box session you can open a thread to view data in it. This can be done before you authenticate the user (required for them to post in the thread).
 When opening a thread the moderation options need to be given. You can pass `firstModerator`, a 3ID (or ethereum address) of the first moderator, and a `members` boolean which indicates if it is a members thread or not.
 ```js
 const thread = await box.openThread('myDapp', 'myThread', { firstModerator: 'did:3:bafy...', members: true })
 ```
+Once a thread has been opened you can call the `getPosts()` method to retrive the posts.
 
 
 <!-- commenting this out for now, not really needed when we're not using the iframe
@@ -184,6 +185,7 @@ You can get all posts made in a thread without opening a space. This is great fo
 const posts = await Box.getThread(spaceName, threadName, firstModerator, membersThread)
 console.log(posts)
 ```
+Threads can also be viewed without opening space, or authenticating by calling the `getPosts()` method on the thread object returned from `openThread` (see Open a thread section above).
 
 ```js
 const posts = await Box.getThreadByAddress(threadAddress)
@@ -876,6 +878,70 @@ const log = store.log
  console.log(entry)
  // { op: 'PUT', key: 'Name', value: 'Botbot', timeStamp: '1538575416068' }
 ```
+<a name="User"></a>
+
+### User
+Class representing a user.
+
+**Kind**: global class  
+
+* [User](#User)
+    * [.DID](#User+DID)
+    * [.signClaim(payload, opts)](#User+signClaim) ⇒ <code>String</code>
+    * [.encrypt(message, opts, to)](#User+encrypt) ⇒ <code>Object</code>
+    * [.decrypt(encryptedObject)](#User+decrypt) ⇒ <code>String</code>
+
+<a name="User+DID"></a>
+
+#### user.DID
+**Kind**: instance property of [<code>User</code>](#User)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DID | <code>String</code> | the DID of the user |
+
+<a name="User+signClaim"></a>
+
+#### user.signClaim(payload, opts) ⇒ <code>String</code>
+Sign a JWT claim
+
+**Kind**: instance method of [<code>User</code>](#User)  
+**Returns**: <code>String</code> - The signed JWT  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| payload | <code>Object</code> | The payload to sign |
+| opts | <code>Object</code> | Optional parameters |
+
+<a name="User+encrypt"></a>
+
+#### user.encrypt(message, opts, to) ⇒ <code>Object</code>
+Encrypt a message. By default encrypts messages symmetrically
+with the users private key. If the `to` parameter is used,
+the message will be asymmetrically encrypted to the recipient.
+
+**Kind**: instance method of [<code>User</code>](#User)  
+**Returns**: <code>Object</code> - An object containing the encrypted payload  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| message | <code>String</code> | The message to encrypt |
+| opts | <code>Object</code> | Optional parameters |
+| to | <code>String</code> | The receiver of the message, a DID or an ethereum address |
+
+<a name="User+decrypt"></a>
+
+#### user.decrypt(encryptedObject) ⇒ <code>String</code>
+Decrypts a message if the user owns the correct key to decrypt it.
+
+**Kind**: instance method of [<code>User</code>](#User)  
+**Returns**: <code>String</code> - The clear text message  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| encryptedObject | <code>Object</code> | The encrypted message to decrypt (as encoded by the `encrypt` method |
+
 <a name="Space"></a>
 
 ### Space
@@ -886,7 +952,7 @@ const log = store.log
     * [.public](#Space+public)
     * [.private](#Space+private)
     * [.syncDone](#Space+syncDone)
-    * [.DID](#Space+DID)
+    * [.user](#Space+user)
     * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
     * [.joinThreadByAddress(address, opts)](#Space+joinThreadByAddress) ⇒ [<code>Thread</code>](#Thread)
     * [.subscribeThread(address, config)](#Space+subscribeThread)
@@ -928,15 +994,15 @@ Please use **box.openSpace** to get the instance of this class
 | --- | --- | --- |
 | syncDone | <code>Promise</code> | A promise that is resolved when the space data is synced |
 
-<a name="Space+DID"></a>
+<a name="Space+user"></a>
 
-#### space.DID
+#### space.user
 **Kind**: instance property of [<code>Space</code>](#Space)  
 **Properties**
 
 | Name | Type | Description |
 | --- | --- | --- |
-| DID | <code>String</code> | the did of the user in this space |
+| user | [<code>User</code>](#User) | access the user object to encrypt data and sign claims |
 
 <a name="Space+joinThread"></a>
 

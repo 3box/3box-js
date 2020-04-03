@@ -2,13 +2,19 @@ const syncComplete = (res) => {
   console.log('Sync Complete')
   updateProfileData(window.box)
 }
-bopen.addEventListener('click', event => {
+
+Box.create(window.ethereum).then(box => {
+  window.box = box
+  bauth.disabled = false
+  openThread.disabled = false
+})
+
+bauth.addEventListener('click', event => {
 
   window.ethereum.enable().then(addresses => {
-    window.Box.openBox(addresses[0],  window.ethereum, {}).then(box => {
+    window.box.auth([], { address: addresses[0] }).then(() => {
       box.onSyncDone(syncComplete)
-      window.box = box
-      console.log(box)
+      console.log('authed')
 
       controlls.style.display = 'block'
       updateProfileData(box)
@@ -61,6 +67,7 @@ bopen.addEventListener('click', event => {
           spacePub.innerHTML = `Public data in ${name}:`
           spacePriv.innerHTML = `Private data in ${name}:`
           spaceCtrl.style.display = 'block'
+          confidentialThreads.style.display = 'block'
           updateSpaceData()
         })
       })
@@ -95,104 +102,130 @@ bopen.addEventListener('click', event => {
           })
         })
       }
+    })
 
-      joinThread.addEventListener('click', () => {
-        const name = threadName.value
-        const firstModerator = threadfirstModerator.value
-        const membersBool = members.checked
-        const ghostBool = ghostCheck.checked
-        console.log('ghost?', ghostBool);
-        posts.style.display = 'block'
-        threadModeration.style.display = 'block'
-        if (members.checked) threadMembers.style.display = 'block'
-        if (ghostCheck.checked) {
-          addThreadMod.disabled = true
-        }
-        box.spaces[window.currentSpace].joinThread(name, {firstModerator, members: membersBool, ghost: ghostBool}).then(thread => {
-          window.currentThread = thread
-          thread.onUpdate(() => {
-            updateThreadData()
-          })
-          thread.onNewCapabilities(() => {
-            updateThreadCapabilities()
-          })
-          if (window.currentThread._room == undefined) {
-            updateThreadData()
-            updateThreadCapabilities()
-          }
-        }).catch(updateThreadError)
-      })
-
-      addThreadMod.addEventListener('click', () => {
-        const id = threadMod.value
-        window.currentThread.addModerator(id).then(res => {
-          updateThreadCapabilities()
-        }).catch(updateThreadError)
-      })
-
-      addThreadMember.addEventListener('click', () => {
-        const id = threadMember.value
-        window.currentThread.addMember(id).then(res => {
-          updateThreadCapabilities()
-        }).catch(updateThreadError)
-      })
-
-      window.deletePost = (el) => {
-        window.currentThread.deletePost(el.id).then(res => {
-          updateThreadData()
-        }).catch(updateThreadError)
-      }
-
-      const updateThreadError = (e = '') => {
-        threadACError.innerHTML = e
-      }
-
-      const updateThreadData = () => {
-        threadData.innerHTML = ''
-        updateThreadError()
-        window.currentThread.getPosts().then(posts => {
-          posts.map(post => {
-            threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
-            threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
-          })
-        })
-      }
-
-      const updateThreadCapabilities = () => {
-        threadMemberList.innerHTML = ''
-        // if else statement cause ghost thread can't list moderators
-        if (window.currentThread._peerId) {
-          window.currentThread.listMembers().then(members => {
-            members.map(member => {
-                threadMemberList.innerHTML += member + '<br />'
-            })
-          })
-        } else {
-          if (window.currentThread._members) {
-            window.currentThread.listMembers().then(members => {
-              members.map(member => {
-                  threadMemberList.innerHTML += member + '<br />'
-              })
-            })
-          }
-          threadModeratorList.innerHTML = ''
-          window.currentThread.listModerators().then(moderators => {
-            moderators.map(moderator => {
-                threadModeratorList.innerHTML += moderator  +  '<br />'
-            })
-          })
-        }
-      }
-
-      postThread.addEventListener('click', () => {
-        window.currentThread.post(postMsg.value).catch(updateThreadError)
-      })
-
-      bclose.addEventListener('click', () => {
-        logout(box)
-      })
+    bclose.addEventListener('click', () => {
+      logout(box)
     })
   })
+})
+
+openThread.addEventListener('click', () => {
+  const name = threadName.value
+  const space = threadSpaceName.value
+  const firstModerator = threadfirstModerator.value
+  const membersBool = members.checked
+  const ghostBool = ghostCheck.checked
+  console.log('ghost?', ghostBool);
+  displayThread(false)
+  if (ghostCheck.checked) {
+    addThreadMod.disabled = true
+  }
+  box.openThread(space, name, {firstModerator, members: membersBool, ghost: ghostBool})
+     .then(registerThreadEvents)
+     .catch(updateThreadError)
+})
+
+joinConfThread.addEventListener('click', () => {
+  const address = confThreadAddress.value
+  displayThread(true)
+  box.spaces[window.currentSpace].joinThreadByAddress(address)
+     .then(registerThreadEvents)
+     .catch(updateThreadError)
+})
+
+createConfThread.addEventListener('click', () => {
+  const name = confThreadName.value
+  displayThread(true)
+  box.spaces[window.currentSpace].createConfidentialThread(name)
+     .then(registerThreadEvents)
+     .catch(updateThreadError)
+})
+
+addThreadMod.addEventListener('click', () => {
+  const id = threadMod.value
+  window.currentThread.addModerator(id).then(res => {
+    updateThreadCapabilities()
+  }).catch(updateThreadError)
+})
+
+addThreadMember.addEventListener('click', () => {
+  const id = threadMember.value
+  window.currentThread.addMember(id).then(res => {
+    updateThreadCapabilities()
+  }).catch(updateThreadError)
+})
+
+window.deletePost = (el) => {
+  window.currentThread.deletePost(el.id).then(res => {
+    updateThreadData()
+  }).catch(updateThreadError)
+}
+
+const registerThreadEvents = (thread) => {
+  window.currentThread = thread
+  thread.onUpdate(() => {
+    updateThreadData()
+  })
+  thread.onNewCapabilities(() => {
+    updateThreadCapabilities()
+  })
+  if (window.currentThread._room == undefined) {
+    updateThreadData()
+    updateThreadCapabilities()
+  }
+}
+
+const displayThread = (members) => {
+  posts.style.display = 'block'
+  threadModeration.style.display = 'block'
+  if (members) threadMembers.style.display = 'block'
+}
+
+const updateThreadError = (e = '') => {
+  threadACError.innerHTML = e
+}
+
+const updateThreadData = () => {
+  threadData.innerHTML = ''
+  threadAddress.innerHTML = window.currentThread.address
+  updateThreadError()
+  window.currentThread.getPosts().then(posts => {
+    posts.map(post => {
+      threadData.innerHTML += post.author + ': <br />' + post.message  + '<br /><br />'
+      threadData.innerHTML += `<button id="` + post.postId + `"onClick="window.deletePost(` + post.postId + `)" type="button" class="btn btn btn-primary" >Delete</button>` + '<br /><br />'
+    })
+  })
+}
+
+const updateThreadCapabilities = () => {
+  threadMemberList.innerHTML = ''
+  // if else statement cause ghost thread can't list moderators
+  if (window.currentThread._peerId) {
+    window.currentThread.listMembers().then(members => {
+      members.map(member => {
+          threadMemberList.innerHTML += member + '<br />'
+      })
+    })
+  } else {
+    if (window.currentThread._members) {
+      window.currentThread.listMembers().then(members => {
+        members.map(member => {
+            threadMemberList.innerHTML += member + '<br />'
+        })
+      })
+    }
+    threadModeratorList.innerHTML = ''
+    window.currentThread.listModerators().then(moderators => {
+      moderators.map(moderator => {
+          threadModeratorList.innerHTML += moderator  +  '<br />'
+      })
+    })
+  }
+}
+
+postThread.addEventListener('click', () => {
+  window.currentThread.post(postMsg.value).catch(updateThreadError)
 })
 
 getProfile.addEventListener('click', () => {
@@ -277,6 +310,6 @@ function updateLinksData (box, address) {
 
   box.isAddressLinked({ address }).then(result => {
     addressLinked.innerHTML = result ? 'Yes' : 'No'
-    linkAddress.style.display = result ? 'none' : 'block'
+    linkAddress.style.display = 'block'
   })
 }

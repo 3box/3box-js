@@ -20,7 +20,19 @@ class GhostThread extends EventEmitter {
     this._filters = opts.ghostFilters || []
 
     this._room.on('message', async ({ from, data }) => {
-      const { payload, issuer } = await this._verifyData(data)
+      let payload, issuer
+      if (data.toString().startsWith('{')) {
+        // we got a non signed message (can only be backlog request, or response)
+        payload = JSON.parse(data)
+        if (payload.type !== 'request_backlog' && payload.type !== 'backlog_response') {
+          // join and messages need signatures
+          return
+        }
+      } else {
+        const verified = await this._verifyData(data)
+        payload = verified.payload
+        issuer = verified.issuer
+      }
 
       // we pass the payload, issuer and peerID (from) to each filter in our filters array and reduce the value to a single boolean
       // this boolean indicates whether the message passed the filters
@@ -33,7 +45,7 @@ class GhostThread extends EventEmitter {
             break
           case 'request_backlog':
             this.getPosts(this._backlogLimit)
-              .then(posts => this._sendDirect({ type: 'backlog_response', message: posts }, from))
+              .then(posts => this._sendDirect({ type: 'backlog_response', message: posts }, from, true))
             break
           case 'backlog_response':
             payload.message.map(msg => {
@@ -59,6 +71,12 @@ class GhostThread extends EventEmitter {
 
   _set3id (threeId) {
     this._3id = threeId
+    // announce to other peers that we are online
+    this.listMembers().then(members => {
+      this._room.getPeers().map(id => {
+        this._announce(id)
+      })
+    })
   }
 
   /**
@@ -100,8 +118,11 @@ class GhostThread extends EventEmitter {
    * @param     {String}      to              The PeerID of a user (optional)
    */
   async _announce (to) {
-    !to ? await this._broadcast({ type: 'join' })
-      : await this._sendDirect({ type: 'join' }, to)
+    if (this._3id) {
+      // we don't announce presence if we're not authed
+      !to ? await this._broadcast({ type: 'join' })
+        : await this._sendDirect({ type: 'join' }, to)
+    }
   }
 
   /**
@@ -138,7 +159,7 @@ class GhostThread extends EventEmitter {
    */
   async _requestBacklog (to) {
     !to ? await this._broadcast({ type: 'request_backlog' })
-      : await this._sendDirect({ type: 'request_backlog' }, to)
+      : await this._sendDirect({ type: 'request_backlog' }, to, true)
   }
 
   /**
@@ -154,10 +175,10 @@ class GhostThread extends EventEmitter {
    *
    * @param     {Object}    message                 The message
    */
-  async _broadcast (message) {
-    if (!this._3id) throw new Error('Can not send message if not authenticated')
-    const jwt = await this._3id.signJWT(message, { use3ID: true })
-    this._room.broadcast(jwt)
+  async _broadcast (message, noSignature) {
+    if (!this._3id ? !noSignature : false) throw new Error('Can not send message if not authenticated')
+    const payload = noSignature ? JSON.stringify(message) : await this._3id.signJWT(message)
+    this._room.broadcast(payload)
   }
 
   /**
@@ -166,11 +187,11 @@ class GhostThread extends EventEmitter {
    * @param     {Object}    message             The message
    * @param     {String}    to                  The PeerID or 3ID of the receiver
    */
-  async _sendDirect (message, to) {
-    if (!this._3id) throw new Error('Can not send message if not authenticated')
-    const jwt = await this._3id.signJWT(message, { use3ID: true })
-    to.startsWith('Qm') ? this._room.sendTo(to, jwt)
-      : this._room.sendTo(this._threeIdToPeerId(to), jwt)
+  async _sendDirect (message, to, noSignature) {
+    if (!this._3id ? !noSignature : false) throw new Error('Can not send message if not authenticated')
+    const payload = noSignature ? JSON.stringify(message) : await this._3id.signJWT(message)
+    to.startsWith('Qm') ? this._room.sendTo(to, payload)
+      : this._room.sendTo(this._threeIdToPeerId(to), payload)
   }
 
   /**
@@ -207,7 +228,7 @@ class GhostThread extends EventEmitter {
    */
   async _userJoined (did, peerID) {
     const members = await this.listMembers()
-    if (!members.includes(did) && (this._3id && this._3id.DID !== did)) {
+    if (!members.includes(did) && (!this._3id || this._3id.DID !== did)) {
       this._members[did] = peerID
       this._members[peerID] = did
       this.emit('user-joined', 'joined', did, peerID)

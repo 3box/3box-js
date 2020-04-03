@@ -181,7 +181,7 @@ describe('KeyValueStore', () => {
     expect(await keyValueStore2.get('key2')).toBeUndefined()
     expect(await keyValueStore2.get('key3')).toBeUndefined()
     await orbitdb2.stop()
-    await utils.stopIPFS(ipfs2, 3)
+    return utils.stopIPFS(ipfs2, 3)
   })
 
   describe('metdata', () => {
@@ -212,7 +212,7 @@ describe('KeyValueStore', () => {
       storeAddr = await keyValueStore._load()
       await keyValueStore.set('key1', 'value1')
       await keyValueStore.set('key2', 'lalalla')
-      await keyValueStore.set('key3', '12345')
+      return keyValueStore.set('key3', '12345')
     })
 
     it('should return array of ALL entries ({op: .., key: .., value: .., timeStamp: ..}) of log underlying store ', async () => {
@@ -255,6 +255,6 @@ describe('KeyValueStore', () => {
 
   afterAll(async () => {
     await orbitdb.stop()
-    await utils.stopIPFS(ipfs, 2)
+    return utils.stopIPFS(ipfs, 2)
   })
 })
