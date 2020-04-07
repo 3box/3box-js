@@ -46,7 +46,7 @@
     "3box-orbitdb-plugins": "^1.1.0",
     "3id-blockchain-utils": "^0.3.3",
     "3id-resolver": "^0.0.5",
-    "@babel/runtime": "^7.4.5",
+    "@babel/runtime": "^7.9.2",
     "@ethersproject/hdnode": "5.0.0-beta.137",
     "@ethersproject/wallet": "5.0.0-beta.136",
     "did-jwt": "^0.2.0",
