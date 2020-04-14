@@ -21,6 +21,7 @@ class AccountLinks {
   async read (address) {
     const docId = await this._getDocId(address)
     const doc = await this._ceramic.loadDocument(docId)
+    await new Promise(resolve => setTimeout(resolve, 500))
     return doc.content
   }
 
@@ -45,7 +46,7 @@ class AccountLinks {
   _convertToCaip10 (address) {
     let [accountAddress, chainId] = address.split('@')
     if (!chainId) chainId = 'eip155:' + (this.provider && this.provider.networkVersion || '1')
-    return [accountAddress, chainId].join('@')
+    return [accountAddress, chainId].join('@').toLowerCase()
   }
 
   /*

@@ -354,8 +354,8 @@ class Box extends BoxApi {
    */
   async isAddressLinked (query = {}) {
     if (!this._3id) throw new Error('isAddressLinked: auth required')
-    if (query.address) query.address = query.address.toLowerCase()
-    const did = await this.accountLinks.read(query.address)
+    const address = query.address && query.address.toLowerCase()
+    const did = await this.accountLinks.read(address)
     return did === this._3id.DID
   }
 
