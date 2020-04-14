@@ -86,7 +86,7 @@ describe('AccountLinks', () => {
     it('should update a ceramic account-link document with the given proof', async() => {
       await accountLinks.update(mockAccount2.address, mockAccount2.did, mockAccount2.proof)
 
-      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount2.address + '@eip155:1'], onlyGenesis: true })
+      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount2.address + '@eip155:1'], onlyGenesis: true, skipWait: true })
       expect(mockCeramic.loadDocument).toHaveBeenCalledWith(mockDocument.id)
       expect(mockDocument.change).toHaveBeenCalledWith(mockAccount2.proof)
     })
@@ -94,7 +94,7 @@ describe('AccountLinks', () => {
     it('should update a ceramic document with a generated proof if no proof provided', async () => {
       await accountLinks.update(mockAccount1.address, mockAccount1.did)
 
-      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount1.address + '@eip155:1'], onlyGenesis: true })
+      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount1.address + '@eip155:1'], onlyGenesis: true, skipWait: true })
       expect(mockCeramic.loadDocument).toHaveBeenCalledWith(mockDocument.id)
       expect(mockDocument.change).toHaveBeenCalledWith(mockAccount1.proof)
     })
@@ -109,7 +109,9 @@ describe('AccountLinks', () => {
   })
 
   describe.skip('delete', async () => {
-    it('should update the content of the ceramic document to an empty string')
+    it('should update the content of the ceramic document to an empty string', () => {
+
+    })
   })
   
 })
