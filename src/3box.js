@@ -19,7 +19,6 @@ const didJWT = require('did-jwt')
 
 const Ceramic = require('@ceramicnetwork/ceramic-core').default
 const AccountLinks = require('./accountLinks')
-const isEqual = require('lodash.isequal')
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url

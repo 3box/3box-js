@@ -1,11 +1,5 @@
 const { createLink, validateLink } = require('3id-blockchain-utils')
 
-function convertToCaip10(address) {
-  let [accountAddress, chainId] = address.split('@')
-  if (!chainId) chainId = 'eip155:1'
-  return [accountAddress, chainId].join('@')
-}
-
 class AccountLinks {
   constructor(ceramic, provider) {
     this._ceramic = ceramic
@@ -13,7 +7,7 @@ class AccountLinks {
   }
 
   async create (address, did, proof = null) {
-    const doc = await this._ceramic.createDocument(null, 'account-link', { owners: [convertToCaip10(address)]})
+    const doc = await this._ceramic.createDocument(null, 'account-link', { owners: [this._convertToCaip10(address)]})
     if (!proof) {
       if (!this.provider) {
         throw new Error('Provider must be set to create an account link')
@@ -43,9 +37,15 @@ class AccountLinks {
     return doc.content
   }
 
-  async _getDocId(address) {
-    const doc = await this._ceramic.createDocument(null, 'account-link', { owners: [convertToCaip10(address)], onlyGenesis: true })
+  async _getDocId (address) {
+    const doc = await this._ceramic.createDocument(null, 'account-link', { owners: [this._convertToCaip10(address)], onlyGenesis: true, skipWait: true })
     return doc.id
+  }
+
+  _convertToCaip10 (address) {
+    let [accountAddress, chainId] = address.split('@')
+    if (!chainId) chainId = 'eip155:' + (this.provider && this.provider.networkVersion || '1')
+    return [accountAddress, chainId].join('@')
   }
 
   /*
