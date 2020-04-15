@@ -1,7 +1,7 @@
-const { createLink, validateLink } = require('3id-blockchain-utils')
+const { createLink } = require('3id-blockchain-utils')
 
 class AccountLinks {
-  constructor(ceramic, provider) {
+  constructor (ceramic, provider) {
     this._ceramic = ceramic
     this.provider = provider
   }
@@ -46,7 +46,7 @@ class AccountLinks {
   }
 
   // TODO: https://github.com/3box/3box/issues/1022
-  async getAddresses(did) {
+  async getAddresses (did) {
     throw new Error('Not implemented')
   }
 
@@ -61,7 +61,7 @@ class AccountLinks {
 
   _convertToCaip10 (address) {
     let [accountAddress, chainId] = address.split('@')
-    if (!chainId) chainId = 'eip155:' + (this.provider && this.provider.networkVersion || '1')
+    if (!chainId) chainId = 'eip155:' + ((this.provider && this.provider.networkVersion) || '1')
     return [accountAddress, chainId].join('@').toLowerCase()
   }
 }

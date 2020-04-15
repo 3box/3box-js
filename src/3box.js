@@ -15,7 +15,6 @@ const config = require('./config.js')
 const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
-const didJWT = require('did-jwt')
 
 const Ceramic = require('@ceramicnetwork/ceramic-core').default
 const AccountLinks = require('./accountLinks')
@@ -110,7 +109,7 @@ class Box extends BoxApi {
       this._writeRootstoreEntry(Replicator.entryTypes.AUTH_DATA, authData)
     })
     this._3id.events.on('new-link-proof', proof => {
-      this.linkAddress({proof})
+      this.linkAddress({ proof })
     })
     this._3id.startUpdatePolling()
 
