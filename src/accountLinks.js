@@ -7,7 +7,9 @@ class AccountLinks {
   }
 
   async create (address, did, proof = null) {
-    const doc = await this._ceramic.createDocument(null, 'account-link', { owners: [this._convertToCaip10(address)]})
+    const doc = await this._ceramic.createDocument(null, 'account-link', {
+      owners: [this._convertToCaip10(address)]
+    })
     if (!proof) {
       if (!this.provider) {
         throw new Error('Provider must be set to create an account link')
@@ -38,8 +40,22 @@ class AccountLinks {
     return doc.content
   }
 
+  // TODO: https://github.com/ceramicnetwork/ceramic/issues/11
+  async delete (address) {
+    throw new Error('Not implemented')
+  }
+
+  // TODO: https://github.com/3box/3box/issues/1022
+  async getAddresses(did) {
+    throw new Error('Not implemented')
+  }
+
   async _getDocId (address) {
-    const doc = await this._ceramic.createDocument(null, 'account-link', { owners: [this._convertToCaip10(address)], onlyGenesis: true, skipWait: true })
+    const doc = await this._ceramic.createDocument(null, 'account-link', {
+      owners: [this._convertToCaip10(address)],
+      onlyGenesis: true,
+      skipWait: true
+    })
     return doc.id
   }
 
@@ -48,14 +64,6 @@ class AccountLinks {
     if (!chainId) chainId = 'eip155:' + (this.provider && this.provider.networkVersion || '1')
     return [accountAddress, chainId].join('@').toLowerCase()
   }
-
-  /*
-  TODO: https://github.com/ceramicnetwork/ceramic/issues/11
-  
-  async delete (address) {
-
-  }
-  */
 }
 
 module.exports = AccountLinks
