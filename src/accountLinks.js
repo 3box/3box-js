@@ -23,8 +23,7 @@ class AccountLinks {
 
   async read (address) {
     const docId = await this._getDocId(address)
-    const doc = await this._ceramic.loadDocument(docId)
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const doc = await this._ceramic.loadDocument(docId, { onlyGenesis: false })
     return doc.content
   }
 
@@ -36,7 +35,7 @@ class AccountLinks {
       proof = await createLink(did, address, this.provider)
     }
     const docId = await this._getDocId(address)
-    const doc = await this._ceramic.loadDocument(docId)
+    const doc = await this._ceramic.loadDocument(docId, { onlyGenesis: false })
     await doc.change(proof)
     return doc.content
   }
