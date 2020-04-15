@@ -1,4 +1,5 @@
 const { createLink } = require('3id-blockchain-utils')
+const utils = require('./utils')
 
 class AccountLinks {
   constructor (ceramic, provider) {
@@ -8,7 +9,7 @@ class AccountLinks {
 
   async create (address, did, proof = null) {
     const doc = await this._ceramic.createDocument(null, 'account-link', {
-      owners: [this._convertToCaip10(address)]
+      owners: [await this._convertToCaip10(address)]
     })
     if (!proof) {
       if (!this.provider) {
@@ -52,16 +53,25 @@ class AccountLinks {
 
   async _getDocId (address) {
     const doc = await this._ceramic.createDocument(null, 'account-link', {
-      owners: [this._convertToCaip10(address)],
+      owners: [await this._convertToCaip10(address)],
       onlyGenesis: true,
       skipWait: true
     })
     return doc.id
   }
 
-  _convertToCaip10 (address) {
+  async _convertToCaip10 (address) {
     let [accountAddress, chainId] = address.split('@')
-    if (!chainId) chainId = 'eip155:' + ((this.provider && this.provider.networkVersion) || '1')
+    if (!chainId) {
+      let netVersion
+      try {
+        netVersion = await utils.callRpc(this.provider, 'net_version')
+      } catch (err) {
+        console.warn('Provider RPC error, defaulting net_version to "1"', err)
+        netVersion = '1'
+      }
+      chainId = 'eip155:' + netVersion
+    }
     return [accountAddress, chainId].join('@').toLowerCase()
   }
 }
