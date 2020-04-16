@@ -35,7 +35,10 @@ describe('AccountLinks', () => {
   const mockDocument = {
     change: jest.fn(),
     id: '/ceramic/bafyreiekd7xj4zungivvamff5pfu7vnf7xroreeaxowntjjilcfwf7d4mq',
-    content: mockAccount1.did
+    content: mockAccount1.did,
+    state: {
+      log: []
+    }
   }
   const mockCeramic = {
     createDocument: jest.fn(() => mockDocument),
@@ -53,14 +56,14 @@ describe('AccountLinks', () => {
     it('should create a ceramic account-link document with the given proof', async() => {
       await accountLinks.create(mockAccount2.address, mockAccount2.did, mockAccount2.proof)
 
-      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount2.address + '@eip155:1'] })
+      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount2.address + '@eip155:1'], onlyGenesis: true })
       expect(mockDocument.change).toHaveBeenCalledWith(mockAccount2.proof)
     })
 
     it('should create a ceramic document with a generated proof if no proof provided', async () => {
       await accountLinks.create(mockAccount1.address, mockAccount1.did)
 
-      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount1.address + '@eip155:1'] })
+      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount1.address + '@eip155:1'], onlyGenesis: true })
       expect(mockDocument.change).toHaveBeenCalledWith(mockAccount1.proof)
     })
 
@@ -78,7 +81,7 @@ describe('AccountLinks', () => {
       const actual = await accountLinks.read(mockAccount1.address)
 
       expect(actual).toEqual(mockAccount1.did)
-      expect(mockCeramic.loadDocument).toHaveBeenCalledWith(mockDocument.id)
+      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount1.address + '@eip155:1'], onlyGenesis: true })
     })
   })
 
@@ -86,16 +89,14 @@ describe('AccountLinks', () => {
     it('should update a ceramic account-link document with the given proof', async() => {
       await accountLinks.update(mockAccount2.address, mockAccount2.did, mockAccount2.proof)
 
-      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount2.address + '@eip155:1'], onlyGenesis: true, skipWait: true })
-      expect(mockCeramic.loadDocument).toHaveBeenCalledWith(mockDocument.id)
+      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount2.address + '@eip155:1'], onlyGenesis: true })
       expect(mockDocument.change).toHaveBeenCalledWith(mockAccount2.proof)
     })
 
     it('should update a ceramic document with a generated proof if no proof provided', async () => {
       await accountLinks.update(mockAccount1.address, mockAccount1.did)
 
-      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount1.address + '@eip155:1'], onlyGenesis: true, skipWait: true })
-      expect(mockCeramic.loadDocument).toHaveBeenCalledWith(mockDocument.id)
+      expect(mockCeramic.createDocument).toHaveBeenCalledWith(null, 'account-link', { owners: [mockAccount1.address + '@eip155:1'], onlyGenesis: true })
       expect(mockDocument.change).toHaveBeenCalledWith(mockAccount1.proof)
     })
 

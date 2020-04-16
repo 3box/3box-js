@@ -8,22 +8,28 @@ class AccountLinks {
   }
 
   async create (address, did, proof = null) {
-    const doc = await this._ceramic.createDocument(null, 'account-link', {
-      owners: [await this._convertToCaip10(address)]
-    })
     if (!proof) {
       if (!this.provider) {
         throw new Error('Provider must be set to create an account link')
       }
       proof = await createLink(did, address, this.provider)
     }
+    const doc = await this._ceramic.createDocument(null, 'account-link', {
+      owners: [await this._convertToCaip10(address)],
+      onlyGenesis: true
+    })
+    if (doc.state.log.length > 1) {
+      throw new Error('Account link already exists')
+    }
     await doc.change(proof)
     return doc.content
   }
 
   async read (address) {
-    const docId = await this._getDocId(address)
-    const doc = await this._ceramic.loadDocument(docId, { onlyGenesis: false })
+    const doc = await this._ceramic.createDocument(null, 'account-link', {
+      owners: [await this._convertToCaip10(address)],
+      onlyGenesis: true
+    })
     return doc.content
   }
 
@@ -34,8 +40,10 @@ class AccountLinks {
       }
       proof = await createLink(did, address, this.provider)
     }
-    const docId = await this._getDocId(address)
-    const doc = await this._ceramic.loadDocument(docId, { onlyGenesis: false })
+    const doc = await this._ceramic.createDocument(null, 'account-link', {
+      owners: [await this._convertToCaip10(address)],
+      onlyGenesis: true
+    })
     await doc.change(proof)
     return doc.content
   }
@@ -48,15 +56,6 @@ class AccountLinks {
   // TODO: https://github.com/3box/3box/issues/1022
   async getAddresses (did) {
     throw new Error('Not implemented')
-  }
-
-  async _getDocId (address) {
-    const doc = await this._ceramic.createDocument(null, 'account-link', {
-      owners: [await this._convertToCaip10(address)],
-      onlyGenesis: true,
-      skipWait: true
-    })
-    return doc.id
   }
 
   async _convertToCaip10 (address) {
