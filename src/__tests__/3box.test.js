@@ -260,7 +260,8 @@ describe('3Box', () => {
     expect(box.spaces[space].joinThread).toHaveBeenCalledWith(name, {})
   })
 
-  it('authenticating works as expected', async () => {
+  // TODO: upgrade DID resolver (https://github.com/3box/3box/issues/1011)
+  it.skip('authenticating works as expected', async () => {
     const space = 's1'
     const name = 't1'
     const prov = 'web3prov'
@@ -293,7 +294,8 @@ describe('3Box', () => {
     expect(box._3id.authenticate).toHaveBeenCalledWith(['s2'])
   })
 
-  it('should openBox correctly with normal auth flow, for new accounts', async () => {
+  // TODO: upgrade DID resolver (https://github.com/3box/3box/issues/1011)
+  it.skip('should openBox correctly with normal auth flow, for new accounts', async () => {
     const addr = '0x12345'
     const prov = 'web3prov'
     const consentCallback = jest.fn()
@@ -321,7 +323,8 @@ describe('3Box', () => {
     return box.close()
   })
 
-  it('should handle error and not link profile on first call to _linkProfile', async () => {
+  // TODO: replace with ceramic equivalent
+  it.skip('should handle error and not link profile on first call to _linkProfile', async () => {
     const box = await Box.openBox('0x12345','web3prov', boxOpts)
     const did = box._3id.DID
     clearMocks()
@@ -344,7 +347,8 @@ describe('3Box', () => {
     return box.close()
   })
 
-  it('should not call createLink if ethereum_proof in rootStore on call to _linkProfile', async () => {
+  // TODO: replace with ceramic equivalent
+  it.skip('should not call createLink if ethereum_proof in rootStore on call to _linkProfile', async () => {
     const boxWithLinks = await Box.openBox('0x12345', 'web3prov', boxOpts)
     clearMocks()
 
@@ -382,7 +386,8 @@ describe('3Box', () => {
     return boxWithLinks.close()
   })
 
-  it('should link profile on call to _linkProfile', async () => {
+  // TODO: replace with ceramic equivalent
+  it.skip('should link profile on call to _linkProfile', async () => {
     const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
     const did = box._3id.DID
     clearMocks()
@@ -404,7 +409,8 @@ describe('3Box', () => {
     return box.close()
   })
 
-  it('should openBox correctly with normal auth flow, for existing accounts', async () => {
+  // TODO: upgrade DID resolver (https://github.com/3box/3box/issues/1011)
+  it.skip('should openBox correctly with normal auth flow, for existing accounts', async () => {
     const addr = '0x12345'
     const prov = 'web3prov'
     const consentCallback = jest.fn()
@@ -430,7 +436,8 @@ describe('3Box', () => {
     return box.close()
   })
 
-  it('should open spaces correctly', async () => {
+  // TODO: upgrade DID resolver (https://github.com/3box/3box/issues/1011)
+  it.skip('should open spaces correctly', async () => {
     const box = await Box.openBox('0x12345','web3prov', boxOpts)
 
     clearMocks()
@@ -478,14 +485,16 @@ describe('3Box', () => {
     expect(isLoggedIn).toEqual(true)
   })
 
-  it('should clear cache correctly', async () => {
+  // TODO: upgrade DID resolver (https://github.com/3box/3box/issues/1011)
+  it.skip('should clear cache correctly', async () => {
     const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
     await box.logout()
     expect(mocked3id.logoutFn).toHaveBeenCalledTimes(1)
     return box.close()
   })
 
-  it('should be logged out', async () => {
+  // TODO: upgrade DID resolver (https://github.com/3box/3box/issues/1011)
+  it.skip('should be logged out', async () => {
     const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
     await box.logout()
     const isLoggedIn = Box.isLoggedIn('0xabcde')

@@ -1,7 +1,7 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
 const registerResolver = require('3id-resolver')
-const { createLink, validateLink } = require('3id-blockchain-utils')
+const { validateLink } = require('3id-blockchain-utils')
 
 const ThreeId = require('./3id')
 const Replicator = require('./replicator')
@@ -15,11 +15,14 @@ const config = require('./config.js')
 const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
-const didJWT = require('did-jwt')
+
+const Ceramic = require('@ceramicnetwork/ceramic-core').default
+const AccountLinks = require('./accountLinks')
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
+const CERAMIC_IPFS_NODE = config.ceramic_ipfs_node
 
 let globalIPFS, globalIPFSPromise // , ipfsProxy, cacheProxy, iframeLoadedPromise
 
@@ -80,6 +83,8 @@ class Box extends BoxApi {
 
   async _init (opts) {
     this.replicator = await Replicator.create(this._ipfs, opts)
+    this.ceramic = await Ceramic.create(this._ipfs)
+    this.accountLinks = new AccountLinks(this.ceramic, this._provider)
   }
 
   async _load (opts = {}) {
@@ -104,11 +109,11 @@ class Box extends BoxApi {
       this._writeRootstoreEntry(Replicator.entryTypes.AUTH_DATA, authData)
     })
     this._3id.events.on('new-link-proof', proof => {
-      this._writeAddressLink(proof)
+      this.linkAddress({ proof })
     })
     this._3id.startUpdatePolling()
 
-    this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
+    this.public = new PublicStore(this._3id.muportFingerprint + '.public', this.linkAddress.bind(this), this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
     await this.public._load()
     await this.private._load()
@@ -271,6 +276,8 @@ class Box extends BoxApi {
   }
 
   async _getLinkedData (ethereumAddress) {
+    // const did = await this.accountLinks.read(query.address)
+    // TODO: Rootstore fetch will require implementation https://github.com/3box/3box/issues/1005
     try {
       const { rootStoreAddress, did } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
       return { rootStoreAddress, did }
@@ -298,11 +305,8 @@ class Box extends BoxApi {
    */
   async linkAddress (link = {}) {
     if (!this._3id) throw new Error('linkAddress: auth required')
-    if (link.proof) {
-      await this._writeAddressLink(link.proof)
-    } else {
-      await this._linkProfile()
-    }
+    const address = await this._3id.getAddress()
+    await this.accountLinks.create(address, this._3id.DID, link.proof)
   }
 
   /**
@@ -311,6 +315,7 @@ class Box extends BoxApi {
    * @param     {String}   address      address that is linked
    */
   async removeAddressLink (address) {
+    // TODO: requires https://github.com/ceramicnetwork/ceramic/issues/11
     if (!this._3id) throw new Error('removeAddressLink: auth required')
     address = address.toLowerCase()
     const linkExist = await this.isAddressLinked({ address })
@@ -348,13 +353,9 @@ class Box extends BoxApi {
    */
   async isAddressLinked (query = {}) {
     if (!this._3id) throw new Error('isAddressLinked: auth required')
-    if (query.address) query.address = query.address.toLowerCase()
-    const links = await this._readAddressLinks()
-    const linksQuery = links.find(link => {
-      const res = query.address ? link.address.toLowerCase() === query.address : true
-      return query.type ? res && link.type === query.type : res
-    })
-    return Boolean(linksQuery)
+    const address = query.address && query.address.toLowerCase()
+    const did = await this.accountLinks.read(address)
+    return did === this._3id.DID
   }
 
   /**
@@ -372,64 +373,6 @@ class Box extends BoxApi {
       list.push(item)
       return list
     }, [])
-  }
-
-  async _writeAddressLink (proof) {
-    const validProof = await validateLink(proof)
-    if (!validProof) {
-      throw new Error('tried to write invalid link proof', proof)
-    }
-    if (await this.isAddressLinked({ address: validProof.address })) return true // address already linked
-    await this._writeRootstoreEntry(Replicator.entryTypes.ADDRESS_LINK, proof)
-    await utils.fetchJson(this._serverUrl + '/link', proof)
-  }
-
-  async _linkProfile () {
-    const address = await this._3id.getAddress()
-    let proof = await this._readAddressLink(address)
-
-    if (!proof) {
-      if (!this._provider.is3idProvider) {
-        try {
-          proof = await createLink(this._3id.DID, address, this._provider)
-        } catch (e) {
-          throw new Error('Link consent message must be signed before adding data, to link address to store', e)
-        }
-        try {
-          await this._writeAddressLink(proof)
-        } catch (err) {
-          throw new Error('An error occured while publishing link:', err)
-        }
-      }
-    } else {
-      // Send consentSignature to 3box-address-server to link profile with ethereum address
-      // _writeAddressLink already does this if the other conditional is called
-      if (!this.hasPublishedLink[proof.signature]) {
-        // Don't want to publish on every call to _linkProfile
-        this.hasPublishedLink[proof.signature] = true
-        try {
-          // Send consentSignature to 3box-address-server to link profile with ethereum address
-          await utils.fetchJson(this._serverUrl + '/link', proof)
-        } catch (err) {
-          throw new Error('An error occured while publishing link:', err)
-        }
-      }
-    }
-    // Ensure we self-published our did
-    // TODO - is this still needed?
-    const proofdid = await this.public.get('proof_did')
-
-    if (proofdid) {
-      // if prior muport, re publish with 3id including muport
-      const issuer = didJWT.decodeJWT(proofdid).payload.iss
-      if (issuer.includes('muport')) {
-        const jwt = { muport: proofdid }
-        await this.public.set('proof_did', await this._3id.signJWT(jwt), { noLink: true })
-      }
-    } else {
-      // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
-    }
   }
 
   async _writeRootstoreEntry (type, payload) {
@@ -524,7 +467,11 @@ class Box extends BoxApi {
 
     const ipfs = globalIPFS
     const pinningNode = opts.pinningNode || PINNING_NODE
-    ipfs.swarm.connect(pinningNode, () => {})
+    await ipfs.swarm.connect(pinningNode)
+    if (CERAMIC_IPFS_NODE) {
+      await ipfs.swarm.connect(CERAMIC_IPFS_NODE)
+      console.log('Connected to Ceramic IPFS node:', CERAMIC_IPFS_NODE)
+    }
     return ipfs
   }
 }

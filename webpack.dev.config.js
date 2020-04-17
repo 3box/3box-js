@@ -23,6 +23,7 @@ module.exports = Object.assign(require('./webpack.config.js'), {
       'MUPORT_IPFS_HOST',
       'MUPORT_IPFS_PORT',
       'MUPORT_IPFS_PROTOCOL',
+      'CERAMIC_IPFS_NODE',
     ])
   ]
 })
