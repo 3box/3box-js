@@ -28,21 +28,18 @@ jest.mock('3id-blockchain-utils', () => ({
   createLink: jest.fn(async (did, address, provider) => (mockAccount1.proof))
 }))
 
+
 const AccountLinks = require('../accountLinks')
+const cloneDeep = require('lodash.clonedeep')
 
 describe('AccountLinks', () => {
   const mockProvider = jest.fn()
   const mockDocument = {
     change: jest.fn(),
     id: '/ceramic/bafyreiekd7xj4zungivvamff5pfu7vnf7xroreeaxowntjjilcfwf7d4mq',
-    content: mockAccount1.did,
-    state: {
-      log: []
-    }
   }
   const mockCeramic = {
-    createDocument: jest.fn(() => mockDocument),
-    loadDocument: jest.fn(() => mockDocument),
+    createDocument: jest.fn(async () => mockDocument),
   }
 
   let accountLinks
@@ -70,14 +67,38 @@ describe('AccountLinks', () => {
     it('should throw an error if no provider is defined and no proof given', async () => {
       accountLinks = new AccountLinks(mockCeramic, null)
 
-      const actual = accountLinks.create(mockAccount1.address, mockAccount1.did)
+      const resultPromise = accountLinks.create(mockAccount1.address, mockAccount1.did)
 
-      await expect(actual).rejects.toThrow(/Provider must be set/i)
+      await expect(resultPromise).rejects.toThrow(/Provider must be set/i)
+    })
+
+    it('should update the account link if it already exists and has a different did', async () => {
+      const mockDocumentWithContent = cloneDeep(mockDocument)
+      mockDocumentWithContent.content = mockAccount1.did
+      mockCeramic.createDocument.mockImplementation(async () => mockDocumentWithContent)
+
+      await accountLinks.create(mockAccount2.address, mockAccount2.did, mockAccount2.proof)
+
+      expect(mockDocumentWithContent.change).toHaveBeenCalledWith(mockAccount2.proof)
+    })
+
+    it('should do nothing if the account link already exists and has the same did', async () => {
+      const mockDocumentWithContent = cloneDeep(mockDocument)
+      mockDocumentWithContent.content = mockAccount2.did
+      mockCeramic.createDocument.mockImplementation(async () => mockDocumentWithContent)
+
+      await accountLinks.create(mockAccount2.address, mockAccount2.did, mockAccount2.proof)
+
+      expect(mockDocumentWithContent.change).not.toHaveBeenCalled()
     })
   })
 
   describe('read', async () => {
     it('should return the DID of the given address if the ceramic document exists', async () => {
+      const mockDocumentWithContent = cloneDeep(mockDocument)
+      mockDocumentWithContent.content = mockAccount1.did
+      mockCeramic.createDocument.mockImplementation(async () => mockDocumentWithContent)
+
       const actual = await accountLinks.read(mockAccount1.address)
 
       expect(actual).toEqual(mockAccount1.did)
@@ -103,9 +124,9 @@ describe('AccountLinks', () => {
     it('should throw an error if no provider is defined and no proof given', async () => {
       accountLinks = new AccountLinks(mockCeramic, null)
 
-      const actual = accountLinks.update(mockAccount1.address, mockAccount1.did)
+      const resultPromise = accountLinks.update(mockAccount1.address, mockAccount1.did)
 
-      await expect(actual).rejects.toThrow(/Provider must be set/i)
+      await expect(resultPromise).rejects.toThrow(/Provider must be set/i)
     })
   })
 
@@ -114,5 +135,6 @@ describe('AccountLinks', () => {
 
     })
   })
+
   
 })

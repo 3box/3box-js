@@ -10,18 +10,17 @@ class AccountLinks {
   async create (address, did, proof = null) {
     if (!proof) {
       if (!this.provider) {
-        throw new Error('Provider must be set to create an account link')
+        throw new Error('Provider must be set')
       }
       proof = await createLink(did, address, this.provider)
     }
     const doc = await this._ceramic.createDocument(null, 'account-link', {
-      owners: [await this._convertToCaip10(address)],
+      owners: [await this._convertToCaip10(proof.address)],
       onlyGenesis: true
     })
-    if (doc.state.log.length > 1) {
-      throw new Error('Account link already exists')
+    if (doc.content !== did) {
+      await doc.change(proof)
     }
-    await doc.change(proof)
     return doc.content
   }
 
@@ -36,12 +35,12 @@ class AccountLinks {
   async update (address, did, proof = null) {
     if (!proof) {
       if (!this.provider) {
-        throw new Error('Provider must be set to update an account link')
+        throw new Error('Provider must be set')
       }
       proof = await createLink(did, address, this.provider)
     }
     const doc = await this._ceramic.createDocument(null, 'account-link', {
-      owners: [await this._convertToCaip10(address)],
+      owners: [await this._convertToCaip10(proof.address)],
       onlyGenesis: true
     })
     await doc.change(proof)
