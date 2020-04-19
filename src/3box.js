@@ -139,6 +139,7 @@ class Box extends BoxApi {
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    */
   async auth (spaces = [], opts = {}) {
+    opts.address = opts.address ? opts.address.toLowerCase() : opts.address
     this._3idEthAddress = opts.address
 
     // Enabled once becomes default
