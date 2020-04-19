@@ -16,18 +16,20 @@ const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
-const ThreeIdConnect = require('../../3box-account/src/threeIdConnect.js').default // TODO
+const ThreeIdConnect = require('3id-connect/src/threeIdConnect.js').default // TODO
+// const ThreeIdConnect = require('3id-connect/src/threeIdConnect.js')
+// const ThreeIdConnect = require('./../../3box-account/src/threeIdConnect.js')
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
-const IFRAME_STORE_URL = 'http://127.0.0.1:30001/' // TODO
+const IFRAME_STORE_URL = 'https://connect-dev.3box.io' // TODO
+// const IFRAME_STORE_URL = 'http://localhost:30001'
 
 let globalIPFS, globalIPFSPromise, threeIdConnect
 
 const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
 if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
-
 /**
  * @extends BoxApi
  */
@@ -120,6 +122,15 @@ class Box extends BoxApi {
   }
 
   /**
+   * Returns and 3ID Connect Provider to manage keys, authentication and account links. Becomes default in future.
+   *
+   * @return    {3IDProvider}        Promise that resolves to a 3ID Connect Provider
+   */
+  static get3idConnectProvider () {
+    return threeIdConnect.get3idProvider()
+  }
+
+  /**
    * Authenticate the user
    *
    * @param     {Array<String>}     spaces                  A list of spaces to authenticate (optional)
@@ -130,9 +141,10 @@ class Box extends BoxApi {
   async auth (spaces = [], opts = {}) {
     this._3idEthAddress = opts.address
 
-    if (!this._provider.is3idProvider && threeIdConnect) {
-      this._provider = await threeIdConnect.get3idProvider()
-    }
+    // Enabled once becomes default
+    // if (!this._provider.is3idProvider && threeIdConnect) {
+    //   this._provider = await threeIdConnect.get3idProvider()
+    // }
 
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
