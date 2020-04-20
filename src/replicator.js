@@ -141,18 +141,10 @@ class Replicator {
     this._publishDB({ odbAddress: this.rootstore.address.toString() })
     await this.rootstore.load()
 
-    try {
-      this.rootstoreSyncDone = this.syncDB(this.rootstore, { hasResponseTimeout: 2000 })
-      await this.rootstoreSyncDone
-    } catch (err) {
-      // timeout error means there isn't a remote database answering HAS_ENTRIES requests,
-      // resolve without syncing
-      this.rootstoreSyncDone = Promise.resolve()
-      this.syncDone = Promise.resolve()
-      return
-    }
+    this.rootstoreSyncDone = this.syncDB(this.rootstore)
 
     const waitForSync = async () => {
+      await this.rootstoreSyncDone
       const addressLinkPinPromise = this.getAddressLinks()
       const authDataPinPromise = this.getAuthData()
       this._initPinningRoomFilter()
@@ -320,42 +312,33 @@ class Replicator {
     }
   }
 
-  async _getNumEntries (odbAddress, { timeout } = {}) {
+  async _getNumEntries (odbAddress) {
     return new Promise((resolve, reject) => {
-      if (this._hasPubsubMsgs[odbAddress]) {
-        return resolve(this._hasPubsubMsgs[odbAddress].numEntries)
-      }
-
-      const onHasMessage = (data) => {
-        resolve(data.numEntries)
-      }
-
       const eventName = `has-${odbAddress}`
-      this.events.once(eventName, onHasMessage)
-
-      if (timeout) {
-        setTimeout(() => {
-          this.events.off(eventName, onHasMessage)
-          reject(new Error('Timed out'))
-        }, timeout)
+      this.events.on(eventName, data => {
+        this.events.removeAllListeners(eventName)
+        resolve(data.numEntries)
+      })
+      if (this._hasPubsubMsgs[odbAddress]) {
+        this.events.removeAllListeners(eventName)
+        resolve(this._hasPubsubMsgs[odbAddress].numEntries)
       }
     })
   }
 
-  async syncDB (dbInstance, { hasResponseTimeout } = {}) {
+  async syncDB (dbInstance) {
     // TODO - syncDB is only relevant in 3box-js. Some different logic
     // is needed for syncing in 3box-pinning-node
-    const numRemoteEntries = await this._getNumEntries(dbInstance.address.toString(), { timeout: hasResponseTimeout })
+    const numRemoteEntries = await this._getNumEntries(dbInstance.address.toString())
     const isNumber = typeof numRemoteEntries === 'number'
     if (isNumber && numRemoteEntries <= dbInstance._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
-      const onReplicatedOnce = () => {
+      dbInstance.events.on('replicated', () => {
         if (numRemoteEntries <= dbInstance._oplog.values.length) {
-          dbInstance.events.off('replicated', onReplicatedOnce)
           resolve()
+          dbInstance.events.removeAllListeners('replicated')
         }
-      }
-      dbInstance.events.on('replicated', onReplicatedOnce)
+      })
     })
   }
 

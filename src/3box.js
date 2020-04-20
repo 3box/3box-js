@@ -89,13 +89,11 @@ class Box extends BoxApi {
 
   async _load (opts = {}) {
     const address = await this._3id.getAddress()
-    const did = await this.accountLinks.read(address)
-    console.log('_load', { address, did })
 
     await this._3id.authenticate(opts.spaces)
     const rootstoreName = this._3id.muportFingerprint + '.root'
     const key = (await this._3id.getPublicKeys(null, true)).signingKey
-    await this.replicator.start(rootstoreName, key, did, { profile: true })
+    await this.replicator.start(rootstoreName, key, this._3id.DID, { profile: true })
 
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
     this.syncDone = this.replicator.syncDone
