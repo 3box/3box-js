@@ -125,16 +125,34 @@ class Replicator {
     return replicator
   }
 
-  async start (rootstoreAddress, did, opts = {}) {
+  async start (rootstoreName, pubkey, did, opts = {}) {
+    if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
     this._did = did
     await this._joinPinningRoom(true)
-    this._publishDB({ odbAddress: rootstoreAddress })
 
-    this.rootstore = await this._orbitdb.feed(rootstoreAddress, ODB_STORE_OPTS)
+    const orbitStoreOpts = {
+      ...ODB_STORE_OPTS,
+      format: 'dag-pb'
+    }
+    orbitStoreOpts.accessController.write = [pubkey]
+    this.rootstore = await this._orbitdb.feed(rootstoreName, orbitStoreOpts)
+
+    this._pinningRoomFilter = null
+    this._publishDB({ odbAddress: this.rootstore.address.toString() })
     await this.rootstore.load()
-    this.rootstoreSyncDone = this.syncDB(this.rootstore)
-    const waitForSync = async () => {
+
+    try {
+      this.rootstoreSyncDone = this.syncDB(this.rootstore, { hasResponseTimeout: 2000 })
       await this.rootstoreSyncDone
+    } catch (err) {
+      // timeout error means there isn't a remote database answering HAS_ENTRIES requests,
+      // resolve without syncing
+      this.rootstoreSyncDone = Promise.resolve()
+      this.syncDone = Promise.resolve()
+      return
+    }
+
+    const waitForSync = async () => {
       const addressLinkPinPromise = this.getAddressLinks()
       const authDataPinPromise = this.getAuthData()
       this._initPinningRoomFilter()
@@ -144,23 +162,6 @@ class Replicator {
       await authDataPinPromise
     }
     this.syncDone = waitForSync()
-  }
-
-  async new (rootstoreName, pubkey, did) {
-    if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
-    this._did = did
-    await this._joinPinningRoom(true)
-    const opts = {
-      ...ODB_STORE_OPTS,
-      format: 'dag-pb'
-    }
-    opts.accessController.write = [pubkey]
-    this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
-    this._pinningRoomFilter = []
-    this._publishDB({ odbAddress: this.rootstore.address.toString() })
-    await this.rootstore.load()
-    this.rootstoreSyncDone = Promise.resolve()
-    this.syncDone = Promise.resolve()
   }
 
   async stop () {
@@ -289,55 +290,72 @@ class Replicator {
     this._joinPinningRoom()
     odbAddress = odbAddress || this.rootstore.address.toString()
     // make sure that the pinning node is in the pubsub room before publishing
-    const pinningNodeJoined = new Promise((resolve, reject) => {
-      this.events.on('pinning-room-peer', (topic, peer) => {
+    await new Promise((resolve) => {
+      // race between finding pinning node already in room and it joining
+      const onPinningRoomPeer = (topic, peer) => {
         if (peer === this._pinningNodePeerId) {
+          this.events.off('pinning-room-peer', onPinningRoomPeer)
           resolve()
         }
-      })
+      }
+      this.events.on('pinning-room-peer', onPinningRoomPeer)
+
+      this.ipfs.pubsub.peers(PINNING_ROOM)
+        .then((peers) => {
+          if (peers.includes(this._pinningNodePeerId)) {
+            this.events.off('pinning-room-peer', onPinningRoomPeer)
+            resolve()
+          }
+        })
     })
-    if (!(await this.ipfs.pubsub.peers(PINNING_ROOM)).includes(this._pinningNodePeerId)) {
-      await pinningNodeJoined
-    }
+
     this._pubsub.publish(PINNING_ROOM, {
       type: isThread ? 'SYNC_DB' : 'PIN_DB',
       odbAddress,
       did: this._did,
       thread: isThread
     })
-    this.events.removeAllListeners('pinning-room-peer')
     if (unsubscribe) {
       this._pubsub.unsubscribe(PINNING_ROOM)
     }
   }
 
-  async _getNumEntries (odbAddress) {
+  async _getNumEntries (odbAddress, { timeout } = {}) {
     return new Promise((resolve, reject) => {
-      const eventName = `has-${odbAddress}`
-      this.events.on(eventName, data => {
-        this.events.removeAllListeners(eventName)
-        resolve(data.numEntries)
-      })
       if (this._hasPubsubMsgs[odbAddress]) {
-        this.events.removeAllListeners(eventName)
-        resolve(this._hasPubsubMsgs[odbAddress].numEntries)
+        return resolve(this._hasPubsubMsgs[odbAddress].numEntries)
+      }
+
+      const onHasMessage = (data) => {
+        resolve(data.numEntries)
+      }
+
+      const eventName = `has-${odbAddress}`
+      this.events.once(eventName, onHasMessage)
+
+      if (timeout) {
+        setTimeout(() => {
+          this.events.off(eventName, onHasMessage)
+          reject(new Error('Timed out'))
+        }, timeout)
       }
     })
   }
 
-  async syncDB (dbInstance) {
+  async syncDB (dbInstance, { hasResponseTimeout } = {}) {
     // TODO - syncDB is only relevant in 3box-js. Some different logic
     // is needed for syncing in 3box-pinning-node
-    const numRemoteEntries = await this._getNumEntries(dbInstance.address.toString())
+    const numRemoteEntries = await this._getNumEntries(dbInstance.address.toString(), { timeout: hasResponseTimeout })
     const isNumber = typeof numRemoteEntries === 'number'
     if (isNumber && numRemoteEntries <= dbInstance._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
-      dbInstance.events.on('replicated', () => {
+      const onReplicatedOnce = () => {
         if (numRemoteEntries <= dbInstance._oplog.values.length) {
+          dbInstance.events.off('replicated', onReplicatedOnce)
           resolve()
-          dbInstance.events.removeAllListeners('replicated')
         }
-      })
+      }
+      dbInstance.events.on('replicated', onReplicatedOnce)
     })
   }
 

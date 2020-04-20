@@ -89,19 +89,14 @@ class Box extends BoxApi {
 
   async _load (opts = {}) {
     const address = await this._3id.getAddress()
-    const { rootStoreAddress, did } = address ? await this._getLinkedData(address) : {}
-    if (rootStoreAddress) {
-      await this.replicator.start(rootStoreAddress, did, { profile: true })
-      await this.replicator.rootstoreSyncDone
-      const authData = await this.replicator.getAuthData()
-      await this._3id.authenticate(opts.spaces, { authData })
-    } else {
-      await this._3id.authenticate(opts.spaces)
-      const rootstoreName = this._3id.muportFingerprint + '.root'
-      const key = (await this._3id.getPublicKeys(null, true)).signingKey
-      await this.replicator.new(rootstoreName, key, this._3id.DID)
-      this._publishRootStore(this.replicator.rootstore.address.toString())
-    }
+    const did = await this.accountLinks.read(address)
+    console.log('_load', { address, did })
+
+    await this._3id.authenticate(opts.spaces)
+    const rootstoreName = this._3id.muportFingerprint + '.root'
+    const key = (await this._3id.getPublicKeys(null, true)).signingKey
+    await this.replicator.start(rootstoreName, key, did, { profile: true })
+
     this.replicator.rootstore.setIdentity(await this._3id.getOdbId())
     this.syncDone = this.replicator.syncDone
 
@@ -246,47 +241,6 @@ class Box extends BoxApi {
   async onSyncDone (syncDone) {
     await this.syncDone
     syncDone()
-  }
-
-  async _publishRootStore (rootStoreAddress) {
-    // Sign rootstoreAddress
-    const addressToken = await this._3id.signJWT({ rootStoreAddress })
-    // Store odbAddress on 3box-address-server
-    const publish = async token => {
-      try {
-        await utils.fetchJson(this._serverUrl + '/odbAddress', {
-          address_token: token
-        })
-      } catch (err) {
-        if (err.message === 'Invalid JWT') {
-          // we tried to publish before address-server has access to 3ID
-          // so it can't verify the JWT. Retry until it is available
-          await new Promise(resolve => setTimeout(resolve, 300))
-          await publish(token)
-        }
-        // we capture http errors (500, etc)
-        // see: https://github.com/3box/3box-js/pull/351
-        if (!err.statusCode) {
-          throw new Error(err)
-        }
-      }
-    }
-    await publish(addressToken)
-    return true
-  }
-
-  async _getLinkedData (ethereumAddress) {
-    // const did = await this.accountLinks.read(query.address)
-    // TODO: Rootstore fetch will require implementation https://github.com/3box/3box/issues/1005
-    try {
-      const { rootStoreAddress, did } = (await utils.fetchJson(`${this._serverUrl}/odbAddress/${ethereumAddress}`)).data
-      return { rootStoreAddress, did }
-    } catch (err) {
-      if (err.statusCode === 404) {
-        return {}
-      }
-      throw new Error('Error while getting rootstore', err)
-    }
   }
 
   /**
