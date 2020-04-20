@@ -51,7 +51,8 @@ describe('Replicator', () => {
       }, () => {})
     })
 
-    await replicator1.new(rsName, key, testDID)
+    await replicator1.start(rsName, key, testDID)
+    pubsub2.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: replicator1.rootstore.address.toString(), numEntries: 0})
     await replicator1.rootstoreSyncDone
     await replicator1.syncDone
     expect(replicator1.rootstore.address.toString()).toMatchSnapshot()
@@ -128,7 +129,7 @@ describe('Replicator', () => {
     const rootstoreNumEntries = replicator1.rootstore._oplog._length
     await addProfilePromise
     const pubStoreNumEntries = replicator1._stores[pubStoreAddr]._oplog._length
-    await replicator2.start(rootstoreAddress, testDID2, { profile: true })
+    await replicator2.start(rootstoreAddress, testDID2, undefined, { profile: true })
     replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: rootstoreAddress, numEntries: rootstoreNumEntries })
     replicator1._pubsub.publish(PINNING_ROOM, { type: 'HAS_ENTRIES', odbAddress: pubStoreAddr, numEntries: pubStoreNumEntries })
     await replicator2.rootstoreSyncDone
