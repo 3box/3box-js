@@ -88,8 +88,6 @@ class Box extends BoxApi {
   }
 
   async _load (opts = {}) {
-    const address = await this._3id.getAddress()
-
     await this._3id.authenticate(opts.spaces)
     const rootstoreName = this._3id.muportFingerprint + '.root'
     const key = (await this._3id.getPublicKeys(null, true)).signingKey
