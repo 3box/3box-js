@@ -72,7 +72,7 @@ module.exports = {
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    const res = callRpc(ethereum, method, params, fromAddress)
+    const res = await callRpc(ethereum, method, params, fromAddress)
 
     if (fromAddress) {
       const recoveredAddr = verifyMessage(msg, res).toLowerCase()

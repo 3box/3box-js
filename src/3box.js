@@ -16,15 +16,12 @@ const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
-const ThreeIdConnect = require('3id-connect/src/threeIdConnect.js').default // TODO
-// const ThreeIdConnect = require('3id-connect/src/threeIdConnect.js')
-// const ThreeIdConnect = require('./../../3box-account/src/threeIdConnect.js')
+const ThreeIdConnect = require('3id-connect').ThreeIdConnect
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
-const IFRAME_STORE_URL = 'https://connect-dev.3box.io' // TODO
-// const IFRAME_STORE_URL = 'http://localhost:30001'
+const IFRAME_STORE_URL = 'https://connect.3box.io'
 
 let globalIPFS, globalIPFSPromise, threeIdConnect
 
@@ -127,6 +124,7 @@ class Box extends BoxApi {
    * @return    {3IDProvider}        Promise that resolves to a 3ID Connect Provider
    */
   static get3idConnectProvider () {
+    if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
     return threeIdConnect.get3idProvider()
   }
 
@@ -152,6 +150,7 @@ class Box extends BoxApi {
       this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, this.replicator._orbitdb.keystore, opts)
       await this._load(Object.assign(opts, { spaces }))
     } else {
+      // box already loaded, just authenticate spaces
       if (this._provider.threeIdConnect && this._provider.migration && !opts.address) {
         throw new Error('auth: address needed when 3ID provider not given')
       }
