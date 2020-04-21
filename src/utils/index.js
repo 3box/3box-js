@@ -59,7 +59,7 @@ module.exports = {
     const res = await callRpc(ethereum, method, params, fromAddress)
 
     if (fromAddress) {
-      const recoveredAddr = verifyMessage(msg, res).toLowerCase()
+      const recoveredAddr = verifyMessage(text, res).toLowerCase()
       if (fromAddress !== recoveredAddr) throw new Error('Provider returned signature from different account than requested')
     }
 
@@ -75,7 +75,7 @@ module.exports = {
     const res = await callRpc(ethereum, method, params, fromAddress)
 
     if (fromAddress) {
-      const recoveredAddr = verifyMessage(msg, res).toLowerCase()
+      const recoveredAddr = verifyMessage(text, res).toLowerCase()
       if (fromAddress !== recoveredAddr) throw new Error('Provider returned signature from different account than requested')
     }
 
