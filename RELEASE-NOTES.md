@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.18.0 - 2020-04-21
+* feat: opt in support for [3ID Connect Provider](https://github.com/3box/3id-connect)
+* fix: confidential threads support with IdentityWallet
+
+Get a 3ID Connect Provider by calling Box.get3idConnectProvider()
+
 ## v1.17.1 - 2020-02-20
 * fix: Use authereum signing key (#733)
 

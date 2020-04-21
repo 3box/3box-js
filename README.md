@@ -54,8 +54,10 @@ console.log(profile)
 3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first authenticate the user's 3Box by calling the `auth` method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
 #### 1. Create a 3Box instance
-To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to openThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)).
+To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to openThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)). It is now suggested to use the 3ID Connect Provider, which is a 3ID provider that wraps available `ethereum providers` and will manage/permission 3ID keys, authentication and blockchain account links inside an iframe. This will become the default soon and will overide passed `ethereum providers`. You can get the 3ID Connect Provider as follows.
+
 ```js
+const provider = await Box.get3idConnectProvider()
 const box = await Box.create(provider)
 ```
 
@@ -174,13 +176,13 @@ const config = await space.private.get('dapp-config')
 ```
 
 ## Threads API (Messaging)
-### Add message threads to your app
-Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, in the same space, and same moderation configs) will be able to communicate in that thread.
+### Add public and confidential message threads to your app
+Threads are a shared datastore that enable decentralized communication between users, by allowing one or more users to post messages in a sequence. This functionality is great for adding commenting, chat, messaging, feed, and stream features to your application. Threads are saved within a space and users that join a thread (with the same name, space, moderation configs, and access configs) will be able to communicate in that thread.
 
 For the fully detailed spec, view the [documentation](https://github.com/3box/3box/blob/master/3IPs/3ip-2.md).
 
-#### Viewing a Thread
-You can get all posts made in a thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. A thread can be referenced by all its configuration options or by its address.
+#### Viewing a Public Thread
+You can get all posts made in a public thread without opening a space. This is great for allowing visitors of your site view comments made by other users. This is achieved by calling the `getThread` method on the Box object. A thread can be referenced by all its configuration options or by its address.
 ```js
 const posts = await Box.getThread(spaceName, threadName, firstModerator, membersThread)
 console.log(posts)
@@ -191,12 +193,14 @@ Threads can also be viewed without opening space, or authenticating by calling t
 const posts = await Box.getThreadByAddress(threadAddress)
 console.log(posts)
 ```
-However if applications want to add interactivity to the thread, such as allowing the user to post in a thread or follow updates in a thread, you will need to open their space to enable additional functionality.
+However if applications want to add interactivity to the thread, such as allowing the user to post in a thread or follow updates in a thread, you will need to open their space to enable additional functionality. Same is true for a confidential thread, which requires you autheticate to get access to view the posts in a confidential thread.
 
 #### Interacting with a Thread
 
-##### 1. Joining a thread
-To post in a thread, a user must first join the thread. This will implicitly use the moderation options where the current user is the `firstModerator` and `members` is false.
+##### 1.a Creating a Public Thread
+
+To create and join a public thread, you can simply join the thread. This will implicitly use the moderation options where the current user is the `firstModerator` and `members` is false.
+
 ```js
 const thread = await space.joinThread('myThread')
 ```
@@ -207,30 +211,54 @@ A thread can also be given the moderation options when joining. You can pass `fi
 const thread = await space.joinThread('myThread', { firstModerator: 'some3ID', members: true })
 ```
 
-Lastly a thread can be joined by its address.
+##### 1.b Creating a Confidential Thread
+
+To create and join a confidential thread.
+
+```js
+const thread = await space.createConfidentialThread('myConfThread')
+```
+
+At creation you will likely want to add other members so that they can read and write messages to the thread, as shown below.
+
+##### 2. Joining a Thread
+
+An existing public or confidential thread can be joined by its address. Confidential threads are best referenced by their address.
 
 ```js
 const thread = await space.joinThreadByAddress('/orbitdb/zdpuAp5QpBKR4BBVTvqe3KXVcNgo4z8Rkp9C5eK38iuEZj3jq/3box.thread.testSpace.testThread')
 ```
 
-##### 2. Posting to a thread
+While public threads can be joined by address or by passing known configs (same as above).
+
+```js
+const publicThread = await space.joinThread('myThread', { firstModerator: 'some3ID', members: true })
+```
+
+An address of a thread can be found as follows once joined.
+
+```js
+const threadAddress = thread.address
+```
+
+##### 3. Posting to a thread
 This allows the user to add a message to the thread. The author of the message will be the user's 3Box DID. When a user posts in a thread, they are automatically subscribed to the thread and it is saved in the space used by the application under the key `thread-threadName`.
 ```js
 await thread.post('hello world')
 ```
-##### 3. Getting all posts in a thread
+##### 4. Getting all posts in a thread
 This allows applications to get the posts in a thread.
 ```js
 const posts = await thread.getPosts()
 console.log(posts)
 ```
-##### 4. Listening for updates in thread
+##### 5. Listening for updates in thread
 This allows applications to listen for new posts in the thread, and perform an action when this occurs, such as adding the new message to the application's UI.
 ```js
 thread.onUpdate(myCallbackFunction)
 ```
 
-##### 5. Handling moderation and capabilities
+##### 6. Handling moderation and capabilities
 
 Add a moderator and list all existing moderators
 ```js
@@ -330,6 +358,7 @@ idUtils.verifyClaim(claim)
             * [.isSupportedDID(did)](#Box.idUtils.isSupportedDID) ⇒ <code>\*</code> \| <code>boolean</code>
             * [.isClaim(claim, opts)](#Box.idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
         * [.create(provider, opts)](#Box.create) ⇒ [<code>Box</code>](#Box)
+        * [.get3idConnectProvider()](#Box.get3idConnectProvider) ⇒ <code>3IDProvider</code>
         * [.openBox(address, provider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
         * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
@@ -580,6 +609,13 @@ Creates an instance of 3Box
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
 
+<a name="Box.get3idConnectProvider"></a>
+
+#### Box.get3idConnectProvider() ⇒ <code>3IDProvider</code>
+Returns and 3ID Connect Provider to manage keys, authentication and account links. Becomes default in future.
+
+**Kind**: static method of [<code>Box</code>](#Box)  
+**Returns**: <code>3IDProvider</code> - Promise that resolves to a 3ID Connect Provider  
 <a name="Box.openBox"></a>
 
 #### Box.openBox(address, provider, opts) ⇒ [<code>Box</code>](#Box)
@@ -954,6 +990,7 @@ Decrypts a message if the user owns the correct key to decrypt it.
     * [.syncDone](#Space+syncDone)
     * [.user](#Space+user)
     * [.joinThread(name, opts)](#Space+joinThread) ⇒ [<code>Thread</code>](#Thread)
+    * [.createConfidentialThread(name)](#Space+createConfidentialThread) ⇒ [<code>Thread</code>](#Thread)
     * [.joinThreadByAddress(address, opts)](#Space+joinThreadByAddress) ⇒ [<code>Thread</code>](#Thread)
     * [.subscribeThread(address, config)](#Space+subscribeThread)
     * [.unsubscribeThread(address)](#Space+unsubscribeThread)
@@ -1018,10 +1055,23 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 | opts | <code>Object</code> | Optional parameters |
 | opts.firstModerator | <code>String</code> | DID of first moderator of a thread, by default, user is first moderator |
 | opts.members | <code>Boolean</code> | join a members only thread, which only members can post in, defaults to open thread |
+| opts.confidential | <code>Boolean</code> | create a confidential thread with true or join existing confidential thread with an encKeyId string |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 | opts.ghost | <code>Boolean</code> | Enable ephemeral messaging via Ghost Thread |
 | opts.ghostBacklogLimit | <code>Number</code> | The number of posts to maintain in the ghost backlog |
 | opts.ghostFilters | <code>Array.&lt;function()&gt;</code> | Array of functions for filtering messages |
+
+<a name="Space+createConfidentialThread"></a>
+
+#### space.createConfidentialThread(name) ⇒ [<code>Thread</code>](#Thread)
+Create a confidential thread
+
+**Kind**: instance method of [<code>Space</code>](#Space)  
+**Returns**: [<code>Thread</code>](#Thread) - An instance of the thread class for the created thread  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | The name of the thread |
 
 <a name="Space+joinThreadByAddress"></a>
 
