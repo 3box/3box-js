@@ -125,14 +125,24 @@ class Replicator {
     return replicator
   }
 
-  async start (rootstoreAddress, did, opts = {}) {
+  async start (rootstoreName, pubkey, did, opts = {}) {
+    if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
     this._did = did
     await this._joinPinningRoom(true)
-    this._publishDB({ odbAddress: rootstoreAddress })
 
-    this.rootstore = await this._orbitdb.feed(rootstoreAddress, ODB_STORE_OPTS)
+    const orbitStoreOpts = {
+      ...ODB_STORE_OPTS,
+      format: 'dag-pb'
+    }
+    orbitStoreOpts.accessController.write = [pubkey]
+    this.rootstore = await this._orbitdb.feed(rootstoreName, orbitStoreOpts)
+
+    this._pinningRoomFilter = null
+    this._publishDB({ odbAddress: this.rootstore.address.toString() })
     await this.rootstore.load()
+
     this.rootstoreSyncDone = this.syncDB(this.rootstore)
+
     const waitForSync = async () => {
       await this.rootstoreSyncDone
       const addressLinkPinPromise = this.getAddressLinks()
@@ -144,23 +154,6 @@ class Replicator {
       await authDataPinPromise
     }
     this.syncDone = waitForSync()
-  }
-
-  async new (rootstoreName, pubkey, did) {
-    if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
-    this._did = did
-    await this._joinPinningRoom(true)
-    const opts = {
-      ...ODB_STORE_OPTS,
-      format: 'dag-pb'
-    }
-    opts.accessController.write = [pubkey]
-    this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
-    this._pinningRoomFilter = []
-    this._publishDB({ odbAddress: this.rootstore.address.toString() })
-    await this.rootstore.load()
-    this.rootstoreSyncDone = Promise.resolve()
-    this.syncDone = Promise.resolve()
   }
 
   async stop () {
@@ -289,23 +282,31 @@ class Replicator {
     this._joinPinningRoom()
     odbAddress = odbAddress || this.rootstore.address.toString()
     // make sure that the pinning node is in the pubsub room before publishing
-    const pinningNodeJoined = new Promise((resolve, reject) => {
-      this.events.on('pinning-room-peer', (topic, peer) => {
+    await new Promise((resolve) => {
+      // race between finding pinning node already in room and it joining
+      const onPinningRoomPeer = (topic, peer) => {
         if (peer === this._pinningNodePeerId) {
+          this.events.off('pinning-room-peer', onPinningRoomPeer)
           resolve()
         }
-      })
+      }
+      this.events.on('pinning-room-peer', onPinningRoomPeer)
+
+      this.ipfs.pubsub.peers(PINNING_ROOM)
+        .then((peers) => {
+          if (peers.includes(this._pinningNodePeerId)) {
+            this.events.off('pinning-room-peer', onPinningRoomPeer)
+            resolve()
+          }
+        })
     })
-    if (!(await this.ipfs.pubsub.peers(PINNING_ROOM)).includes(this._pinningNodePeerId)) {
-      await pinningNodeJoined
-    }
+
     this._pubsub.publish(PINNING_ROOM, {
       type: isThread ? 'SYNC_DB' : 'PIN_DB',
       odbAddress,
       did: this._did,
       thread: isThread
     })
-    this.events.removeAllListeners('pinning-room-peer')
     if (unsubscribe) {
       this._pubsub.unsubscribe(PINNING_ROOM)
     }
