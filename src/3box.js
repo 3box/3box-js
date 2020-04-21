@@ -16,30 +16,17 @@ const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
+const ThreeIdConnect = require('3id-connect').ThreeIdConnect
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
+const IFRAME_STORE_URL = 'https://connect.3box.io'
 
-let globalIPFS, globalIPFSPromise // , ipfsProxy, cacheProxy, iframeLoadedPromise
+let globalIPFS, globalIPFSPromise, threeIdConnect
 
-/*
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  const iframe = document.createElement('iframe')
-  iframe.src = IFRAME_STORE_URL
-  iframe.style = 'width:0; height:0; border:0; border:none !important'
-
-  iframeLoadedPromise = new Promise((resolve, reject) => {
-    iframe.onload = () => { resolve() }
-  })
-
-  document.body.appendChild(iframe)
-  // Create proxy clients that talks to the iframe
-  const postMessage = iframe.contentWindow.postMessage.bind(iframe.contentWindow)
-  ipfsProxy = createProxyClient({ postMessage })
-  cacheProxy = OrbitDBCacheProxy({ postMessage })
-} */
-
+const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
+if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
 /**
  * @extends BoxApi
  */
@@ -83,15 +70,15 @@ class Box extends BoxApi {
   }
 
   async _load (opts = {}) {
-    const address = await this._3id.getAddress()
+    const address = opts.address || await this._3id.getAddress()
     const { rootStoreAddress, did } = address ? await this._getLinkedData(address) : {}
     if (rootStoreAddress) {
       await this.replicator.start(rootStoreAddress, did, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
-      await this._3id.authenticate(opts.spaces, { authData })
+      await this._3id.authenticate(opts.spaces, { authData, address })
     } else {
-      await this._3id.authenticate(opts.spaces)
+      await this._3id.authenticate(opts.spaces, { address })
       const rootstoreName = this._3id.muportFingerprint + '.root'
       const key = (await this._3id.getPublicKeys(null, true)).signingKey
       await this.replicator.new(rootstoreName, key, this._3id.DID)
@@ -132,6 +119,16 @@ class Box extends BoxApi {
   }
 
   /**
+   * Returns and 3ID Connect Provider to manage keys, authentication and account links. Becomes default in future.
+   *
+   * @return    {3IDProvider}        Promise that resolves to a 3ID Connect Provider
+   */
+  static get3idConnectProvider () {
+    if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
+    return threeIdConnect.get3idProvider()
+  }
+
+  /**
    * Authenticate the user
    *
    * @param     {Array<String>}     spaces                  A list of spaces to authenticate (optional)
@@ -140,13 +137,24 @@ class Box extends BoxApi {
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    */
   async auth (spaces = [], opts = {}) {
+    opts.address = opts.address ? opts.address.toLowerCase() : opts.address
+    this._3idEthAddress = opts.address
+
+    // Enabled once becomes default
+    // if (!this._provider.is3idProvider && threeIdConnect) {
+    //   this._provider = await threeIdConnect.get3idProvider()
+    // }
+
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
       this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, this.replicator._orbitdb.keystore, opts)
       await this._load(Object.assign(opts, { spaces }))
     } else {
       // box already loaded, just authenticate spaces
-      await this._3id.authenticate(spaces)
+      if (this._provider.threeIdConnect && this._provider.migration && !opts.address) {
+        throw new Error('auth: address needed when 3ID provider not given')
+      }
+      await this._3id.authenticate(spaces, { address: opts.address })
     }
     // make sure we are authenticated to threads
     await Promise.all(spaces.map(async space => {
@@ -186,6 +194,7 @@ class Box extends BoxApi {
    * @return    {Space}                                     the Space instance for the given space name
    */
   async openSpace (name, opts = {}) {
+    opts = Object.assign(opts, { address: this._3idEthAddress })
     if (name.includes('.')) throw new Error('Invalid name: character "." not allowed')
     if (!this._3id) throw new Error('openSpace: auth required')
     if (!this.spaces[name]) {
@@ -389,17 +398,20 @@ class Box extends BoxApi {
     let proof = await this._readAddressLink(address)
 
     if (!proof) {
-      if (!this._provider.is3idProvider) {
-        try {
+      try {
+        if (!this._provider.is3idProvider) {
           proof = await createLink(this._3id.DID, address, this._provider)
-        } catch (e) {
-          throw new Error('Link consent message must be signed before adding data, to link address to store', e)
+        } else if (this._provider.threeIdConnect && this._provider.migration) {
+          // during migration, need to link "managment" address, for account which derived, rather than creating general link proofs
+          proof = await this._3id.linkManagementAddress()
         }
-        try {
-          await this._writeAddressLink(proof)
-        } catch (err) {
-          throw new Error('An error occured while publishing link:', err)
-        }
+      } catch (e) {
+        throw new Error('Link consent message must be signed before adding data, to link address to store', e)
+      }
+      try {
+        if (!this._provider.is3idProvider) await this._writeAddressLink(proof)
+      } catch (err) {
+        throw new Error('An error occured while publishing link:', err)
       }
     } else {
       // Send consentSignature to 3box-address-server to link profile with ethereum address

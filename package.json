@@ -45,6 +45,7 @@
   "dependencies": {
     "3box-orbitdb-plugins": "^1.1.0",
     "3id-blockchain-utils": "^0.3.3",
+    "3id-connect": "0.0.1",
     "3id-resolver": "^0.0.5",
     "@babel/runtime": "^7.4.5",
     "@ethersproject/hdnode": "5.0.0-beta.137",
@@ -55,7 +56,7 @@
     "https-did-resolver": "^0.1.0",
     "ipfs": "^0.40.0",
     "ipfs-did-document": "^1.2.3",
-    "ipfs-log": "^4.5.4",
+    "ipfs-log": "^4.5.5",
     "ipfs-postmsg-proxy": "^3.1.1",
     "ipfs-pubsub-room": "^1.4.1",
     "ipfs-repo": "^0.30.1",

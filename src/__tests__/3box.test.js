@@ -271,7 +271,6 @@ describe('3Box', () => {
     await box.auth([space], opts)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(opts.address, prov, boxOpts.ipfs, box.replicator._orbitdb.keystore, opts)
-    expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
     expect(box.replicator.start).toHaveBeenCalledTimes(0)
@@ -288,9 +287,9 @@ describe('3Box', () => {
     expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[1][1].address_token).payload.rootStoreAddress).toEqual('/orbitdb/asdf/rootstore-address')
 
     // second call to auth should only auth new spaces
-    await box.auth(['s2'])
+    await box.auth(['s2'], opts)
     expect(box._3id.authenticate).toHaveBeenCalledTimes(2)
-    expect(box._3id.authenticate).toHaveBeenCalledWith(['s2'])
+    expect(box._3id.authenticate).toHaveBeenCalledWith(['s2'], {address: "0x12345" })
   })
 
   it('should openBox correctly with normal auth flow, for new accounts', async () => {
@@ -303,7 +302,6 @@ describe('3Box', () => {
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs,  box.replicator._orbitdb.keystore, opts)
     expect(box.replicator).toBeDefined()
-    expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
     expect(box.replicator.start).toHaveBeenCalledTimes(0)
@@ -414,11 +412,10 @@ describe('3Box', () => {
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, box.replicator._orbitdb.keystore, opts)
     expect(box.replicator).toBeDefined()
-    expect(box._3id.getAddress).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
-    expect(box._3id.authenticate).toHaveBeenCalledWith([], { authData: [] })
+    expect(box._3id.authenticate).toHaveBeenCalledWith([], { authData: [], address: "0x12345" })
     expect(box.replicator.start).toHaveBeenCalledTimes(1)
     expect(box.replicator.start).toHaveBeenCalledWith('/orbitdb/asdf/rootstore-address', box._3id.DID, { profile: true })
     expect(box.replicator.new).toHaveBeenCalledTimes(0)
@@ -438,7 +435,7 @@ describe('3Box', () => {
     global.console.error = jest.fn()
     let space1 = await box.openSpace('name1', {})
     expect(space1._name).toEqual('name1')
-    expect(space1.open).toHaveBeenCalledWith(expect.any(Object), {})
+    expect(space1.open).toHaveBeenCalledWith(expect.any(Object), { address: "0x12345"})
     let opts = { onSyncDone: jest.fn() }
     let space2 = await box.openSpace('name1', opts)
     expect(space1).toEqual(space2)
