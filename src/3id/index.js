@@ -2,7 +2,6 @@ const { mnemonicToSeed, entropyToMnemonic } = require('@ethersproject/hdnode')
 const EventEmitter = require('events')
 const didJWT = require('did-jwt')
 const DidDocument = require('ipfs-did-document')
-const IpfsMini = require('ipfs-mini')
 const localstorage = require('store')
 const Identities = require('orbit-db-identity-provider')
 const { OdbIdentityProvider } = require('3box-orbitdb-plugins')
@@ -37,7 +36,7 @@ class ThreeId {
           this.events.emit(event, data)
         })
       }
-      setInterval(() => {
+      this._pollInterval = setInterval(() => {
         poll('3id_newAuthMethodPoll', 'new-auth-method')
         poll('3id_newLinkPoll', 'new-link-proof')
       }, POLL_INTERVAL)
@@ -175,10 +174,16 @@ class ThreeId {
     }
   }
 
+  async linkManagementAddress () {
+    if (this._has3idProv) {
+      return utils.callRpc(this._provider, '3id_linkManagementKey')
+    }
+  }
+
   async authenticate (spaces, opts = {}) {
     spaces = spaces || []
     if (this._has3idProv) {
-      const pubkeys = await utils.callRpc(this._provider, '3id_authenticate', { spaces, authData: opts.authData })
+      const pubkeys = await utils.callRpc(this._provider, '3id_authenticate', { spaces, authData: opts.authData, address: opts.address })
       this._pubkeys.main = pubkeys.main
       this._pubkeys.spaces = Object.assign(this._pubkeys.spaces, pubkeys.spaces)
       if (!this.DID) {
@@ -246,7 +251,8 @@ class ThreeId {
 
   async decrypt (encObj, space, toBuffer) {
     if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space })
+      const res = await utils.callRpc(this._provider, '3id_decrypt', { ...encObj, space, buffer: toBuffer })
+      return toBuffer ? Buffer.from(res) : res
     } else {
       const keyring = this._keyringBySpace(space)
       let paddedMsg
@@ -274,6 +280,9 @@ class ThreeId {
 
   logout () {
     localstorage.remove(STORAGE_KEY + this.managementAddress)
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval)
+    }
   }
 
   static isLoggedIn (address) {

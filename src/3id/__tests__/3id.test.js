@@ -21,8 +21,6 @@ utils.sha256Multihash = jest.fn(str => {
 utils.pad = x => x
 utils.unpad = x => x
 
-jest.mock('ipfs-mini')
-
 const STORAGE_KEY = 'serialized3id_'
 const clearLocalStorage3id = (address) => {
   localstorage.remove(STORAGE_KEY + address)

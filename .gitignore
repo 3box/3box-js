@@ -4,5 +4,6 @@ dist/
 coverage/
 tmp/
 .js-ipfs
+.DS_Store
 yarn.lock
 orbitdb

@@ -1,6 +1,7 @@
 const fetch = typeof window !== 'undefined' ? window.fetch : require('node-fetch')
 const Multihash = require('multihashes')
 const sha256 = require('js-sha256').sha256
+import { verifyMessage } from '@ethersproject/wallet'
 
 const ENC_BLOCK_SIZE = 24
 const MAGIC_ERC1271_VALUE = '0x20c13b0b'
@@ -49,22 +50,36 @@ module.exports = {
   getMessageConsent,
   callRpc,
 
-  openBoxConsent: (fromAddress, ethereum) => {
+  openBoxConsent: async (fromAddress, ethereum) => {
     const text = 'This app wants to view and update your 3Box profile.'
     if (ethereum.isAuthereum) return ethereum.signMessageWithSigningKey(text)
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return callRpc(ethereum, method, params, fromAddress)
+    const res = await callRpc(ethereum, method, params, fromAddress)
+
+    if (fromAddress) {
+      const recoveredAddr = verifyMessage(msg, res).toLowerCase()
+      if (fromAddress !== recoveredAddr) throw new Error('Provider returned signature from different account than requested')
+    }
+
+    return res
   },
 
-  openSpaceConsent: (fromAddress, ethereum, name) => {
+  openSpaceConsent: async (fromAddress, ethereum, name) => {
     const text = `Allow this app to open your ${name} space.`
     if (ethereum.isAuthereum) return ethereum.signMessageWithSigningKey(text)
     var msg = '0x' + Buffer.from(text, 'utf8').toString('hex')
     var params = [msg, fromAddress]
     var method = 'personal_sign'
-    return callRpc(ethereum, method, params, fromAddress)
+    const res = await callRpc(ethereum, method, params, fromAddress)
+
+    if (fromAddress) {
+      const recoveredAddr = verifyMessage(msg, res).toLowerCase()
+      if (fromAddress !== recoveredAddr) throw new Error('Provider returned signature from different account than requested')
+    }
+
+    return res
   },
 
   fetchJson: async (url, body) => {

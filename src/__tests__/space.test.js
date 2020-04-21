@@ -60,7 +60,7 @@ describe('Space', () => {
     expect(opts.consentCallback).toHaveBeenCalledWith(true, NAME1)
     //expect(rootstoreMock.add).toHaveBeenCalledWith({ type: 'space', DID: threeIdMock.getSubDID(NAME1), odbAddress:'/orbitdb/myodbaddr' })
     expect(threeIdMock.isAuthenticated).toHaveBeenCalledWith([NAME1])
-    expect(threeIdMock.authenticate).toHaveBeenCalledWith([NAME1])
+    expect(threeIdMock.authenticate).toHaveBeenCalledWith([NAME1], opts)
     return syncDonePromise
   })
 
