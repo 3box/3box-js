@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.18.1 - 2020-04-21
+* fix: address recover signature check
+
 ## v1.18.0 - 2020-04-21
 * feat: opt in support for [3ID Connect Provider](https://github.com/3box/3id-connect)
 * fix: confidential threads support with IdentityWallet
