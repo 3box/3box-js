@@ -49,7 +49,7 @@
     "3id-resolver": "^0.0.5",
     "@babel/runtime": "^7.4.5",
     "@ethersproject/hdnode": "5.0.0-beta.137",
-    "@ethersproject/wallet": "5.0.0-beta.136",
+    "@ethersproject/wallet": "5.0.0-beta.140",
     "did-jwt": "^0.2.0",
     "events": "^3.0.0",
     "graphql-request": "^1.8.2",
