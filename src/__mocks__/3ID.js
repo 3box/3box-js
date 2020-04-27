@@ -1,4 +1,5 @@
 const didJWT = require('did-jwt')
+const { Resolver } = require('did-resolver')
 const Identities = require('orbit-db-identity-provider')
 const { OdbIdentityProvider } = require('3box-orbitdb-plugins')
 Identities.addIdentityProvider(OdbIdentityProvider)
@@ -23,6 +24,12 @@ const didResolverMock = async (did) => {
     }]
   }
 }
+
+const mockDidResolver = new Resolver({
+  '3': didResolverMock,
+  muport: didResolverMock
+})
+//OdbIdentityProvider.setDidResolver(mockDidResolver)
 
 const threeIDMockFactory = (did) => {
   const signJWT = (payload) => {
@@ -57,4 +64,4 @@ const threeIDMockFactory = (did) => {
   }
 }
 
-module.exports = { threeIDMockFactory, didResolverMock }
+module.exports = { threeIDMockFactory, didResolverMock, mockDidResolver }
