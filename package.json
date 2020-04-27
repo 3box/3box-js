@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
-    "3box-orbitdb-plugins": "^1.1.0",
+    "3box-orbitdb-plugins": "^2.0.0",
     "3id-blockchain-utils": "^0.3.3",
     "3id-connect": "0.0.1",
     "3id-resolver": "^0.0.5",
