@@ -1,12 +1,15 @@
 const path = require('path')
 const EventEmitter = require('events')
+const merge = require('lodash.merge')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const AccessControllers = require('orbit-db-access-controllers')
 const OdbStorage = require('orbit-db-storage-adapter')
 const OdbCache = require('orbit-db-cache')
 const OdbKeystore = require('orbit-db-keystore')
-const resolveDID = require('did-resolver').default
+const { Resolver } = require('did-resolver')
+const get3IdResolver = require('3id-resolver').getResolver
+const getMuportResolver = require('muport-did-resolver').getResolver
 const {
   OdbIdentityProvider,
   LegacyIPFS3BoxAccessController,
@@ -23,26 +26,11 @@ Identities.addIdentityProvider(OdbIdentityProvider)
 const PINNING_NODE = config.pinning_node
 const PINNING_ROOM = config.pinning_room
 const ORBITDB_OPTS = config.orbitdb_options
-const ODB_STORE_OPTS = {
-  ...ORBITDB_OPTS,
-  accessController: {
-    type: 'legacy-ipfs-3box',
-    skipManifest: true
-  }
-}
+
 const entryTypes = {
   SPACE: 'space',
   ADDRESS_LINK: 'address-link',
   AUTH_DATA: 'auth-data'
-}
-
-const pinDID = did => {
-  if (!did) return
-  // We resolve the DID in order to pin the ipfs object
-  try {
-    resolveDID(did)
-    // if this throws it's not a DID
-  } catch (e) {}
 }
 
 class Replicator {
@@ -56,6 +44,22 @@ class Replicator {
     // TODO - this should only be done in 3box-js. For use in
     // 3box-pinning-node the below code should be disabled
     this._hasPubsubMsgs = {}
+
+    const threeIdResolver = get3IdResolver(ipfs, { pin: true })
+    const muportResolver = getMuportResolver(ipfs)
+    this.resolver = new Resolver({...threeIdResolver, ...muportResolver})
+    OdbIdentityProvider.setDidResolver(this.resolver)
+
+    this._orbitDbOpts = {
+      ...ORBITDB_OPTS,
+      format: 'dag-pb',
+      accessController: {
+        type: 'legacy-ipfs-3box',
+        skipManifest: true,
+        resolver: this.resolver
+      }
+    }
+
     this.events.on('pinning-room-message', (topic, data) => {
       if (data.type === 'HAS_ENTRIES' && data.odbAddress) {
         const odbAddress = data.odbAddress
@@ -130,7 +134,7 @@ class Replicator {
     await this._joinPinningRoom(true)
     this._publishDB({ odbAddress: rootstoreAddress })
 
-    this.rootstore = await this._orbitdb.feed(rootstoreAddress, ODB_STORE_OPTS)
+    this.rootstore = await this._orbitdb.feed(rootstoreAddress, this._orbitDbOpts)
     await this.rootstore.load()
     this.rootstoreSyncDone = this.syncDB(this.rootstore)
     const waitForSync = async () => {
@@ -150,12 +154,8 @@ class Replicator {
     if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
     this._did = did
     await this._joinPinningRoom(true)
-    const opts = {
-      ...ODB_STORE_OPTS,
-      format: 'dag-pb'
-    }
-    opts.accessController.write = [pubkey]
-    this.rootstore = await this._orbitdb.feed(rootstoreName, opts)
+    const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] }})
+    this.rootstore = await this._orbitdb.feed(rootstoreName, orbitDbOpts)
     this._pinningRoomFilter = []
     this._publishDB({ odbAddress: this.rootstore.address.toString() })
     await this.rootstore.load()
@@ -170,12 +170,8 @@ class Replicator {
 
   async addKVStore (name, pubkey, isSpace, did) {
     if (!this.rootstore) throw new Error('This method can only be called once before the replicator has started')
-    const opts = {
-      ...ODB_STORE_OPTS,
-      format: 'dag-pb'
-    }
-    opts.accessController.write = [pubkey]
-    const store = await this._orbitdb.keyvalue(name, opts)
+    const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] }})
+    const store = await this._orbitdb.keyvalue(name, orbitDbOpts)
     const storeAddress = store.address.toString()
     this._stores[storeAddress] = store
     // add entry to rootstore
@@ -203,7 +199,7 @@ class Replicator {
     const loadPromises = storeEntries.map(entry => {
       const data = entry.payload.value
       if (data.type === entryTypes.SPACE && data.DID) {
-        pinDID(data.DID)
+        this._pinDID(data.DID)
       }
       if (profile && (data.odbAddress.includes('public') || data.odbAddress.includes('private'))) {
         return this._loadKeyValueStore(data.odbAddress)
@@ -218,7 +214,7 @@ class Replicator {
   async _loadKeyValueStore (odbAddress) {
     if (!this._storePromises[odbAddress]) {
       this._storePromises[odbAddress] = new Promise((resolve, reject) => {
-        this._orbitdb.keyvalue(odbAddress, ODB_STORE_OPTS).then(store => {
+        this._orbitdb.keyvalue(odbAddress, this._orbitDbOpts).then(store => {
           store.load().then(() => { resolve(store) })
         })
       })
@@ -343,6 +339,15 @@ class Replicator {
 
   static get entryTypes () {
     return entryTypes
+  }
+
+  async _pinDID (did) {
+    if (!did) return
+    // We resolve the DID in order to pin the ipfs object
+    try {
+      await this.resolver.resolve(did)
+      // if this throws it's not a DID
+    } catch (e) {}
   }
 }
 

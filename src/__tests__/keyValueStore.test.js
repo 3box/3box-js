@@ -1,3 +1,10 @@
+jest.mock('3id-resolver', () => {
+  const { didResolverMock } = require('../__mocks__/3ID')
+  return {
+    getResolver: () => ({'3': didResolverMock})
+  }
+})
+
 const utils = require('./testUtils')
 const KeyValueStore = require('../keyValueStore')
 const OrbitDB = require('orbit-db')
@@ -6,8 +13,7 @@ const Identities = require('orbit-db-identity-provider')
 Identities.addIdentityProvider(OdbIdentityProvider)
 const AccessControllers = require('orbit-db-access-controllers')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
-const { registerMethod } = require('did-resolver')
-const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
+const { threeIDMockFactory, mockDidResolver } = require('../__mocks__/3ID')
 
 const STORE_NAME = '09ab7cd93f9e.public'
 const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
@@ -15,8 +21,6 @@ const THREEID_MOCK = threeIDMockFactory(DID1)
 
 const config = require('../config')
 const ORBITDB_OPTS = config.orbitdb_options
-
-registerMethod('3', didResolverMock)
 
 describe('KeyValueStore', () => {
   let ipfs
@@ -28,6 +32,7 @@ describe('KeyValueStore', () => {
 
   beforeAll(async () => {
     ipfs = await utils.initIPFS(2)
+    OdbIdentityProvider.setDidResolver(mockDidResolver)
     orbitdb = await OrbitDB.createInstance(ipfs, {
       directory:'./tmp/orbitdb4',
       identity: await Identities.createIdentity({
@@ -54,7 +59,8 @@ describe('KeyValueStore', () => {
           accessController: {
             write: [key],
             type: 'legacy-ipfs-3box',
-            skipManifest: true
+            skipManifest: true,
+            resolver: mockDidResolver
           }
         }
         store = await orbitdb.keyvalue(name, opts)

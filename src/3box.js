@@ -1,6 +1,5 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
-const registerResolver = require('3id-resolver')
 const { createLink, validateLink } = require('3id-blockchain-utils')
 
 const ThreeId = require('./3id')
@@ -39,7 +38,6 @@ class Box extends BoxApi {
     super()
     this._provider = provider
     this._ipfs = ipfs
-    registerResolver(this._ipfs, { pin: true })
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     /**
      * @property {KeyValueStore} public         access the profile store of the users 3Box

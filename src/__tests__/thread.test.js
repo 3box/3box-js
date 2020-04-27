@@ -1,3 +1,10 @@
+jest.mock('3id-resolver', () => {
+  const { didResolverMock } = require('../__mocks__/3ID')
+  return {
+    getResolver: () => ({'3': didResolverMock})
+  }
+})
+
 const utils = require('./testUtils')
 const Thread = require('../thread')
 const OrbitDB = require('orbit-db')
@@ -13,10 +20,7 @@ const AccessControllers = require('orbit-db-access-controllers')
 AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
 AccessControllers.addAccessController({ AccessController: ThreadAccessController })
 AccessControllers.addAccessController({ AccessController: ModeratorAccessController })
-const { registerMethod } = require('did-resolver')
-const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
-
-registerMethod('3', didResolverMock)
+const { threeIDMockFactory, mockDidResolver } = require('../__mocks__/3ID')
 
 const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
 const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
@@ -49,6 +53,7 @@ describe('Thread', () => {
 
   beforeAll(async () => {
     ipfs = await utils.initIPFS(4)
+    OdbIdentityProvider.setDidResolver(mockDidResolver)
     const identity = await Identities.createIdentity({ id: 'nullid', identityKeysPath: './tmp/odbIdentityKeys-thread' })
     orbitdb = await OrbitDB.createInstance(ipfs, {
       directory:'./tmp/orbitdb4',

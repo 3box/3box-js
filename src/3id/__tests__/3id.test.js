@@ -2,8 +2,8 @@ const ThreeId = require('../index')
 const testUtils = require('../../__tests__/testUtils')
 const localstorage = require('store')
 const { verifyJWT } = require('did-jwt')
-const resolve = require('did-resolver').default
-const registerResolver = require('3id-resolver')
+const { Resolver } = require('did-resolver')
+const get3IdResolver = require('3id-resolver').getResolver
 const IdentityWallet = require('identity-wallet')
 const OdbStorage = require('orbit-db-storage-adapter')
 const OdbKeystore = require('orbit-db-keystore')
@@ -45,11 +45,12 @@ const mockedUtils = require('../../utils/index')
 
 describe('3id', () => {
 
-  let threeId, ipfs, idw3id, keystore
+  let threeId, ipfs, idw3id, keystore, resolver
 
   beforeAll(async () => {
     ipfs = await testUtils.initIPFS(6)
-    registerResolver(ipfs)
+    const threeIdResolver = get3IdResolver(ipfs)
+    resolver = new Resolver(threeIdResolver)
     const levelDown = OdbStorage(null, {})
     const keystorePath = path.join('./tmp', `/${utils.randInt(1000000)}`, '/keystore')
     const keyStorage = await levelDown.createStore(keystorePath)
@@ -73,7 +74,7 @@ describe('3id', () => {
       expect(threeId.DID).toMatchSnapshot()
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(1)
-      expect(await resolve(threeId.DID)).toMatchSnapshot()
+      expect(await resolver.resolve(threeId.DID)).toMatchSnapshot()
     })
 
     it('should create the same identity given the same address', async () => {
@@ -107,7 +108,7 @@ describe('3id', () => {
       expect(contentSignatureThreeId.DID).toMatchSnapshot()
       expect(opts.consentCallback).toHaveBeenCalledWith(true)
       expect(mockedUtils.openBoxConsent).toHaveBeenCalledTimes(0)
-      expect(await resolve(contentSignatureThreeId.DID)).toMatchSnapshot()
+      expect(await resolver.resolve(contentSignatureThreeId.DID)).toMatchSnapshot()
     })
 
     it('should create the same identity given the same address and contentSignature', async () => {
@@ -139,7 +140,7 @@ describe('3id', () => {
         expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_1)
         let subDid = threeId.getSubDID(SPACE_1)
         expect(subDid).toMatchSnapshot()
-        expect(await resolve(subDid)).toMatchSnapshot()
+        expect(await resolver.resolve(subDid)).toMatchSnapshot()
 
         authenticated = await threeId.isAuthenticated([SPACE_1])
         expect(authenticated).toEqual(true)
@@ -153,7 +154,7 @@ describe('3id', () => {
         expect(mockedUtils.openSpaceConsent).toHaveBeenCalledWith(ADDR_1, ETHEREUM, SPACE_2)
         subDid = threeId.getSubDID(SPACE_2)
         expect(subDid).toMatchSnapshot()
-        expect(await resolve(subDid)).toMatchSnapshot()
+        expect(await resolver.resolve(subDid)).toMatchSnapshot()
 
         authenticated = await threeId.isAuthenticated([SPACE_2])
         expect(authenticated).toEqual(true)
@@ -203,7 +204,7 @@ describe('3id', () => {
           iat: null,
           data: 'some data'
         })
-        await expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
+        await expect(verifyJWT(jwt, { resolver })).resolves.toMatchSnapshot()
       })
 
       it('should sign jwts correctly with subDID', async () => {
@@ -211,7 +212,7 @@ describe('3id', () => {
           iat: null,
           data: 'some data'
         }, { space: SPACE_1 })
-        await expect(verifyJWT(jwt, { auth: true })).resolves.toMatchSnapshot()
+        await expect(verifyJWT(jwt, { resolver, auth: true })).resolves.toMatchSnapshot()
       })
     })
 
@@ -237,7 +238,7 @@ describe('3id', () => {
       expect(idw3id.DID).toMatchSnapshot()
       expect(await idw3id.getPublicKeys()).toMatchSnapshot()
       expect(await idw3id.getPublicKeys(null, true)).toMatchSnapshot()
-      expect(await resolve(idw3id.DID)).toMatchSnapshot()
+      expect(await resolver.resolve(idw3id.DID)).toMatchSnapshot()
     })
 
     describe('keyring logic', () => {
@@ -245,12 +246,12 @@ describe('3id', () => {
         await idw3id.authenticate([SPACE_1])
         let subDid = idw3id.getSubDID(SPACE_1)
         expect(subDid).toMatchSnapshot()
-        expect(await resolve(subDid)).toMatchSnapshot()
+        expect(await resolver.resolve(subDid)).toMatchSnapshot()
 
         await idw3id.authenticate([SPACE_2])
         subDid = idw3id.getSubDID(SPACE_2)
         expect(subDid).toMatchSnapshot()
-        expect(await resolve(subDid)).toMatchSnapshot()
+        expect(await resolver.resolve(subDid)).toMatchSnapshot()
       })
 
       it('should get public keys correctly', async () => {
@@ -289,7 +290,7 @@ describe('3id', () => {
           iat: null,
           data: 'some data'
         })
-        await expect(verifyJWT(jwt)).resolves.toMatchSnapshot()
+        await expect(verifyJWT(jwt, { resolver })).resolves.toMatchSnapshot()
       })
 
       it('should sign jwts correctly with subDID', async () => {
@@ -297,7 +298,7 @@ describe('3id', () => {
           iat: null,
           data: 'some data'
         }, { space: SPACE_1 })
-        await expect(verifyJWT(jwt, { auth: true })).resolves.toMatchSnapshot()
+        await expect(verifyJWT(jwt, { resolver, auth: true })).resolves.toMatchSnapshot()
       })
     })
   })
