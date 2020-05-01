@@ -24,7 +24,7 @@ class GhostThread extends EventEmitter {
 
     const threeIdResolver = get3IdResolver(ipfs, { pin: true })
     const muportResolver = getMuportResolver(ipfs)
-    this._resolver = new Resolver({...threeIdResolver, ...muportResolver})
+    this._resolver = new Resolver({ ...threeIdResolver, ...muportResolver })
 
     this._room.on('message', async ({ from, data }) => {
       let payload, issuer

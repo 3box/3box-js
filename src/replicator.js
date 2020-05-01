@@ -47,7 +47,7 @@ class Replicator {
 
     const threeIdResolver = get3IdResolver(ipfs, { pin: true })
     const muportResolver = getMuportResolver(ipfs)
-    this.resolver = new Resolver({...threeIdResolver, ...muportResolver})
+    this.resolver = new Resolver({ ...threeIdResolver, ...muportResolver })
     OdbIdentityProvider.setDidResolver(this.resolver)
 
     this._orbitDbOpts = {
@@ -154,7 +154,7 @@ class Replicator {
     if (this.rootstore) throw new Error('This method can only be called once before the replicator has started')
     this._did = did
     await this._joinPinningRoom(true)
-    const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] }})
+    const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] } })
     this.rootstore = await this._orbitdb.feed(rootstoreName, orbitDbOpts)
     this._pinningRoomFilter = []
     this._publishDB({ odbAddress: this.rootstore.address.toString() })
@@ -170,7 +170,7 @@ class Replicator {
 
   async addKVStore (name, pubkey, isSpace, did) {
     if (!this.rootstore) throw new Error('This method can only be called once before the replicator has started')
-    const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] }})
+    const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] } })
     const store = await this._orbitdb.keyvalue(name, orbitDbOpts)
     const storeAddress = store.address.toString()
     this._stores[storeAddress] = store
