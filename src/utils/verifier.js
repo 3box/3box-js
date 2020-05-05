@@ -3,9 +3,10 @@ const didJWT = require('did-jwt')
 const { verifyMessage } = require('@ethersproject/wallet')
 const config = require('../config.js')
 const utils = require('./index')
-const registerResolver = require('3id-resolver')
-require('https-did-resolver').default()
-require('muport-did-resolver')()
+const { Resolver } = require('did-resolver')
+const get3IdResolver = require('3id-resolver').getResolver
+const getMuportResolver = require('muport-did-resolver').getResolver
+const getHttpsResolver = require('https-did-resolver').default
 
 const PROFILE_SERVER_URL = config.profile_server_url
 
@@ -21,7 +22,11 @@ const ipfs = (didServerUrl) => {
   }
 }
 
-registerResolver(ipfs(PROFILE_SERVER_URL), { pin: false })
+const resolver = new Resolver({
+  ...get3IdResolver(ipfs, { pin: false }),
+  ...getMuportResolver(ipfs),
+  ...getHttpsResolver()
+})
 
 module.exports = {
   /**
@@ -65,7 +70,7 @@ module.exports = {
   verifyTwitter: async (did, claim) => {
     const dids = typeof did === 'string' ? [did] : did
     if (!claim) return null
-    const verified = await didJWT.verifyJWT(claim)
+    const verified = await didJWT.verifyJWT(claim, { resolver })
     if (!dids.includes(verified.payload.sub)) {
       throw new Error('Verification not valid for given user')
     }
@@ -91,7 +96,7 @@ module.exports = {
   verifyEmail: async (did, claim) => {
     const dids = typeof did === 'string' ? [did] : did
     if (!claim) return null
-    const verified = await didJWT.verifyJWT(claim)
+    const verified = await didJWT.verifyJWT(claim, { resolver })
     if (!dids.includes(verified.payload.sub)) {
       throw new Error('Verification not valid for given user')
     }
@@ -112,11 +117,11 @@ module.exports = {
    * @return    {String}                            The DID of the user
    */
   verifyDID: async (claim) => {
-    const verified = await didJWT.verifyJWT(claim)
+    const verified = await didJWT.verifyJWT(claim, { resolver })
     const muport = verified.payload.muport
     const res = {}
     if (muport) {
-      const muportDID = (await didJWT.verifyJWT(muport)).payload.iss
+      const muportDID = (await didJWT.verifyJWT(muport, { resolver })).payload.iss
       res.muport = muportDID
     }
     res.did = verified.payload.iss

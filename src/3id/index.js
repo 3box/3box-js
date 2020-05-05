@@ -1,6 +1,9 @@
 const { mnemonicToSeed, entropyToMnemonic } = require('@ethersproject/hdnode')
 const EventEmitter = require('events')
 const didJWT = require('did-jwt')
+const { Resolver } = require('did-resolver')
+const get3IdResolver = require('3id-resolver').getResolver
+const getMuportResolver = require('muport-did-resolver').getResolver
 const DidDocument = require('ipfs-did-document')
 const localstorage = require('store')
 const Identities = require('orbit-db-identity-provider')
@@ -26,6 +29,10 @@ class ThreeId {
     this._muportIpfs = opts.muportIpfs || MUPORT_IPFS
     this._pubkeys = { spaces: {} }
     this._keystore = keystore
+    const threeIdResolver = get3IdResolver(ipfs, { pin: true })
+    const muportResolver = getMuportResolver(ipfs)
+    const resolver = new Resolver({...threeIdResolver, ...muportResolver})
+    OdbIdentityProvider.setDidResolver(resolver)
   }
 
   startUpdatePolling () {

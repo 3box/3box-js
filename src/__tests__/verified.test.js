@@ -1,7 +1,25 @@
+jest.mock('https-did-resolver', () => ({
+  default: () => ({
+    https: async () => ({
+      '@context': 'https://w3id.org/did/v1',
+      'id': 'did:https:test.com',
+      'publicKey': [{
+        'id': 'did:https:test.com#owner',
+        'type': 'Secp256k1VerificationKey2018',
+        'owner': 'did:https:test.com',
+        'publicKeyHex': '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781'
+      }],
+      'authentication': [{
+        'type': 'Secp256k1SignatureAuthentication2018',
+        'publicKey': 'did:https:test.com#owner'
+      }]
+    })
+  })
+}))
+
 const Verified = require('../verified')
 const Box = require('../3box')
 const didJWT = require('did-jwt')
-const { registerMethod } = require('did-resolver')
 
 const GITHUB_LINK1_URL = 'https://gist.githubusercontent.com/user1/12345'
 const GITHUB_LINK1_USER = 'user1'
@@ -26,22 +44,6 @@ jest.mock('../utils', () => {
   }
 })
 
-registerMethod('https', async () => {
-  return {
-    '@context': 'https://w3id.org/did/v1',
-    'id': 'did:https:test.com',
-    'publicKey': [{
-      'id': 'did:https:test.com#owner',
-      'type': 'Secp256k1VerificationKey2018',
-      'owner': 'did:https:test.com',
-      'publicKeyHex': '044f5c08e2150b618264c4794d99a22238bf60f1133a7f563e74fcf55ddb16748159872687a613545c65567d2b7a4d4e3ac03763e1d9a5fcfe512a371faa48a781'
-    }],
-    'authentication': [{
-      'type': 'Secp256k1SignatureAuthentication2018',
-      'publicKey': 'did:https:test.com#owner'
-    }]
-  }
-})
 const httpsDidSigner = didJWT.SimpleSigner('95838ece1ac686bde68823b21ce9f564bc536eebb9c3500fa6da81f17086a6be')
 
 describe('Verified', () => {

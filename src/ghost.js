@@ -1,5 +1,8 @@
 const EventEmitter = require('events').EventEmitter
 const { verifyJWT } = require('did-jwt')
+const { Resolver } = require('did-resolver')
+const get3IdResolver = require('3id-resolver').getResolver
+const getMuportResolver = require('muport-did-resolver').getResolver
 const Room = require('ipfs-pubsub-room')
 
 const DEFAULT_BACKLOG_LIMIT = 100
@@ -18,6 +21,10 @@ class GhostThread extends EventEmitter {
     this._backlogLimit = opts.ghostBacklogLimit || DEFAULT_BACKLOG_LIMIT
 
     this._filters = opts.ghostFilters || []
+
+    const threeIdResolver = get3IdResolver(ipfs, { pin: true })
+    const muportResolver = getMuportResolver(ipfs)
+    this._resolver = new Resolver({ ...threeIdResolver, ...muportResolver })
 
     this._room.on('message', async ({ from, data }) => {
       let payload, issuer
@@ -269,7 +276,7 @@ class GhostThread extends EventEmitter {
     const jwt = data.toString()
     const cidPromise = this._ipfs.dag.put(jwt)
     try {
-      const verified = await verifyJWT(jwt)
+      const verified = await verifyJWT(jwt, { resolver: this._resolver })
       verified.payload.postId = (await cidPromise).toString()
       return verified
     } catch (e) {
