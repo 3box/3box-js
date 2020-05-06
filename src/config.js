@@ -12,7 +12,7 @@ module.exports = {
   pinning_room: process.env.PINNING_ROOM || '3box-pinning',
   rendezvous_address: RENDEZVOUS_DISABLE ? '' : (process.env.RENDEZVOUS_ADDRESS || '/dns4/p2p.3box.io/tcp/9091/wss/p2p-webrtc-star/'),
   iframe_store_version: process.env.IFRAME_STORE_VERSION || IFRAME_STORE_VERSION,
-  iframe_cache_url: process.env.IFRAME_CACHE_URL || `https://iframe.3box.io/iframe.html`,
+  iframe_cache_url: process.env.IFRAME_CACHE_URL || 'https://cache.3box.io',
   ipfs_options: {
     preload: { enabled: false },
     config: {

@@ -30,11 +30,6 @@ module.exports = {
       }
     ]
   },
-  plugins: [
-    new webpack.EnvironmentPlugin([
-      'IFRAME_CACHE_URL',
-    ])
-  ],
   node: {
     console: false,
     fs: 'empty',
