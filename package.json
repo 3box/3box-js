@@ -57,7 +57,7 @@
     "https-did-resolver": "^1.0.0",
     "ipfs": "^0.40.0",
     "ipfs-did-document": "^1.2.3",
-    "ipfs-log": "^4.5.5",
+    "ipfs-log": "4.5.5",
     "ipfs-postmsg-proxy": "^3.1.1",
     "ipfs-pubsub-room": "^1.4.1",
     "ipfs-repo": "^0.30.1",
