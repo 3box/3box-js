@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.19.0 - 2020-05-12
+* chore: upgrade did-jwt and did resolver libraries
+
 ## v1.18.1 - 2020-04-21
 * fix: address recover signature check
 
