@@ -4,32 +4,17 @@ const GhostThread = require('./ghost')
 const API = require('./api')
 const { throwIfUndefined, throwIfNotEqualLenArrays } = require('./utils')
 const OrbitDBAddress = require('orbit-db/src/orbit-db-address')
-const resolveDID = require('did-resolver').default
 
 const nameToSpaceName = name => `3box.space.${name}.keyvalue`
 const namesTothreadName = (spaceName, threadName) => `3box.thread.${spaceName}.${threadName}`
 const namesToChatName = (spaceName, chatName) => `3box.ghost.${spaceName}.${chatName}`
-const findSpacePubKey = async (did, spaceName) => {
-  if (did.startsWith('0x')) {
-    // we got an ethereum address
-    did = await API.getSpaceDID(did, spaceName)
-  }
-  let doc = await resolveDID(did)
-  let pubkey = doc.publicKey.find(key => key.id.includes('#subEncryptionKey'))
-  if (!pubkey) {
-    // A root 3ID was passed, get the space 3ID
-    did = await API.getSpaceDID(did, spaceName)
-    doc = await resolveDID(did)
-    pubkey = doc.publicKey.find(key => key.id.includes('#subEncryptionKey'))
-  }
-  return pubkey.publicKeyBase64
-}
 
 /** Class representing a user. */
 class User {
-  constructor (spaceName, threeId) {
+  constructor (spaceName, threeId, resolver) {
     this._name = spaceName
     this._3id = threeId
+    this._resolver = resolver
   }
 
   /**
@@ -65,7 +50,7 @@ class User {
   async encrypt (message, { to } = {}) {
     let toPubkey
     if (to) {
-      toPubkey = await findSpacePubKey(to, this._name)
+      toPubkey = await this._findSpacePubKey(to, this._name)
     }
     return this._3id.encrypt(message, this._name, toPubkey)
   }
@@ -79,6 +64,22 @@ class User {
    */
   async decrypt (encryptedObject, toBuffer) {
     return this._3id.decrypt(encryptedObject, this._name, toBuffer)
+  }
+
+  async _findSpacePubKey (did, spaceName) {
+    if (did.startsWith('0x')) {
+      // we got an ethereum address
+      did = await API.getSpaceDID(did, spaceName)
+    }
+    let doc = await this._resolver.resolve(did)
+    let pubkey = doc.publicKey.find(key => key.id.includes('#subEncryptionKey'))
+    if (!pubkey) {
+      // A root 3ID was passed, get the space 3ID
+      did = await API.getSpaceDID(did, spaceName)
+      doc = await this._resolver.resolve(did)
+      pubkey = doc.publicKey.find(key => key.id.includes('#subEncryptionKey'))
+    }
+    return pubkey.publicKeyBase64
   }
 }
 
@@ -114,7 +115,7 @@ class Space {
    */
   get user () {
     if (!this._3id) throw new Error('user is not authenticated')
-    this._user = this._user || new User(this._name, this._3id)
+    this._user = this._user || new User(this._name, this._3id, this._replicator.resolver)
     return this._user
   }
 

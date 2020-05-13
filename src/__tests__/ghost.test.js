@@ -1,7 +1,14 @@
+jest.mock('3id-resolver', () => {
+  const { didResolverMock } = require('../__mocks__/3ID')
+  return {
+    getResolver: () => ({'3': didResolverMock})
+  }
+})
+
 const utils = require('./testUtils')
 const GhostThread = require('../ghost')
 
-const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
+const { threeIDMockFactory } = require('../__mocks__/3ID')
 
 const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
 const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
@@ -12,11 +19,6 @@ const CHAT_NAME = '3box.chat.somespace.name'
 const THREEID1_MOCK = threeIDMockFactory(DID1);
 const THREEID2_MOCK = threeIDMockFactory(DID2);
 const THREEID3_MOCK = threeIDMockFactory(DID3);
-
-const { registerMethod } = require('did-resolver')
-
-registerMethod('3', didResolverMock)
-didResolverMock(THREEID1_MOCK);
 
 describe('Ghost Chat', () => {
   let ipfs

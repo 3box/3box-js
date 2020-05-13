@@ -1,24 +1,3 @@
-const testUtils = require('./testUtils')
-const OrbitDB = require('orbit-db')
-const jsdom = require('jsdom')
-const didJWT = require('did-jwt')
-const Box = require('../3box')
-global.window = new jsdom.JSDOM().window
-const { registerMethod } = require('did-resolver')
-const AccessControllers = require('orbit-db-access-controllers')
-const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
-AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
-const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
-
-registerMethod('3', didResolverMock)
-registerMethod('muport', didResolverMock)
-
-const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
-const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
-
-const randomStr = () => `${Math.floor(Math.random() * 1000000)}`
-
-jest.mock('3id-resolver')
 jest.mock('../3id', () => {
   const randomStr = () => `${Math.floor(Math.random() * 1000000)}`
   const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
@@ -51,6 +30,7 @@ jest.mock('../3id', () => {
     isLoggedIn: jest.fn(() => { return loggedIn })
    }
 })
+
 jest.mock('../publicStore', () => {
   return jest.fn(() => {
     return {
@@ -63,6 +43,7 @@ jest.mock('../publicStore', () => {
     }
   })
 })
+
 jest.mock('../privateStore', () => {
   return jest.fn(() => {
     return {
@@ -71,6 +52,7 @@ jest.mock('../privateStore', () => {
     }
   })
 })
+
 jest.mock('../space', () => {
   return jest.fn(name => {
     let isOpen = false
@@ -85,6 +67,7 @@ jest.mock('../space', () => {
     }
   })
 })
+
 jest.mock('../replicator', () => {
   const randInt = max => Math.floor(Math.random() * max)
 
@@ -141,13 +124,20 @@ jest.mock('3id-blockchain-utils', () => ({
 }))
 
 jest.mock('../utils/verifier')
+
 jest.mock('../utils/index', () => {
   const actualUtils = jest.requireActual('../utils/index')
+  const { didResolverMock } = require('../__mocks__/3ID')
+  const { Resolver } = require('did-resolver')
   const sha256 = require('js-sha256').sha256
   const { verifyJWT } = require('did-jwt')
   let addressMap = {}
   let linkmap = {}
   let linkNum = 0
+  const resolver = new Resolver({
+    '3': didResolverMock,
+    muport: didResolverMock
+  })
   return {
     getMessageConsent: actualUtils.getMessageConsent,
     openBoxConsent: jest.fn(async () => '0x8726348762348723487238476238746827364872634876234876234'),
@@ -157,7 +147,7 @@ jest.mock('../utils/index', () => {
       let x, hash, did
       switch (lastPart) {
         case 'odbAddress': // put odbAddress
-          const payload = (await verifyJWT(body.address_token)).payload
+          const payload = (await verifyJWT(body.address_token, { resolver })).payload
           addressMap[payload.iss] = payload.rootStoreAddress
           return { status: 'success', data: {} }
         case 'link': // make a link
@@ -196,6 +186,36 @@ jest.mock('../utils/index', () => {
     sha256
   }
 })
+
+jest.mock('3id-resolver', () => {
+  const { didResolverMock } = require('../__mocks__/3ID')
+  return {
+    getResolver: () => ({'3': didResolverMock})
+  }
+})
+
+jest.mock('muport-did-resolver', () => {
+  const { didResolverMock } = require('../__mocks__/3ID')
+  return {
+    getResolver: () => ({'muport': didResolverMock})
+  }
+})
+
+const testUtils = require('./testUtils')
+const OrbitDB = require('orbit-db')
+const jsdom = require('jsdom')
+const didJWT = require('did-jwt')
+const Box = require('../3box')
+global.window = new jsdom.JSDOM().window
+const { Resolver } = require('did-resolver')
+const AccessControllers = require('orbit-db-access-controllers')
+const { LegacyIPFS3BoxAccessController } = require('3box-orbitdb-plugins')
+AccessControllers.addAccessController({ AccessController: LegacyIPFS3BoxAccessController })
+
+const DID1 = 'did:3:zdpuAsaK9YsqpphSBeQvfrKAjs8kF7vUX4Y3kMkMRgEQigzCt'
+const DID2 = 'did:3:zdpuB2DcKQKNBDz3difEYxjTupsho5VuPCLgRbRunXqhmrJaX'
+
+const randomStr = () => `${Math.floor(Math.random() * 1000000)}`
 
 const mockedUtils = require('../utils/index')
 const { createLink } = require('3id-blockchain-utils')
@@ -523,10 +543,6 @@ describe('3Box', () => {
 
   describe('verify eth', () => {
     let verifier = jest.requireActual('../utils/verifier')
-    // re register mock resolvers, as the real ones are registered in verifier module
-    registerMethod('3', didResolverMock)
-    registerMethod('muport', didResolverMock)
-
 
     const ethProof = {
       consent_msg: 'Create a new 3Box profile\n\n- \nYour unique profile ID is did:muport:Qmb9E8wLqjfAqfKhideoApU5g26Yz2Q2bSp6MSZmc5WrNr',

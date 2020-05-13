@@ -1,8 +1,14 @@
+jest.mock('3id-resolver', () => {
+  const { didResolverMock } = require('../__mocks__/3ID')
+  return {
+    getResolver: () => ({'3': didResolverMock})
+  }
+})
+
 const testUtils = require('./testUtils')
 const Replicator = require('../replicator')
 const { threeIDMockFactory, didResolverMock } = require('../__mocks__/3ID')
 const Pubsub = require('orbit-db-pubsub')
-const { registerMethod } = require('did-resolver')
 
 const testDID = 'did:3:bafoijqr94'
 const PINNING_ROOM = '3box-pinning'
@@ -37,7 +43,6 @@ describe('Replicator', () => {
       orbitPath: './tmp/orbitdb13',
     }
     replicator1 = await Replicator.create(ipfs1, opts)
-    registerMethod('3', didResolverMock)
   })
 
   it('new rootstore created', async () => {
@@ -92,7 +97,6 @@ describe('Replicator', () => {
       orbitPath: './tmp/orbitdb14',
     }
     replicator2 = await Replicator.create(ipfs2, opts)
-    registerMethod('3', didResolverMock)
     const rootstoreAddress = replicator1.rootstore.address.toString()
     const rootstoreNumEntries = replicator1.rootstore._oplog._length
     await replicator2.start(rootstoreAddress, testDID2)
@@ -123,7 +127,6 @@ describe('Replicator', () => {
       orbitPath: './tmp/orbitdb14',
     }
     replicator2 = await Replicator.create(ipfs2, opts)
-    registerMethod('3', didResolverMock)
     const rootstoreAddress = replicator1.rootstore.address.toString()
     const rootstoreNumEntries = replicator1.rootstore._oplog._length
     await addProfilePromise
