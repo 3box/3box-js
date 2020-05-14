@@ -17,12 +17,14 @@ const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
 // const ThreeIdConnect = require('3id-connect').ThreeIdConnect
+const ThreeIdConnect = require('./../../3box-account/src/index').ThreeIdConnect
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 const RENDEZVOUS_ADDRESS = config.rendezvous_address
 // const IFRAME_STORE_URL = 'https://connect.3box.io'
+const IFRAME_STORE_URL = 'http://localhost:30001'
 
 let globalIPFS, globalIPFSPromise // , threeIdConnect
 
@@ -126,20 +128,19 @@ class Box extends BoxApi {
    */
   static async create (provider, opts = {}) {
     const ipfs = await Box.getIPFS(opts)
+    if (!provider.is3idProvider) {
+      await threeIdConnect.connect(provider, ThreeId)
+      provider = await threeIdConnect.get3idProvider()
+    }
     const box = new Box(provider, ipfs, opts)
     await box._init(opts)
     return box
   }
 
-  /**
-   * Returns and 3ID Connect Provider to manage keys, authentication and account links. Becomes default in future.
-   *
-   * @return    {3IDProvider}        Promise that resolves to a 3ID Connect Provider
-   */
-  // static get3idConnectProvider () {
-  //   if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
-  //   return threeIdConnect.get3idProvider()
-  // }
+  static get3idConnectProvider () {
+    //TODO Could add blogpost link
+    throw new Error('3idConnectProvider now consumes an eth provider, initialize 3box as you did before 3idconnectProvider, and 3box will create a 3idConnectProvider by default')
+  }
 
   /**
    * Authenticate the user
@@ -152,11 +153,6 @@ class Box extends BoxApi {
   async auth (spaces = [], opts = {}) {
     opts.address = opts.address ? opts.address.toLowerCase() : opts.address
     this._3idEthAddress = opts.address
-
-    // Enabled once becomes default
-    // if (!this._provider.is3idProvider && threeIdConnect) {
-    //   this._provider = await threeIdConnect.get3idProvider()
-    // }
 
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
@@ -415,20 +411,17 @@ class Box extends BoxApi {
     let proof = await this._readAddressLink(address)
 
     if (!proof) {
-      try {
-        if (!this._provider.is3idProvider) {
+      if (!this._provider.is3idProvider) {
+        try {
           proof = await createLink(this._3id.DID, address, this._provider)
-        } else if (this._provider.threeIdConnect && this._provider.migration) {
-          // during migration, need to link "managment" address, for account which derived, rather than creating general link proofs
-          proof = await this._3id.linkManagementAddress()
+        } catch (e) {
+          throw new Error('Link consent message must be signed before adding data, to link address to store', e)
         }
-      } catch (e) {
-        throw new Error('Link consent message must be signed before adding data, to link address to store', e)
-      }
-      try {
-        if (!this._provider.is3idProvider) await this._writeAddressLink(proof)
-      } catch (err) {
-        throw new Error('An error occured while publishing link:', err)
+        try {
+          await this._writeAddressLink(proof)
+        } catch (err) {
+          throw new Error('An error occured while publishing link:', err)
+        }
       }
     } else {
       // Send consentSignature to 3box-address-server to link profile with ethereum address
