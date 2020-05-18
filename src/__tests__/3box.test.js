@@ -151,15 +151,10 @@ jest.mock('../utils/index', () => {
           addressMap[payload.iss] = payload.rootStoreAddress
           return { status: 'success', data: {} }
         case 'link': // make a link
-          if (linkNum < 2) {
-            linkNum += 1
-            return Promise.reject('{ status: "error", message: "an error" }')
-          } else {
-            did = body.message.split(',')[1]
-            const address = body.signature.split(',')[1]
-            linkmap[address] = did
-            return { status: 'success', data: { did, address } }
-          }
+          did = body.message.split(',')[1]
+          const address = body.signature.split(',')[1]
+          linkmap[address] = did
+          return { status: 'success', data: { did, address } }
         default:
           // post profileList (profile api)
           if(/profileList/.test(lastPart)) {
@@ -302,9 +297,10 @@ describe('3Box', () => {
     expect(box.private._load).toHaveBeenCalledWith()
     expect(box.spaces[space]._authThreads).toHaveBeenCalledTimes(1)
     await box.syncDone
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
+    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(3)
     expect(mockedUtils.fetchJson.mock.calls[1][0]).toEqual('address-server/odbAddress')
     expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[1][1].address_token).payload.rootStoreAddress).toEqual('/orbitdb/asdf/rootstore-address')
+    expect(mockedUtils.fetchJson.mock.calls[2][0]).toEqual('address-server/link')
 
     // second call to auth should only auth new spaces
     await box.auth(['s2'], opts)
@@ -324,8 +320,8 @@ describe('3Box', () => {
     expect(box.replicator).toBeDefined()
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
     expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
-    expect(box.replicator.start).toHaveBeenCalledTimes(0)
-    expect(box.replicator.new).toHaveBeenCalledTimes(1)
+    expect(box.replicator.start).toHaveBeenCalledTimes(1)
+    expect(box.replicator.new).toHaveBeenCalledTimes(0)
     expect(box.replicator.rootstore.setIdentity).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledWith()
@@ -334,70 +330,8 @@ describe('3Box', () => {
     await box.syncDone
     //await new Promise((resolve, reject) => { setTimeout(resolve, 500) })
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
-    expect(mockedUtils.fetchJson.mock.calls[1][0]).toEqual('address-server/odbAddress')
-    expect(didJWT.decodeJWT(mockedUtils.fetchJson.mock.calls[1][1].address_token).payload.rootStoreAddress).toEqual('/orbitdb/asdf/rootstore-address')
+    expect(mockedUtils.fetchJson.mock.calls[1][0]).toEqual('address-server/link')
     return box.close()
-  })
-
-  it('should handle error and not link profile on first call to _linkProfile', async () => {
-    const box = await Box.openBox('0x12345','web3prov', boxOpts)
-    const did = box._3id.DID
-    clearMocks()
-
-    // first two calls in our mock will throw an error
-    await expect(box._linkProfile()).rejects.toMatchSnapshot()
-
-    expect(box.replicator.rootstore.add).toHaveBeenCalledTimes(1) //  proof
-
-    // It will check the self-signed did
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-    expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      message: `I agree to stuff,${did}`,
-      signature: "0xSuchRealSig,0x12345",
-      timestamp: 111,
-      type: "ethereum-eoa",
-      version: 1,
-    })
-    expect(createLink).toHaveBeenCalledTimes(1)
-    return box.close()
-  })
-
-  it('should not call createLink if ethereum_proof in rootStore on call to _linkProfile', async () => {
-    const boxWithLinks = await Box.openBox('0x12345', 'web3prov', boxOpts)
-    clearMocks()
-
-    boxWithLinks.public.get = jest.fn((key) => {
-      if (key === 'proof_did') return 'proof-did'
-      return null
-    })
-
-    boxWithLinks._readAddressLink = jest.fn(() => {
-      return {
-        message: `I agree to stuff,${DID1}`,
-        signature: "0xSuchRealSig,0x12345",
-        timestamp: 111,
-        type: "ethereum-eoa",
-        version: 1,
-      }
-    })
-
-    // first two calls in our mock will throw an error
-    boxWithLinks.public.set.mockClear()
-
-    await expect(boxWithLinks._linkProfile()).rejects.toMatchSnapshot()
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
-    // TODO now hwy this second clal as expected??
-    expect(mockedUtils.fetchJson).toHaveBeenNthCalledWith(1, 'address-server/link', {
-      message: `I agree to stuff,${DID1}`,
-      signature: "0xSuchRealSig,0x12345",
-      timestamp: 111,
-      type: "ethereum-eoa",
-      version: 1,
-    })
-    expect(createLink).toHaveBeenCalledTimes(0)
-    expect(boxWithLinks.public.set).toHaveBeenCalledTimes(0)
-
-    return boxWithLinks.close()
   })
 
   it('should link profile on call to _linkProfile', async () => {
@@ -432,13 +366,13 @@ describe('3Box', () => {
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledWith(addr, prov, boxOpts.ipfs, box.replicator._orbitdb.keystore, opts)
     expect(box.replicator).toBeDefined()
-    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(1)
+    expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(2)
     expect(mockedUtils.fetchJson.mock.calls[0][0]).toEqual('address-server/odbAddress/0x12345')
-    expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
-    expect(box._3id.authenticate).toHaveBeenCalledWith([], { authData: [], address: "0x12345" })
     expect(box.replicator.start).toHaveBeenCalledTimes(1)
     expect(box.replicator.start).toHaveBeenCalledWith('/orbitdb/asdf/rootstore-address', box._3id.DID, { profile: true })
     expect(box.replicator.new).toHaveBeenCalledTimes(0)
+    expect(box._3id.authenticate).toHaveBeenCalledTimes(1)
+    expect(box._3id.authenticate).toHaveBeenCalledWith([], { authData: [], address: "0x12345" })
     expect(box.public._load).toHaveBeenCalledTimes(1)
     expect(box.public._load).toHaveBeenCalledWith()
     expect(box.private._load).toHaveBeenCalledTimes(1)
