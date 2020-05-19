@@ -158,9 +158,7 @@ class Box extends BoxApi {
     await this.linkAddress()
     // make sure we are authenticated to threads
     await Promise.all(spaces.map(async space => {
-      if (this.spaces[space]) {
-        await this.spaces[space]._authThreads(this._3id)
-      }
+      await this.openSpace(space)
     }))
   }
 

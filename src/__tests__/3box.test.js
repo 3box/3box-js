@@ -282,6 +282,7 @@ describe('3Box', () => {
     const opts = { address: '0x12345' }
     const box = await Box.create(prov, boxOpts)
     await box.openThread(space, name, {})
+    expect(box.spaces[space].isOpen).toEqual(false)
 
     await box.auth([space], opts)
     expect(mocked3id.getIdFromEthAddress).toHaveBeenCalledTimes(1)
@@ -295,7 +296,7 @@ describe('3Box', () => {
     expect(box.public._load).toHaveBeenCalledWith()
     expect(box.private._load).toHaveBeenCalledTimes(1)
     expect(box.private._load).toHaveBeenCalledWith()
-    expect(box.spaces[space]._authThreads).toHaveBeenCalledTimes(1)
+    expect(box.spaces[space].isOpen).toEqual(true)
     await box.syncDone
     expect(mockedUtils.fetchJson).toHaveBeenCalledTimes(3)
     expect(mockedUtils.fetchJson.mock.calls[1][0]).toEqual('address-server/odbAddress')
