@@ -93,7 +93,7 @@ class Box extends BoxApi {
     })
     this._3id.startUpdatePolling()
 
-    this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
+    this.public = new PublicStore(this._3id.muportFingerprint + '.public', this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
     await this.public._load()
     await this.private._load()
@@ -154,6 +154,8 @@ class Box extends BoxApi {
       }
       await this._3id.authenticate(spaces, { address: opts.address })
     }
+    // Link address if needed
+    await this.linkAddress()
     // make sure we are authenticated to threads
     await Promise.all(spaces.map(async space => {
       if (this.spaces[space]) {
@@ -201,7 +203,6 @@ class Box extends BoxApi {
     if (!this.spaces[name].isOpen) {
       try {
         await this.spaces[name].open(this._3id, opts)
-        if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
         delete this.spaces[name]
         if (e.message.includes('User denied message signature.')) {
@@ -434,11 +435,11 @@ class Box extends BoxApi {
       const issuer = didJWT.decodeJWT(proofdid).payload.iss
       if (issuer.includes('muport')) {
         const jwt = { muport: proofdid }
-        await this.public.set('proof_did', await this._3id.signJWT(jwt), { noLink: true })
+        await this.public.set('proof_did', await this._3id.signJWT(jwt))
       }
     } else {
       // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
+      await this.public.set('proof_did', await this._3id.signJWT())
     }
   }
 
