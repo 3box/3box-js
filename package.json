@@ -13,6 +13,7 @@
     "build:dist": "./node_modules/.bin/webpack --config webpack.config.js --mode=development",
     "build:dist:example": "./node_modules/.bin/webpack --config webpack.example.config.js --mode=development",
     "build:dist:dev": "./node_modules/.bin/webpack --config webpack.dev.config.js --mode=development",
+    "build:dist:example": "./node_modules/.bin/webpack --config webpack.example.config.js --mode=development",
     "build:dist:prod": "./node_modules/.bin/webpack --config webpack.config.js --mode=production --output-filename 3box.min.js",
     "build:dist:api": "./node_modules/.bin/webpack --config webpack.api.config.js --mode=production",
     "build": "npm run build:es5; npm run build:dist; npm run build:dist:prod; npm run build:dist:api",
@@ -46,6 +47,7 @@
   "dependencies": {
     "3box-orbitdb-plugins": "^2.0.0",
     "3id-blockchain-utils": "^0.3.3",
+    "3id-connect": "github:3box/3id-connect#feat/external-provider",
     "3id-resolver": "^1.0.0",
     "@babel/runtime": "^7.4.5",
     "@ethersproject/hdnode": "5.0.0-beta.137",
@@ -93,6 +95,7 @@
     "jest-environment-uint8array": "^1.0.0",
     "jsdoc-to-markdown": "^5.0.0",
     "standard": "^14.3.1",
+    "web3": "^1.2.7",
     "web3modal": "^1.6.3",
     "webpack": "^4.32.2",
     "webpack-cli": "^3.3.2"
