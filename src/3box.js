@@ -16,8 +16,8 @@ const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
-const ThreeIdConnect = require('3id-connect/src/index').ThreeIdConnect
-// const ThreeIdConnect = require('./../../3box-account/src/index').ThreeIdConnect
+const { ThreeIdConnect } = require('3id-connect')
+// const ThreeIdConnect = require('./../../3box-account/lib/index').ThreeIdConnect //TODO
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -25,6 +25,7 @@ const IPFS_OPTIONS = config.ipfs_options
 const RENDEZVOUS_ADDRESS = config.rendezvous_address
 // const IFRAME_STORE_URL = 'https://connect.3box.io'
 const IFRAME_STORE_URL = 'https://connect-dev.3box.io'
+// const IFRAME_STORE_URL = 'http://localhost:30001'  //TODO
 
 let globalIPFS, globalIPFSPromise // , threeIdConnect
 
@@ -128,18 +129,26 @@ class Box extends BoxApi {
    */
   static async create (provider, opts = {}) {
     const ipfs = await Box.getIPFS(opts)
-    if (!provider.is3idProvider) {
-      await threeIdConnect.connect(provider, ThreeId)
-      provider = await threeIdConnect.get3idProvider()
-    }
     const box = new Box(provider, ipfs, opts)
+    await box._setProvider(provider)
     await box._init(opts)
     return box
   }
 
   static get3idConnectProvider () {
-    //TODO Could add blogpost link
+    // TODO Could add blogpost link
     throw new Error('3idConnectProvider now consumes an eth provider, initialize 3box as you did before 3idconnectProvider, and 3box will create a 3idConnectProvider by default')
+  }
+
+  async _setProvider (provider) {
+    if (!provider) return
+    // This will still allow an ethprovider if no threeIdConnect for now, but later will only consume 3idproviders
+    if (!provider.is3idProvider && threeIdConnect) {
+      await threeIdConnect.connect(provider, ThreeId)
+      this._provider = await threeIdConnect.get3idProvider()
+    } else {
+      this._provider = provider
+    }
   }
 
   /**
@@ -148,9 +157,12 @@ class Box extends BoxApi {
    * @param     {Array<String>}     spaces                  A list of spaces to authenticate (optional)
    * @param     {Object}            opts                    Optional parameters
    * @param     {String}            opts.address            An ethereum address
+   * @param     {String}            opts.provider           A 3ID provider, or ethereum provider
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    */
   async auth (spaces = [], opts = {}) {
+    if (opts.provider) await this._setProvider(opts.provider)
+    if (!this._provider) throw new Error('auth: provider was not passed to auth or create, provider required')
     opts.address = opts.address ? opts.address.toLowerCase() : opts.address
     this._3idEthAddress = opts.address
 
