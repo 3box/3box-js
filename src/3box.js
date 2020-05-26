@@ -107,7 +107,7 @@ class Box extends BoxApi {
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.addressServer      URL of the Address Server
-   * @param     {String}            opts.ghostPinbotAddress URL of the Ghost Pinbot Server
+   * @param     {String}            opts.ghostPinbot        MultiAddress of a Ghost Pinbot node
    * @return    {Box}                                       the 3Box session instance
    */
   static async create (provider, opts = {}) {
@@ -535,8 +535,8 @@ class Box extends BoxApi {
     const ipfs = globalIPFS
     const pinningNode = opts.pinningNode || PINNING_NODE
     ipfs.swarm.connect(pinningNode, () => {})
-    if (opts.ghostPinbotAddress) {
-      ipfs.swarm.connect(opts.ghostPinbotAddress, () => {})
+    if (opts.ghostPinbot) {
+      ipfs.swarm.connect(opts.ghostPinbot, () => {})
     }
     return ipfs
   }
