@@ -12,9 +12,9 @@ class GhostThread extends EventEmitter {
     super()
     this._name = name
     this._spaceName = name.split('.')[2]
-    this._room = Room(ipfs, name) // instance of ipfs pubsub room
+    this._room = new Room(ipfs, name) // instance of ipfs pubsub room
     this._ipfs = ipfs
-    this._peerId = ipfs._peerInfo.id.toB58String()
+    //this._peerId = ipfs._peerInfo.id.toB58String()
 
     this._members = {}
     this._backlog = new Set() // set of past messages
@@ -65,9 +65,9 @@ class GhostThread extends EventEmitter {
         }
       }
     })
-    this._room.on('peer joined', (peer) => {
-      this._announce(peer)
-      this._requestBacklog(peer)
+    this._room.on('peer joined', async (peer) => {
+      await this._announce(peer)
+      await this._requestBacklog(peer)
     })
     this._room.on('peer left', (peer) => this._userLeft(peer))
   }

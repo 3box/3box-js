@@ -64,7 +64,7 @@ describe('Replicator', () => {
     await pubsub2.unsubscribe(PINNING_ROOM)
 
     expect(await replicator1.ipfs.pubsub.ls()).toMatchSnapshot()
-    expect((await replicator1.ipfs.swarm.peers()).map(p => p.peer._idB58String)).toContain(ipfs2MultiAddr.split('/').pop())
+    expect((await replicator1.ipfs.swarm.peers()).map(p => p.peer)).toContain(ipfs2MultiAddr.getPeerId())
   })
 
   it('adds profile KVStore correctly', async () => {
@@ -105,7 +105,7 @@ describe('Replicator', () => {
     await replicator2.syncDone
 
     expect((await replicator2.ipfs.pubsub.ls())[0]).toMatchSnapshot()
-    expect((await replicator2.ipfs.swarm.peers()).map(p => p.peer._idB58String)).toContain(ipfs1MultiAddr.split('/').pop())
+    expect((await replicator2.ipfs.swarm.peers()).map(p => p.peer)).toContain(ipfs1MultiAddr.getPeerId())
 
     expect(replicator2.listStoreAddresses()).toEqual(replicator1.listStoreAddresses())
     expect(replicator2.rootstore.iterator({ limit: -1 }).collect()).toEqual(replicator1.rootstore.iterator({ limit: -1 }).collect())
@@ -156,7 +156,9 @@ describe('Replicator', () => {
     })
     expect(entryData).toMatchSnapshot()
     await testUtils.delay(100)
-    const pinnedCIDs = (await ipfs1.pin.ls()).map(pin => pin.hash)
+
+    const pinnedCIDs = []
+    for await (const { cid } of ipfs1.pin.ls()) pinnedCIDs.push(cid.toString())
     expect(pinnedCIDs.includes(cid1)).toBeTruthy()
     expect(pinnedCIDs.includes(cid2)).toBeTruthy()
   })
@@ -170,7 +172,8 @@ describe('Replicator', () => {
     })
     expect(entryData).toMatchSnapshot()
     await testUtils.delay(100)
-    const pinnedCIDs = (await ipfs1.pin.ls()).map(pin => pin.hash)
+    const pinnedCIDs = []
+    for await (const { cid } of ipfs1.pin.ls()) pinnedCIDs.push(cid.toString())
     expect(pinnedCIDs.includes(cid1)).toBeTruthy()
     expect(pinnedCIDs.includes(cid2)).toBeTruthy()
   })
@@ -196,8 +199,12 @@ describe('Replicator', () => {
   })
 
   it('ensureConnected works as expected for store', async () => {
-    let peer = (await ipfs2.swarm.addrs())[0]
-    await ipfs2.swarm.disconnect(peer)
+    const peers = (await ipfs1.swarm.peers())
+    for (const peer of peers) {
+      try {
+        await ipfs1.swarm.disconnect(peer.addr)
+      } catch (e) {}
+    }
     await testUtils.delay(1000)
     await replicator1.ensureConnected('fake address store')
     await new Promise((resolve, reject) => {
@@ -210,8 +217,12 @@ describe('Replicator', () => {
   })
 
   it('ensureConnected works as expected for thread', async () => {
-    let peer = (await ipfs2.swarm.addrs())[0]
-    await ipfs2.swarm.disconnect(peer)
+    const peers = (await ipfs1.swarm.peers())
+    for (const peer of peers) {
+      try {
+        await ipfs1.swarm.disconnect(peer.addr)
+      } catch (e) {}
+    }
     await testUtils.delay(1000)
     await replicator1.ensureConnected('fake address thread')
     await new Promise((resolve, reject) => {

@@ -36,6 +36,11 @@ describe('Ghost Chat', () => {
     jest.setTimeout(30000)
   })
 
+  afterAll(async () => {
+    await chat1.close()
+    return utils.stopIPFS(ipfs, 11)
+  })
+
   it('creates chat correctly', async () => {
     chat = new GhostThread(CHAT_NAME, { ipfs })
     expect(chat._name).toEqual(CHAT_NAME)
@@ -46,16 +51,19 @@ describe('Ghost Chat', () => {
     expect(chat._3id).toEqual(THREEID1_MOCK)
   })
 
-  it('should catch messages', async (done) => {
-    chat.onUpdate(async ({ type, author, message }) => {
-      if (type == 'chat') {
-        expect(author).toEqual(DID1)
-        expect(chat.getPosts()).not.toEqual([])
-        expect(chat.getPosts()).toBeDefined()
-        done()
-      }
+  it('should catch messages', async () => {
+    const postPromise = new Promise(resolve => {
+      chat.onUpdate(async ({ type, author, message }) => {
+        if (type == 'chat') {
+          expect(author).toEqual(DID1)
+          expect(chat.getPosts()).not.toEqual([])
+          expect(chat.getPosts()).toBeDefined()
+          resolve()
+        }
+      })
     })
     await chat.post('hello')
+    await postPromise
   })
 
   describe('multi user interaction', () => {
@@ -64,6 +72,11 @@ describe('Ghost Chat', () => {
 
     beforeAll(async () => {
       ipfs2 = await utils.initIPFS(12)
+    })
+
+    afterAll(async () => {
+      await chat2.close()
+      await utils.stopIPFS(ipfs2, 12)
     })
 
     it('creates second chat correctly', async () => {
@@ -153,11 +166,6 @@ describe('Ghost Chat', () => {
       })
       await chat._requestBacklog()
     })
-
-    afterAll(async () => {
-      await chat2.close()
-      await utils.stopIPFS(ipfs2, 12)
-    })
   })
 
   describe('ghost filter tests', () => {
@@ -169,6 +177,15 @@ describe('Ghost Chat', () => {
       }
       return true
     }
+
+    beforeAll(async () => {
+      ipfs3 = await utils.initIPFS(12)
+    })
+
+    afterAll(async () => {
+      await chat3.close()
+      return utils.stopIPFS(ipfs3, 12)
+    })
 
     it('creates third chat correctly', async (done) => {
       chat.removeAllListeners()
@@ -201,19 +218,5 @@ describe('Ghost Chat', () => {
       })
       await chat.post('wide')
     })
-
-    beforeAll(async () => {
-      ipfs3 = await utils.initIPFS(12)
-    })
-
-    afterAll(async () => {
-      await chat3.close()
-      return utils.stopIPFS(ipfs3, 12)
-    })
-  })
-
-  afterAll(async () => {
-    await chat1.close()
-    return utils.stopIPFS(ipfs, 11)
   })
 })

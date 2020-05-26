@@ -38,7 +38,7 @@ class Replicator {
     this.events = new EventEmitter()
     this.ipfs = ipfs
     this._pinningNode = opts.pinningNode || PINNING_NODE
-    this.ipfs.swarm.connect(this._pinningNode, () => {})
+    this.ipfs.swarm.connect(this._pinningNode)
     this._stores = {}
     this._storePromises = {}
     // TODO - this should only be done in 3box-js. For use in
@@ -268,14 +268,14 @@ class Replicator {
   }
 
   get _pinningNodePeerId () {
-    return this._pinningNode.split('/').pop()
+    return this._pinningNode.getPeerId()
   }
 
   async ensureConnected (odbAddress) {
     const isThread = odbAddress.includes('thread')
     const roomPeers = await this.ipfs.pubsub.peers(odbAddress)
     if (!roomPeers.find(p => p === this._pinningNodePeerId)) {
-      this.ipfs.swarm.connect(this._pinningNode, () => {})
+      this.ipfs.swarm.connect(this._pinningNode)
       odbAddress = isThread ? odbAddress : this.rootstore.address.toString()
       this._publishDB({ odbAddress, isThread }, true)
     }
