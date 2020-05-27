@@ -15,17 +15,17 @@ const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
-//const ThreeIdConnect = require('3id-connect').ThreeIdConnect
+// const ThreeIdConnect = require('3id-connect').ThreeIdConnect
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
-const IFRAME_STORE_URL = 'https://connect.3box.io'
+// const IFRAME_STORE_URL = 'https://connect.3box.io'
 
-let globalIPFS, globalIPFSPromise, threeIdConnect
+let globalIPFS, globalIPFSPromise // , threeIdConnect
 
-const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
-//if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
+// const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
+// if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
 /**
  * @extends BoxApi
  */
@@ -121,10 +121,10 @@ class Box extends BoxApi {
    *
    * @return    {3IDProvider}        Promise that resolves to a 3ID Connect Provider
    */
-  //static get3idConnectProvider () {
-    //if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
-    //return threeIdConnect.get3idProvider()
-  //}
+  // static get3idConnectProvider () {
+  //   if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
+  //   return threeIdConnect.get3idProvider()
+  // }
 
   /**
    * Authenticate the user
@@ -486,6 +486,7 @@ class Box extends BoxApi {
 
   async close () {
     if (!this._3id) throw new Error('close: auth required')
+    await this._3id.stopUpdatePolling()
     await this.replicator.stop()
   }
 
@@ -533,7 +534,7 @@ class Box extends BoxApi {
 
     const ipfs = globalIPFS
     const pinningNode = opts.pinningNode || PINNING_NODE
-    ipfs.swarm.connect(pinningNode, () => {})
+    ipfs.swarm.connect(pinningNode)
     return ipfs
   }
 }

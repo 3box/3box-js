@@ -14,7 +14,6 @@ class GhostThread extends EventEmitter {
     this._spaceName = name.split('.')[2]
     this._room = new Room(ipfs, name) // instance of ipfs pubsub room
     this._ipfs = ipfs
-    //this._peerId = ipfs._peerInfo.id.toB58String()
 
     this._members = {}
     this._backlog = new Set() // set of past messages

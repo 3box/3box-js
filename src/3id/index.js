@@ -288,6 +288,10 @@ class ThreeId {
 
   logout () {
     localstorage.remove(STORAGE_KEY + this.managementAddress)
+    this.stopUpdatePolling()
+  }
+
+  stopUpdatePolling () {
     if (this._pollInterval) {
       clearInterval(this._pollInterval)
     }

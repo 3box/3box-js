@@ -58,7 +58,7 @@ describe('3id', () => {
   })
 
   afterAll(async () => {
-    await testUtils.stopIPFS(ipfs, 6)
+    await ipfs.stop()
   })
 
   beforeEach(() => {

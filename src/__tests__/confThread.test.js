@@ -419,6 +419,8 @@ describe('Confidential Thread', () => {
     let replicatorMock2
     beforeAll(async () => {
       ipfs2 = await utils.initIPFS(25)
+      let ipfsMultiAddr = (await ipfs.id()).addresses[0]
+      await ipfs2.swarm.connect(ipfsMultiAddr)
       orbitdb2 = await OrbitDB.createInstance(ipfs2, {
         directory:'./tmp/orbitdb5'
       })
@@ -537,12 +539,12 @@ describe('Confidential Thread', () => {
 
     afterAll(async () => {
       await orbitdb2.stop()
-      return utils.stopIPFS(ipfs2, 25)
+      return ipfs2.stop()
     })
   })
 
   afterAll(async () => {
     await orbitdb.stop()
-    return utils.stopIPFS(ipfs, 24)
+    return ipfs.stop()
   })
 })

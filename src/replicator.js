@@ -170,6 +170,10 @@ class Replicator {
 
   async addKVStore (name, pubkey, isSpace, did) {
     if (!this.rootstore) throw new Error('This method can only be called once before the replicator has started')
+    const storeAddr = Object.keys(this._stores).find(addr => addr.includes(name))
+    if (storeAddr) {
+      return this._stores[storeAddr]
+    }
     const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] } })
     const store = await this._orbitdb.keyvalue(name, orbitDbOpts)
     const storeAddress = store.address.toString()

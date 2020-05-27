@@ -14,7 +14,7 @@ const testDID = 'did:3:bafoijqr94'
 const PINNING_ROOM = '3box-pinning'
 
 describe('Replicator', () => {
-  jest.setTimeout(30000)
+  jest.setTimeout(50000)
   let ipfs1, ipfs2, ipfs1MultiAddr, ipfs2MultiAddr
   let pubsub1, pubsub2, threeId
   let replicator1, replicator2
@@ -30,11 +30,10 @@ describe('Replicator', () => {
   })
 
   afterAll(async () => {
-    await replicator1.close()
-    await replicator2.close()
+    await replicator1.stop()
     await pubsub2.disconnect()
-    await testUtils.stopIPFS(ipfs1, 7)
-    return testUtils.stopIPFS(ipfs2, 8)
+    await ipfs1.stop()
+    await ipfs2.stop()
   })
 
   it('creates replicator correctly', async () => {
@@ -74,7 +73,7 @@ describe('Replicator', () => {
     await replicator1.addKVStore(storeName, key, false, testDID)
     expect(replicator1.listStoreAddresses()).toMatchSnapshot()
     expect(Object.keys(replicator1._stores)).toMatchSnapshot()
-    // should not re-add entry
+    //// should not re-add entry
     await replicator1.addKVStore(storeName, key, false, testDID)
     expect(replicator1.listStoreAddresses()).toMatchSnapshot()
   })
@@ -114,6 +113,7 @@ describe('Replicator', () => {
   })
 
   it('replicates 3box on start, with profile', async () => {
+    await ipfs1.swarm.connect(ipfs2MultiAddr)
     let pubStoreAddr = replicator1.listStoreAddresses()[0]
     const addProfilePromise = (async () => {
       const pubStore = await replicator1.getStore(pubStoreAddr)
@@ -138,7 +138,7 @@ describe('Replicator', () => {
     await replicator2.syncDone
     expect(replicator2._stores[pubStoreAddr]).toBeDefined()
     expect(replicator2._stores[pubStoreAddr].all).toMatchSnapshot()
-    return replicator2.stop()
+    await replicator2.stop()
   })
 
   const addEntry = async (type, data) => {

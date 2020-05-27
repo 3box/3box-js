@@ -70,6 +70,11 @@ describe('Thread', () => {
     replicatorMock.ensureConnected.mockClear()
   })
 
+  afterAll(async () => {
+    await orbitdb.stop()
+    await ipfs.stop()
+  })
+
   it('creates thread correctly', async () => {
     thread = new Thread(THREAD1_NAME, replicatorMock, false, DID1, undefined, undefined, subscribeMock)
   })
@@ -465,12 +470,7 @@ describe('Thread', () => {
   //
   //   afterAll(async () => {
   //     await orbitdb2.stop()
-  //     return utils.stopIPFS(ipfs2, 5)
+  //     return ipfs2.stop()
   //   })
   // })
-
-  afterAll(async () => {
-    await orbitdb.stop()
-    return utils.stopIPFS(ipfs, 4)
-  })
 })

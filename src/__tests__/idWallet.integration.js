@@ -81,9 +81,9 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   afterAll(async () => {
-    // await pubsub.disconnect()
-    // await testUtils.stopIPFS(ipfs1, 9)
-    // return testUtils.stopIPFS(ipfs2, 10)
+    await pubsub.disconnect()
+    await ipfs2.stop()
+    await ipfs1.stop()
   })
 
   it('should create and auth correctly when idWallet is passed', async () => {
@@ -98,7 +98,7 @@ describe('Integration Test: IdentityWallet', () => {
     pubAddr = box.public._db.address.toString()
     privAddr = box.private._db.address.toString()
     pubState = await box.public.all()
-    return box.close()
+    await box.close()
   })
 
   it('should get same state on second open and auth', async () => {
