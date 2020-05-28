@@ -17,7 +17,6 @@ const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
 const { ThreeIdConnect } = require('3id-connect')
-// const ThreeIdConnect = require('./../../3box-account/lib/index').ThreeIdConnect //TODO
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
@@ -25,7 +24,6 @@ const IPFS_OPTIONS = config.ipfs_options
 const RENDEZVOUS_ADDRESS = config.rendezvous_address
 // const IFRAME_STORE_URL = 'https://connect.3box.io'
 const IFRAME_STORE_URL = 'https://connect-dev.3box.io'
-// const IFRAME_STORE_URL = 'http://localhost:30001'  //TODO
 
 let globalIPFS, globalIPFSPromise // , threeIdConnect
 
@@ -144,7 +142,7 @@ class Box extends BoxApi {
     if (!provider) return
     // This will still allow an ethprovider if no threeIdConnect for now, but later will only consume 3idproviders
     if (!provider.is3idProvider && threeIdConnect) {
-      await threeIdConnect.connect(provider, ThreeId)
+      await threeIdConnect.connect(provider, ThreeId, this._ipfs)
       this._provider = await threeIdConnect.get3idProvider()
     } else {
       this._provider = provider
