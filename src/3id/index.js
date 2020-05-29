@@ -169,7 +169,9 @@ class ThreeId {
     const keys = await this.getPublicKeys(null)
     const doc = createMuportDocument(keys.signingKey, keys.managementKey, keys.asymEncryptionKey)
     const serializedDoc = Buffer.from(JSON.stringify(doc))
-    const docCid = (await (await this._ipfs.add(serializedDoc)).next()).value.cid
+    const generator = await this._ipfs.add(serializedDoc)
+    const docCid = (await generator.next()).value.cid
+    await generator.next() // we need to do this in order to not block the process in tests
     this._muportDID = 'did:muport:' + docCid.toString()
     this.muportFingerprint = utils.sha256Multihash(this.muportDID)
   }

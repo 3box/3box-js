@@ -44,6 +44,7 @@ const utils = require('../utils/index')
 const getConsent = () => true
 
 
+
 describe('Integration Test: IdentityWallet', () => {
   let ipfs1, ipfs2
   let ipfsMultiAddr2
@@ -70,7 +71,6 @@ describe('Integration Test: IdentityWallet', () => {
     opts = {
       ipfs: ipfs1,
       orbitPath: './tmp/orbitdb7',
-      identityKeysPath: `./tmp/did1`,
       pinningNode: ipfsMultiAddr2
     }
     pubsub.subscribe(PINNING_ROOM, (topic, data) => {}, () => {})
