@@ -22,13 +22,12 @@ const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 const RENDEZVOUS_ADDRESS = config.rendezvous_address
-// const IFRAME_STORE_URL = 'https://connect.3box.io'
-const IFRAME_STORE_URL = 'https://connect-dev.3box.io'
+const IFRAME_STORE_URL = 'https://connect.3box.io/v1/index.html'
 
-let globalIPFS, globalIPFSPromise // , threeIdConnect
+let globalIPFS, globalIPFSPromise, threeIdConnect
 
 const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
-// if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
+if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
 /**
  * @extends BoxApi
  */
