@@ -67,6 +67,7 @@ describe('Integration Test: IdentityWallet', () => {
     ipfs1 = await testUtils.initIPFS(9)
     ipfs2 = await testUtils.initIPFS(10)
     ipfsMultiAddr2 = (await ipfs2.id()).addresses[0]
+    await ipfs1.swarm.connect(ipfsMultiAddr2)
     pubsub = new Pubsub(ipfs2, (await ipfs2.id()).id)
     opts = {
       ipfs: ipfs1,
