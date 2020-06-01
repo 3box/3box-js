@@ -1,6 +1,7 @@
 const path = require('path')
 const EventEmitter = require('events')
 const merge = require('lodash.merge')
+const multiaddr = require('multiaddr')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const AccessControllers = require('orbit-db-access-controllers')
@@ -37,7 +38,7 @@ class Replicator {
   constructor (ipfs, opts) {
     this.events = new EventEmitter()
     this.ipfs = ipfs
-    this._pinningNode = opts.pinningNode || PINNING_NODE
+    this._pinningNode = multiaddr(opts.pinningNode || PINNING_NODE)
     this.ipfs.swarm.connect(this._pinningNode)
     this._stores = {}
     this._storePromises = {}
