@@ -1,20 +1,26 @@
+import web3Modal from './providers.js'
+
 const syncComplete = (res) => {
   console.log('Sync Complete')
   updateProfileData(window.box)
 }
 
-//Box.get3idConnectProvider().then(provider => {
-Box.create(window.ethereum).then(box => {
+Box.create().then(box => {
   window.box = box
   bauth.disabled = false
   openThread.disabled = false
 })
 //})
 
-bauth.addEventListener('click', event => {
-
-  window.ethereum.enable().then(addresses => {
-    window.box.auth([], { address: addresses[0] }).then(() => {
+bauth.addEventListener('click', (event) => {
+  let ethProvider
+  web3Modal.connect()
+    .then(provider => {
+      ethProvider = provider
+      return provider.enable() })
+    .then(addresses => {
+      window.box.auth([], { address: addresses[0], provider: ethProvider })
+    .then(() => {
       box.onSyncDone(syncComplete)
       console.log('authed')
 

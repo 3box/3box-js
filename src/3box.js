@@ -128,6 +128,17 @@ class Box extends BoxApi {
     return box
   }
 
+  async _setProvider (provider) {
+    // if (!provider) return
+    // // This will still allow an ethprovider if no threeIdConnect for now, but later will only consume 3idproviders
+    // if (!provider.is3idProvider && threeIdConnect) {
+    //   // await threeIdConnect.connect(provider, ThreeId, this._ipfs)
+    //   this._provider = await threeIdConnect.get3idProvider()
+    // } else {
+      this._provider = provider
+    // }
+  }
+
   /**
    * Returns and 3ID Connect Provider to manage keys, authentication and account links. Becomes default in future.
    *
@@ -147,14 +158,14 @@ class Box extends BoxApi {
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    */
   async auth (spaces = [], opts = {}) {
+    if (opts.provider) await this._setProvider(opts.provider)
     opts.address = opts.address ? opts.address.toLowerCase() : opts.address
-    this._3idEthAddress = opts.address
-
-    // Enabled once becomes default
-    // if (!this._provider.is3idProvider && threeIdConnect) {
-    //   this._provider = await threeIdConnect.get3idProvider()
-    // }
-
+//     this._3idEthAddress = opts.address
+//
+//     // Enabled once becomes default
+//     // if (!this._provider.is3idProvider && threeIdConnect) {
+//     //   this._provider = await threeIdConnect.get3idProvider()
+//     // }
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
       this._3id = await ThreeId.getIdFromEthAddress(opts.address, this._provider, this._ipfs, this.replicator._orbitdb.keystore, opts)
