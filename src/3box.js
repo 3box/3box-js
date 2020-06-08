@@ -536,7 +536,11 @@ class Box extends BoxApi {
     const pinningNode = opts.pinningNode || PINNING_NODE
     ipfs.swarm.connect(pinningNode, () => {})
     if (opts.ghostPinbot) {
-      ipfs.swarm.connect(opts.ghostPinbot, () => {})
+      await ipfs.swarm.connect(opts.ghostPinbot, () => {})
+      const peerId = opts.ghostPinbot.substring(opts.ghostPinbot.lastIndexOf('/') + 1)
+      setInterval(async () => {
+        await ipfs.ping(peerId)
+      }, 10000)
     }
     return ipfs
   }
