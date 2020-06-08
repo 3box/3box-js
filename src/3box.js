@@ -65,6 +65,15 @@ class Box extends BoxApi {
 
   async _init (opts) {
     this.replicator = await Replicator.create(this._ipfs, opts)
+
+    if (opts.ghostPinbot) {
+      const peerId = opts.ghostPinbot.substring(opts.ghostPinbot.lastIndexOf('/') + 1)
+
+      const self = this
+      this.ghostPinbotKeepAliveHandle = setInterval(async () => {
+        await self._ipfs.ping(peerId)
+      }, 10000)
+    }
   }
 
   async _load (opts = {}) {
@@ -487,6 +496,9 @@ class Box extends BoxApi {
 
   async close () {
     if (!this._3id) throw new Error('close: auth required')
+    if (this.ghostPinbotKeepAliveHandle) {
+      clearInterval(this.ghostPinbotKeepAliveHandle)
+    }
     await this.replicator.stop()
   }
 
@@ -536,7 +548,7 @@ class Box extends BoxApi {
     const pinningNode = opts.pinningNode || PINNING_NODE
     ipfs.swarm.connect(pinningNode, () => {})
     if (opts.ghostPinbot) {
-      ipfs.swarm.connect(opts.ghostPinbot, () => {})
+      await ipfs.swarm.connect(opts.ghostPinbot, () => {})
     }
     return ipfs
   }
