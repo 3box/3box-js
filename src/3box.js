@@ -1,5 +1,6 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
+const multiaddr = require('multiaddr')
 const { createLink, validateLink } = require('3id-blockchain-utils')
 
 const ThreeId = require('./3id')
@@ -10,7 +11,7 @@ const Verified = require('./verified')
 const Space = require('./space')
 const utils = require('./utils/index')
 const idUtils = require('./utils/id')
-const config = require('./config.js')
+const config = require('./config')
 const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
@@ -20,6 +21,7 @@ const didJWT = require('did-jwt')
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
+const RENDEZVOUS_ADDRESS = config.rendezvous_address
 // const IFRAME_STORE_URL = 'https://connect.3box.io'
 
 let globalIPFS, globalIPFSPromise // , threeIdConnect
@@ -551,6 +553,9 @@ class Box extends BoxApi {
     if (opts.ghostPinbot) {
       ipfs.swarm.connect(opts.ghostPinbot)
     }
+    if (ipfs.libp2p) {
+      ipfs.libp2p.transportManager.listen(multiaddr(RENDEZVOUS_ADDRESS)).catch(console.warn)
+    }
     return ipfs
   }
 }
@@ -588,7 +593,6 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
       ipfsRepo = initIPFSRepo()
       ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
     }
-
     ipfs = await IPFS.create(ipfsOptions)
 
     if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {
