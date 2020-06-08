@@ -1,7 +1,7 @@
 jest.mock('3id-resolver', () => {
   const { didResolverMock } = require('../__mocks__/3ID')
   return {
-    getResolver: () => ({ 3: didResolverMock })
+    getResolver: () => ({ '3': didResolverMock })
   }
 })
 
