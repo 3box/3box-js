@@ -250,9 +250,8 @@ class Box extends BoxApi {
     }
 
     if (this._ghostPinbot) {
-      Object.assign(opts, {
-        ghostPinbot: this._ghostPinbot
-      })
+      const options = opts || {}
+      options.ghostPinbot = this._ghostPinbot
     }
     return this.spaces[space].joinThread(name, opts)
   }
