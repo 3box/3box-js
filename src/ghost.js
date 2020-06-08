@@ -4,6 +4,7 @@ const { Resolver } = require('did-resolver')
 const get3IdResolver = require('3id-resolver').getResolver
 const getMuportResolver = require('muport-did-resolver').getResolver
 const Room = require('ipfs-pubsub-room')
+const utils = require('./utils')
 
 const DEFAULT_BACKLOG_LIMIT = 100
 
@@ -15,6 +16,10 @@ class GhostThread extends EventEmitter {
     this._room = Room(ipfs, name) // instance of ipfs pubsub room
     this._ipfs = ipfs
     this._peerId = ipfs._peerInfo.id.toB58String()
+
+    if (opts.ghostPinbot) {
+      this._ghostPinbotPeerId = utils.getPeerIdFromMultiaddr(opts.ghostPinbot)
+    }
 
     this._members = {}
     this._backlog = new Set() // set of past messages
@@ -92,7 +97,13 @@ class GhostThread extends EventEmitter {
    * @return    {Array<String>}      users online
    */
   async listMembers () {
-    return Object.keys(this._members).filter(id => !id.startsWith('Qm'))
+    let members = Object.keys(this._members).filter(id => !id.startsWith('Qm'))
+
+    if (this._ghostPinbotPeerId) {
+      // exclude Ghost Pinbot
+      members = members.filter(id => id !== this._ghostPinbotPeerId)
+    }
+    return members
   }
 
   /**
