@@ -65,6 +65,15 @@ class Box extends BoxApi {
 
   async _init (opts) {
     this.replicator = await Replicator.create(this._ipfs, opts)
+
+    if (opts.ghostPinbot) {
+      const peerId = opts.ghostPinbot.substring(opts.ghostPinbot.lastIndexOf('/') + 1)
+
+      const self = this
+      this.ghostPinbotKeepAliveHandle = setInterval(async () => {
+        await self._ipfs.ping(peerId)
+      }, 10000)
+    }
   }
 
   async _load (opts = {}) {
@@ -107,6 +116,7 @@ class Box extends BoxApi {
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.addressServer      URL of the Address Server
+   * @param     {String}            opts.ghostPinbot        MultiAddress of a Ghost Pinbot node
    * @return    {Box}                                       the 3Box session instance
    */
   static async create (provider, opts = {}) {
@@ -487,6 +497,9 @@ class Box extends BoxApi {
   async close () {
     if (!this._3id) throw new Error('close: auth required')
     await this._3id.stopUpdatePolling()
+    if (this.ghostPinbotKeepAliveHandle) {
+      clearInterval(this.ghostPinbotKeepAliveHandle)
+    }
     await this.replicator.stop()
   }
 
@@ -535,6 +548,9 @@ class Box extends BoxApi {
     const ipfs = globalIPFS
     const pinningNode = opts.pinningNode || PINNING_NODE
     ipfs.swarm.connect(pinningNode)
+    if (opts.ghostPinbot) {
+      ipfs.swarm.connect(opts.ghostPinbot)
+    }
     return ipfs
   }
 }
