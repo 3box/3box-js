@@ -1,5 +1,6 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
+const multiaddr = require('multiaddr')
 const { createLink, validateLink } = require('3id-blockchain-utils')
 
 const ThreeId = require('./3id')
@@ -10,22 +11,23 @@ const Verified = require('./verified')
 const Space = require('./space')
 const utils = require('./utils/index')
 const idUtils = require('./utils/id')
-const config = require('./config.js')
+const config = require('./config')
 const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
-const ThreeIdConnect = require('3id-connect').ThreeIdConnect
+// const ThreeIdConnect = require('3id-connect').ThreeIdConnect
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
-const IFRAME_STORE_URL = 'https://connect.3box.io'
+const RENDEZVOUS_ADDRESS = config.rendezvous_address
+// const IFRAME_STORE_URL = 'https://connect.3box.io'
 
-let globalIPFS, globalIPFSPromise, threeIdConnect
+let globalIPFS, globalIPFSPromise // , threeIdConnect
 
 const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
-if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
+// if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
 /**
  * @extends BoxApi
  */
@@ -134,10 +136,10 @@ class Box extends BoxApi {
    *
    * @return    {3IDProvider}        Promise that resolves to a 3ID Connect Provider
    */
-  static get3idConnectProvider () {
-    if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
-    return threeIdConnect.get3idProvider()
-  }
+  // static get3idConnectProvider () {
+  //   if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
+  //   return threeIdConnect.get3idProvider()
+  // }
 
   /**
    * Authenticate the user
@@ -504,6 +506,7 @@ class Box extends BoxApi {
 
   async close () {
     if (!this._3id) throw new Error('close: auth required')
+    await this._3id.stopUpdatePolling()
     if (this.ghostPinbotKeepAliveHandle) {
       clearInterval(this.ghostPinbotKeepAliveHandle)
     }
@@ -539,7 +542,7 @@ class Box extends BoxApi {
    * @return    {IPFS}                           the ipfs instance
    */
   static async getIPFS (opts = {}) {
-    if (typeof window !== 'undefined') {
+    if (browserHuh) {
       globalIPFS = window.globalIPFS
       globalIPFSPromise = window.globalIPFSPromise
     }
@@ -547,16 +550,19 @@ class Box extends BoxApi {
     if (!globalIPFS && !globalIPFSPromise) {
       globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     }
-    if (typeof window !== 'undefined') window.globalIPFSPromise = globalIPFSPromise
+    if (browserHuh) window.globalIPFSPromise = globalIPFSPromise
 
     if (!globalIPFS) globalIPFS = await globalIPFSPromise
-    if (typeof window !== 'undefined') window.globalIPFS = globalIPFS
+    if (browserHuh) window.globalIPFS = globalIPFS
 
     const ipfs = globalIPFS
     const pinningNode = opts.pinningNode || PINNING_NODE
-    ipfs.swarm.connect(pinningNode, () => {})
+    ipfs.swarm.connect(pinningNode)
     if (opts.ghostPinbot) {
-      await ipfs.swarm.connect(opts.ghostPinbot, () => {})
+      ipfs.swarm.connect(opts.ghostPinbot)
+    }
+    if (browserHuh && ipfs.libp2p) {
+      ipfs.libp2p.transportManager.listen(multiaddr(RENDEZVOUS_ADDRESS)).catch(console.warn)
     }
     return ipfs
   }
@@ -595,7 +601,6 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
       ipfsRepo = initIPFSRepo()
       ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
     }
-
     ipfs = await IPFS.create(ipfsOptions)
 
     if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {

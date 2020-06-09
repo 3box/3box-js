@@ -44,6 +44,7 @@ const utils = require('../utils/index')
 const getConsent = () => true
 
 
+
 describe('Integration Test: IdentityWallet', () => {
   let ipfs1, ipfs2
   let ipfsMultiAddr2
@@ -66,11 +67,11 @@ describe('Integration Test: IdentityWallet', () => {
     ipfs1 = await testUtils.initIPFS(9)
     ipfs2 = await testUtils.initIPFS(10)
     ipfsMultiAddr2 = (await ipfs2.id()).addresses[0]
+    await ipfs1.swarm.connect(ipfsMultiAddr2)
     pubsub = new Pubsub(ipfs2, (await ipfs2.id()).id)
     opts = {
       ipfs: ipfs1,
       orbitPath: './tmp/orbitdb7',
-      identityKeysPath: `./tmp/did1`,
       pinningNode: ipfsMultiAddr2
     }
     pubsub.subscribe(PINNING_ROOM, (topic, data) => {}, () => {})
@@ -81,9 +82,9 @@ describe('Integration Test: IdentityWallet', () => {
   })
 
   afterAll(async () => {
-    // await pubsub.disconnect()
-    // await testUtils.stopIPFS(ipfs1, 9)
-    // return testUtils.stopIPFS(ipfs2, 10)
+    await pubsub.disconnect()
+    await ipfs2.stop()
+    await ipfs1.stop()
   })
 
   it('should create and auth correctly when idWallet is passed', async () => {
@@ -98,7 +99,7 @@ describe('Integration Test: IdentityWallet', () => {
     pubAddr = box.public._db.address.toString()
     privAddr = box.private._db.address.toString()
     pubState = await box.public.all()
-    return box.close()
+    await box.close()
   })
 
   it('should get same state on second open and auth', async () => {

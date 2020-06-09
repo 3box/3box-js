@@ -38,6 +38,11 @@ describe('Ghost Chat', () => {
     jest.setTimeout(30000)
   })
 
+  afterAll(async () => {
+    await chat.close()
+    await ipfs.stop()
+  })
+
   it('creates chat correctly', async () => {
     chat = new GhostThread(CHAT_NAME, { ipfs })
     expect(chat._name).toEqual(CHAT_NAME)
@@ -48,16 +53,19 @@ describe('Ghost Chat', () => {
     expect(chat._3id).toEqual(THREEID1_MOCK)
   })
 
-  it('should catch messages', async (done) => {
-    chat.onUpdate(async ({ type, author, message }) => {
-      if (type == 'chat') {
-        expect(author).toEqual(DID1)
-        expect(chat.getPosts()).not.toEqual([])
-        expect(chat.getPosts()).toBeDefined()
-        done()
-      }
+  it('should catch messages', async () => {
+    const postPromise = new Promise(resolve => {
+      chat.onUpdate(async ({ type, author, message }) => {
+        if (type == 'chat') {
+          expect(author).toEqual(DID1)
+          expect(chat.getPosts()).not.toEqual([])
+          expect(chat.getPosts()).toBeDefined()
+          resolve()
+        }
+      })
     })
     await chat.post('hello')
+    await postPromise
   })
 
   describe('multi user interaction', () => {
@@ -66,6 +74,13 @@ describe('Ghost Chat', () => {
 
     beforeAll(async () => {
       ipfs2 = await utils.initIPFS(12)
+      let ipfsMultiAddr = (await ipfs.id()).addresses[0]
+      await ipfs2.swarm.connect(ipfsMultiAddr)
+    })
+
+    afterAll(async () => {
+      await chat2.close()
+      await ipfs2.stop()
     })
 
     it('creates second chat correctly', async () => {
@@ -155,11 +170,6 @@ describe('Ghost Chat', () => {
       })
       await chat._requestBacklog()
     })
-
-    afterAll(async () => {
-      await chat2.close()
-      await utils.stopIPFS(ipfs2, 12)
-    })
   })
 
   describe('ghost filter tests', () => {
@@ -171,6 +181,17 @@ describe('Ghost Chat', () => {
       }
       return true
     }
+
+    beforeAll(async () => {
+      ipfs3 = await utils.initIPFS(12)
+      let ipfsMultiAddr = (await ipfs.id()).addresses[0]
+      await ipfs3.swarm.connect(ipfsMultiAddr)
+    })
+
+    afterAll(async () => {
+      await chat3.close()
+      await ipfs3.stop()
+    })
 
     it('creates third chat correctly', async (done) => {
       chat.removeAllListeners()
@@ -203,15 +224,6 @@ describe('Ghost Chat', () => {
       })
       await chat.post('wide')
     })
-
-    beforeAll(async () => {
-      ipfs3 = await utils.initIPFS(12)
-    })
-
-    afterAll(async () => {
-      await chat3.close()
-      return utils.stopIPFS(ipfs3, 12)
-    })
   })
 
   describe('Ghost Pinbot interaction', () => {
@@ -224,17 +236,19 @@ describe('Ghost Chat', () => {
     const GHOST_PINBOT_CHAT_NAME = '3box.chat.somespace-ghost.name-ghost'
 
     beforeAll(async () => {
-      ipfs4 = await utils.initIPFS(13)
-      ipfsGhost = await utils.initIPFS(14)
+      ipfs4 = await utils.initIPFS(14)
+      ipfsGhost = await utils.initIPFS(15)
 
-      ghostMultiaddr = ipfsGhost._peerInfo.multiaddrs._multiaddrs.filter(
-        m =>
-          m.toString().includes('ws') &&
-          m.toString().includes('127.0.0.1') &&
-          m.toString().startsWith('/ip4')
-      ).toString()
-
+      let ghostMultiaddr = (await ipfsGhost.id()).addresses[0]
       await ipfs4.swarm.connect(ghostMultiaddr)
+    })
+
+    afterAll(async () => {
+      await chat4.close()
+      await chatGhost.close()
+
+      await ipfs4.stop()
+      return ipfsGhost.stop()
     })
 
     it('creates Ghost Pinbot correctly', async () => {
@@ -281,14 +295,6 @@ describe('Ghost Chat', () => {
       expect(chat4.listMembers()).toBeDefined()
       expect(chat4.getPosts()).toBeDefined()
       await gPromise
-    })
-
-    afterAll(async () => {
-      await chat4.close()
-      await chatGhost.close()
-
-      await utils.stopIPFS(ipfs4, 13)
-      return utils.stopIPFS(ipfsGhost, 14)
     })
   })
 

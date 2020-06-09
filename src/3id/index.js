@@ -168,8 +168,11 @@ class ThreeId {
   async _initMuport () {
     const keys = await this.getPublicKeys(null)
     const doc = createMuportDocument(keys.signingKey, keys.managementKey, keys.asymEncryptionKey)
-    let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
-    this._muportDID = 'did:muport:' + docHash
+    const serializedDoc = Buffer.from(JSON.stringify(doc))
+    const generator = await this._ipfs.add(serializedDoc)
+    const docCid = (await generator.next()).value.cid
+    await generator.next() // we need to do this in order to not block the process in tests
+    this._muportDID = 'did:muport:' + docCid.toString()
     this.muportFingerprint = utils.sha256Multihash(this.muportDID)
   }
 
@@ -287,6 +290,10 @@ class ThreeId {
 
   logout () {
     localstorage.remove(STORAGE_KEY + this.managementAddress)
+    this.stopUpdatePolling()
+  }
+
+  stopUpdatePolling () {
     if (this._pollInterval) {
       clearInterval(this._pollInterval)
     }

@@ -16,6 +16,7 @@ jest.mock('../3id', () => {
       // muportFingerprint: managementKey === '0x12345' ? 'b932fe7ab' : 'ab8c73d8f',
       muportFingerprint: randomStr(),
       authenticate: jest.fn(),
+      stopUpdatePolling: jest.fn(),
       getDidDocument: () => { return { managementKey } },
     }
     return Object.assign(instance, extend)
@@ -253,8 +254,8 @@ describe('3Box', () => {
   })
 
   afterAll(async () => {
-    await testUtils.stopIPFS(ipfs, 0)
-    return testUtils.stopIPFS(ipfsBox, 1)
+    await ipfs.stop()
+    return ipfsBox.stop()
   })
 
   it('Create instance of 3box works as intended', async () => {
