@@ -69,9 +69,12 @@ class Box extends BoxApi {
     this.replicator = await Replicator.create(this._ipfs, opts)
 
     if (opts.ghostPinbot) {
-      const peerId = opts.ghostPinbot.substring(opts.ghostPinbot.lastIndexOf('/') + 1)
+      this._ghostPinbot = opts.ghostPinbot
 
       const self = this
+      const peerId = utils.getPeerIdFromMultiaddr(opts.ghostPinbot)
+
+      // ping Ghost Pinbot to keep connection alive
       this.ghostPinbotKeepAliveHandle = setInterval(async () => {
         await self._ipfs.ping(peerId)
       }, 10000)
@@ -246,6 +249,11 @@ class Box extends BoxApi {
   async openThread (space, name, opts) {
     if (!this.spaces[space]) {
       this.spaces[space] = new Space(space, this.replicator)
+    }
+
+    if (this._ghostPinbot) {
+      const options = opts || {}
+      options.ghostPinbot = this._ghostPinbot
     }
     return this.spaces[space].joinThread(name, opts)
   }

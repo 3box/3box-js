@@ -90,8 +90,7 @@ module.exports = {
     const r = await fetch(url, opts)
 
     if (r.ok) {
-      let res = await r.json()
-      return res
+      return r.json()
     } else {
       throw HTTPError(r.status, (await r.json()).message)
     }
@@ -121,6 +120,10 @@ module.exports = {
     if (arr1.length !== arr2.length) {
       throw new Error('Arrays must be of the same length')
     }
+  },
+
+  getPeerIdFromMultiaddr: (multiaddr) => {
+    return multiaddr.substring(multiaddr.lastIndexOf('/') + 1)
   },
 
   sha256Multihash: str => {

@@ -167,6 +167,7 @@ class Space {
    * @param     {Boolean}   opts.confidential       create a confidential thread with true or join existing confidential thread with an encKeyId string
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
    * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
+   * @param     {String}    opts.ghostPinbot        MultiAddress of a Ghost Pinbot node
    * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
    * @param     {Array<Function>} opts.ghostFilters Array of functions for filtering messages
    *
