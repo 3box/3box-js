@@ -327,4 +327,7 @@ idUtils.verifyClaim(claim)
   .catch(err => console.error('claim verification failed:', err)
 ```
 
+## Maintainers
+[@oed](https://github.com/oed)
+
 ## <a name="api"></a> API Documentation

@@ -327,6 +327,9 @@ idUtils.verifyClaim(claim)
   .catch(err => console.error('claim verification failed:', err)
 ```
 
+## Maintainers
+[@oed](https://github.com/oed)
+
 ## <a name="api"></a> API Documentation
 <a name="Box"></a>
 
@@ -608,6 +611,7 @@ Creates an instance of 3Box
 | opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
+| opts.ghostPinbot | <code>String</code> | MultiAddress of a Ghost Pinbot node |
 
 <a name="Box.get3idConnectProvider"></a>
 
@@ -1058,6 +1062,7 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 | opts.confidential | <code>Boolean</code> | create a confidential thread with true or join existing confidential thread with an encKeyId string |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 | opts.ghost | <code>Boolean</code> | Enable ephemeral messaging via Ghost Thread |
+| opts.ghostPinbot | <code>String</code> | MultiAddress of a Ghost Pinbot node |
 | opts.ghostBacklogLimit | <code>Number</code> | The number of posts to maintain in the ghost backlog |
 | opts.ghostFilters | <code>Array.&lt;function()&gt;</code> | Array of functions for filtering messages |
 
