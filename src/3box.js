@@ -23,10 +23,12 @@ const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 const RENDEZVOUS_ADDRESS = config.rendezvous_address
 const IFRAME_STORE_URL = 'https://connect.3box.io/v1/index.html'
+const supportAlert = 'This site uses local data storage to give you control of your data. Please enable web APIs like localstorage, indexxeddb, etc in your browser settings.'
 
 let globalIPFS, globalIPFSPromise, threeIdConnect
 
 const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
+if (browserHuh) require('./modernizr.js')
 if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
 /**
  * @extends BoxApi
@@ -122,14 +124,33 @@ class Box extends BoxApi {
    * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.addressServer      URL of the Address Server
    * @param     {String}            opts.ghostPinbot        MultiAddress of a Ghost Pinbot node
+   * @param     {String}            opts.supportCheck       Gives browser alert if 3boxjs/ipfs not supported in browser env, defaults to true. You can also set to false to implement your own alert and call Box.support to check if supported.
    * @return    {Box}                                       the 3Box session instance
    */
   static async create (provider, opts = {}) {
+    if (opts.supportCheck !== false && browserHuh) await this._supportAlert()
     const ipfs = await Box.getIPFS(opts)
     const box = new Box(provider, ipfs, opts)
     await box._setProvider(provider)
     await box._init(opts)
     return box
+  }
+
+  static async _supportAlert () {
+    const supported = await this.supported()
+    if (!supported) window.alert(supportAlert)
+  }
+
+  /**
+   * Determines if this browser environment supports 3boxjs and ipfs.
+   *
+   * @return    {Boolean}
+   */
+  static async supported () {
+    return new Promise((resolve, reject) => {
+      if (!browserHuh) throw new Error('Supported only detects browser feature support')
+      window.Modernizr.on('indexeddb', resolve)
+    })
   }
 
   static get3idConnectProvider () {
