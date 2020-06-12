@@ -44,8 +44,9 @@
   },
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
-    "3box-orbitdb-plugins": "^2.0.0",
-    "3id-blockchain-utils": "^0.3.3",
+    "3box-orbitdb-plugins": "^2.1.0",
+    "3id-blockchain-utils": "^0.4.0",
+    "3id-connect": "^0.1.0",
     "3id-resolver": "^1.0.0",
     "@babel/runtime": "^7.4.5",
     "@ethersproject/hdnode": "5.0.0-beta.137",

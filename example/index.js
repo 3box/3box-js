@@ -5,21 +5,21 @@ const syncComplete = (res) => {
   updateProfileData(window.box)
 }
 
-let ethProvider
-
-web3Modal.connect().then(provider => {
-  ethProvider = provider
-  Box.create(ethProvider).then(box => {
-    window.box = box
-    bauth.disabled = false
-    openThread.disabled = false
-  })
+Box.create().then(box => {
+  window.box = box
+  bauth.disabled = false
+  openThread.disabled = false
 })
 
-bauth.addEventListener('click', event => {
-
-  ethProvider.enable().then(addresses => {
-    window.box.auth([], { address: addresses[0] }).then(() => {
+bauth.addEventListener('click', (event) => {
+  let ethProvider
+  web3Modal.connect()
+    .then(provider => {
+      ethProvider = provider
+      return provider.enable() })
+    .then(addresses => {
+      window.box.auth([], { address: addresses[0], provider: ethProvider })
+    .then(() => {
       box.onSyncDone(syncComplete)
       console.log('authed')
 

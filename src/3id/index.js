@@ -153,10 +153,10 @@ class ThreeId {
       doc.addCustomProperty('space', spaceName)
       doc.addCustomProperty('root', this.DID)
       const payload = {
+        iat: null,
         subSigningKey: pubkeys.signingKey,
         subEncryptionKey: pubkeys.asymEncryptionKey,
-        space: spaceName,
-        iat: null
+        space: spaceName
       }
       const signature = (await this.signJWT(payload, { use3ID: true })).split('.')[2]
       doc.addCustomProperty('proof', { alg: 'ES256K', signature })
@@ -181,12 +181,6 @@ class ThreeId {
       return utils.callRpc(this._provider, '3id_getLink')
     } else {
       return this.managementAddress
-    }
-  }
-
-  async linkManagementAddress () {
-    if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_linkManagementKey')
     }
   }
 
