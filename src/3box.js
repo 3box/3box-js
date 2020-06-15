@@ -154,8 +154,7 @@ class Box extends BoxApi {
   }
 
   static get3idConnectProvider () {
-    // TODO Could add blogpost link
-    throw new Error('3idConnectProvider now consumes an eth provider, initialize 3box as you did before 3idconnectProvider, and 3box will create a 3idConnectProvider by default')
+    throw new Error('3idConnectProvider function is no longer supported, initialize 3box as you did before 3idConnectProvider by passing a provider to Box.create or box.auth, and 3box will create a 3idConnectProvider in the background using your given provider - https://medium.com/3box/introducing-3id-connect-531af4f84d3f')
   }
 
   async _setProvider (provider) {
