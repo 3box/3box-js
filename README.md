@@ -54,19 +54,19 @@ console.log(profile)
 3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first authenticate the user's 3Box by calling the `auth` method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
 #### 1. Create a 3Box instance
-To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to openThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)). It is now suggested to use the 3ID Connect Provider, which is a 3ID provider that wraps available `ethereum providers` and will manage/permission 3ID keys, authentication and blockchain account links inside an iframe. This will become the default soon and will overide passed `ethereum providers`. You can get the 3ID Connect Provider as follows.
+To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to openThreads and authenticate the user in any order. This is best to call on page load, so it can begin initializing and connecting services like IPFS in background.
 
 ```js
-const provider = await Box.get3idConnectProvider()
-const box = await Box.create(provider)
+const box = await Box.create()
 ```
 
 #### 2. Authenticate user
-Calling the `auth` method will authenticate the user. If you want to authenticate the user to one or multiple spaces you can specify this here. If when you created the 3Box session you used an ethereum provider you need to pass an ethereum address to the `auth` method. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+Calling the `auth` method will authenticate the user. If you want to authenticate the user to one or multiple spaces you can specify this here. A provider needs to be passed, this can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)). If using an ethereum provider you need to pass an ethereum address to the `auth` method as well. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+
 ```js
 const address = '0x12345abcde'
 const spaces = ['myDapp']
-await box.auth(spaces, { address })
+await box.auth(spaces, { address, provider })
 ```
 
 #### 3. Sync user's available 3Box data from the network
@@ -327,6 +327,9 @@ idUtils.verifyClaim(claim)
   .catch(err => console.error('claim verification failed:', err)
 ```
 
+## Maintainers
+[@oed](https://github.com/oed)
+
 ## <a name="api"></a> API Documentation
 <a name="Box"></a>
 
@@ -358,7 +361,7 @@ idUtils.verifyClaim(claim)
             * [.isSupportedDID(did)](#Box.idUtils.isSupportedDID) ⇒ <code>\*</code> \| <code>boolean</code>
             * [.isClaim(claim, opts)](#Box.idUtils.isClaim) ⇒ <code>Promise.&lt;boolean&gt;</code>
         * [.create(provider, opts)](#Box.create) ⇒ [<code>Box</code>](#Box)
-        * [.get3idConnectProvider()](#Box.get3idConnectProvider) ⇒ <code>3IDProvider</code>
+        * [.supported()](#Box.supported) ⇒ <code>Boolean</code>
         * [.openBox(address, provider, opts)](#Box.openBox) ⇒ [<code>Box</code>](#Box)
         * [.isLoggedIn(address)](#Box.isLoggedIn) ⇒ <code>Boolean</code>
         * [.getIPFS()](#Box.getIPFS) ⇒ <code>IPFS</code>
@@ -440,6 +443,7 @@ Authenticate the user
 | spaces | <code>Array.&lt;String&gt;</code> | A list of spaces to authenticate (optional) |
 | opts | <code>Object</code> | Optional parameters |
 | opts.address | <code>String</code> | An ethereum address |
+| opts.provider | <code>String</code> | A 3ID provider, or ethereum provider |
 | opts.consentCallback | <code>function</code> | A function that will be called when the user has consented to opening the box |
 
 <a name="Box+openSpace"></a>
@@ -608,14 +612,15 @@ Creates an instance of 3Box
 | opts.pinningNode | <code>String</code> | A string with an ipfs multi-address to a 3box pinning node |
 | opts.ipfs | <code>Object</code> | A js-ipfs ipfs object |
 | opts.addressServer | <code>String</code> | URL of the Address Server |
+| opts.ghostPinbot | <code>String</code> | MultiAddress of a Ghost Pinbot node |
+| opts.supportCheck | <code>String</code> | Gives browser alert if 3boxjs/ipfs not supported in browser env, defaults to true. You can also set to false to implement your own alert and call Box.support to check if supported. |
 
-<a name="Box.get3idConnectProvider"></a>
+<a name="Box.supported"></a>
 
-#### Box.get3idConnectProvider() ⇒ <code>3IDProvider</code>
-Returns and 3ID Connect Provider to manage keys, authentication and account links. Becomes default in future.
+#### Box.supported() ⇒ <code>Boolean</code>
+Determines if this browser environment supports 3boxjs and ipfs.
 
 **Kind**: static method of [<code>Box</code>](#Box)  
-**Returns**: <code>3IDProvider</code> - Promise that resolves to a 3ID Connect Provider  
 <a name="Box.openBox"></a>
 
 #### Box.openBox(address, provider, opts) ⇒ [<code>Box</code>](#Box)
@@ -1058,6 +1063,7 @@ Join a thread. Use this to start receiving updates from, and to post in threads
 | opts.confidential | <code>Boolean</code> | create a confidential thread with true or join existing confidential thread with an encKeyId string |
 | opts.noAutoSub | <code>Boolean</code> | Disable auto subscription to the thread when posting to it (default false) |
 | opts.ghost | <code>Boolean</code> | Enable ephemeral messaging via Ghost Thread |
+| opts.ghostPinbot | <code>String</code> | MultiAddress of a Ghost Pinbot node |
 | opts.ghostBacklogLimit | <code>Number</code> | The number of posts to maintain in the ghost backlog |
 | opts.ghostFilters | <code>Array.&lt;function()&gt;</code> | Array of functions for filtering messages |
 

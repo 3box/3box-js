@@ -153,10 +153,10 @@ class ThreeId {
       doc.addCustomProperty('space', spaceName)
       doc.addCustomProperty('root', this.DID)
       const payload = {
+        iat: null,
         subSigningKey: pubkeys.signingKey,
         subEncryptionKey: pubkeys.asymEncryptionKey,
-        space: spaceName,
-        iat: null
+        space: spaceName
       }
       const signature = (await this.signJWT(payload, { use3ID: true })).split('.')[2]
       doc.addCustomProperty('proof', { alg: 'ES256K', signature })
@@ -168,8 +168,11 @@ class ThreeId {
   async _initMuport () {
     const keys = await this.getPublicKeys(null)
     const doc = createMuportDocument(keys.signingKey, keys.managementKey, keys.asymEncryptionKey)
-    let docHash = (await this._ipfs.add(Buffer.from(JSON.stringify(doc))))[0].hash
-    this._muportDID = 'did:muport:' + docHash
+    const serializedDoc = Buffer.from(JSON.stringify(doc))
+    const generator = await this._ipfs.add(serializedDoc)
+    const docCid = (await generator.next()).value.cid
+    await generator.next() // we need to do this in order to not block the process in tests
+    this._muportDID = 'did:muport:' + docCid.toString()
     this.muportFingerprint = utils.sha256Multihash(this.muportDID)
   }
 
@@ -178,12 +181,6 @@ class ThreeId {
       return utils.callRpc(this._provider, '3id_getLink')
     } else {
       return this.managementAddress
-    }
-  }
-
-  async linkManagementAddress () {
-    if (this._has3idProv) {
-      return utils.callRpc(this._provider, '3id_linkManagementKey')
     }
   }
 
@@ -287,6 +284,10 @@ class ThreeId {
 
   logout () {
     localstorage.remove(STORAGE_KEY + this.managementAddress)
+    this.stopUpdatePolling()
+  }
+
+  stopUpdatePolling () {
     if (this._pollInterval) {
       clearInterval(this._pollInterval)
     }

@@ -187,7 +187,7 @@ describe('KeyValueStore', () => {
     expect(await keyValueStore2.get('key2')).toBeUndefined()
     expect(await keyValueStore2.get('key3')).toBeUndefined()
     await orbitdb2.stop()
-    return utils.stopIPFS(ipfs2, 3)
+    return ipfs2.stop()
   })
 
   describe('metdata', () => {
@@ -261,6 +261,6 @@ describe('KeyValueStore', () => {
 
   afterAll(async () => {
     await orbitdb.stop()
-    return utils.stopIPFS(ipfs, 2)
+    return ipfs.stop()
   })
 })

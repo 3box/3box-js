@@ -1,5 +1,6 @@
 const localstorage = require('store')
 const IPFS = require('ipfs')
+const multiaddr = require('multiaddr')
 const { createLink, validateLink } = require('3id-blockchain-utils')
 
 const ThreeId = require('./3id')
@@ -10,21 +11,24 @@ const Verified = require('./verified')
 const Space = require('./space')
 const utils = require('./utils/index')
 const idUtils = require('./utils/id')
-const config = require('./config.js')
+const config = require('./config')
 const BoxApi = require('./api')
 const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
-const ThreeIdConnect = require('3id-connect').ThreeIdConnect
+const { ThreeIdConnect } = require('3id-connect')
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
-const IFRAME_STORE_URL = 'https://connect.3box.io'
+const RENDEZVOUS_ADDRESS = config.rendezvous_address
+const IFRAME_STORE_URL = 'https://connect.3box.io/v1/index.html'
+const supportAlert = 'This site uses local data storage to give you control of your data. Please enable web APIs like localstorage, indexxeddb, etc in your browser settings.'
 
 let globalIPFS, globalIPFSPromise, threeIdConnect
 
 const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
+if (browserHuh) require('./modernizr.js')
 if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
 /**
  * @extends BoxApi
@@ -65,6 +69,18 @@ class Box extends BoxApi {
 
   async _init (opts) {
     this.replicator = await Replicator.create(this._ipfs, opts)
+
+    if (opts.ghostPinbot) {
+      this._ghostPinbot = opts.ghostPinbot
+
+      const self = this
+      const peerId = utils.getPeerIdFromMultiaddr(opts.ghostPinbot)
+
+      // ping Ghost Pinbot to keep connection alive
+      this.ghostPinbotKeepAliveHandle = setInterval(async () => {
+        await self._ipfs.ping(peerId)
+      }, 10000)
+    }
   }
 
   async _load (opts = {}) {
@@ -93,7 +109,7 @@ class Box extends BoxApi {
     })
     this._3id.startUpdatePolling()
 
-    this.public = new PublicStore(this._3id.muportFingerprint + '.public', this._linkProfile.bind(this), this.replicator, this._3id)
+    this.public = new PublicStore(this._3id.muportFingerprint + '.public', this.replicator, this._3id)
     this.private = new PrivateStore(this._3id.muportFingerprint + '.private', this.replicator, this._3id)
     await this.public._load()
     await this.private._load()
@@ -107,23 +123,49 @@ class Box extends BoxApi {
    * @param     {String}            opts.pinningNode        A string with an ipfs multi-address to a 3box pinning node
    * @param     {Object}            opts.ipfs               A js-ipfs ipfs object
    * @param     {String}            opts.addressServer      URL of the Address Server
+   * @param     {String}            opts.ghostPinbot        MultiAddress of a Ghost Pinbot node
+   * @param     {String}            opts.supportCheck       Gives browser alert if 3boxjs/ipfs not supported in browser env, defaults to true. You can also set to false to implement your own alert and call Box.support to check if supported.
    * @return    {Box}                                       the 3Box session instance
    */
   static async create (provider, opts = {}) {
+    if (opts.supportCheck !== false && browserHuh) await this._supportAlert()
     const ipfs = await Box.getIPFS(opts)
     const box = new Box(provider, ipfs, opts)
+    await box._setProvider(provider)
     await box._init(opts)
     return box
   }
 
+  static async _supportAlert () {
+    const supported = await this.supported()
+    if (!supported) window.alert(supportAlert)
+  }
+
   /**
-   * Returns and 3ID Connect Provider to manage keys, authentication and account links. Becomes default in future.
+   * Determines if this browser environment supports 3boxjs and ipfs.
    *
-   * @return    {3IDProvider}        Promise that resolves to a 3ID Connect Provider
+   * @return    {Boolean}
    */
+  static async supported () {
+    return new Promise((resolve, reject) => {
+      if (!browserHuh) throw new Error('Supported only detects browser feature support')
+      window.Modernizr.on('indexeddb', resolve)
+    })
+  }
+
   static get3idConnectProvider () {
-    if (!threeIdConnect) throw new Error('3ID Connect Provider not available in this environment or unable to load')
-    return threeIdConnect.get3idProvider()
+    throw new Error('3idConnectProvider function is no longer supported, initialize 3box as you did before 3idConnectProvider by passing a provider to Box.create or box.auth, and 3box will create a 3idConnectProvider in the background using your given provider - https://medium.com/3box/introducing-3id-connect-531af4f84d3f')
+  }
+
+  async _setProvider (provider) {
+    if (!provider) return
+    // This will still allow an ethprovider if no threeIdConnect for now, but later will only consume 3idproviders
+    if (!provider.is3idProvider && threeIdConnect) {
+      await threeIdConnect.connect(provider, ThreeId, this._ipfs)
+      this._provider = await threeIdConnect.get3idProvider()
+    } else {
+      this._provider = provider
+    }
   }
 
   /**
@@ -132,16 +174,14 @@ class Box extends BoxApi {
    * @param     {Array<String>}     spaces                  A list of spaces to authenticate (optional)
    * @param     {Object}            opts                    Optional parameters
    * @param     {String}            opts.address            An ethereum address
+   * @param     {String}            opts.provider           A 3ID provider, or ethereum provider
    * @param     {Function}          opts.consentCallback    A function that will be called when the user has consented to opening the box
    */
   async auth (spaces = [], opts = {}) {
+    if (opts.provider) await this._setProvider(opts.provider)
+    if (!this._provider) throw new Error('auth: provider was not passed to auth or create, provider required')
     opts.address = opts.address ? opts.address.toLowerCase() : opts.address
     this._3idEthAddress = opts.address
-
-    // Enabled once becomes default
-    // if (!this._provider.is3idProvider && threeIdConnect) {
-    //   this._provider = await threeIdConnect.get3idProvider()
-    // }
 
     if (!this._3id) {
       if (!this._provider.is3idProvider && !opts.address) throw new Error('auth: address needed when 3ID provider is not used')
@@ -154,11 +194,11 @@ class Box extends BoxApi {
       }
       await this._3id.authenticate(spaces, { address: opts.address })
     }
+    // Link address if needed
+    await this.linkAddress()
     // make sure we are authenticated to threads
     await Promise.all(spaces.map(async space => {
-      if (this.spaces[space]) {
-        await this.spaces[space]._authThreads(this._3id)
-      }
+      await this.openSpace(space)
     }))
   }
 
@@ -201,7 +241,6 @@ class Box extends BoxApi {
     if (!this.spaces[name].isOpen) {
       try {
         await this.spaces[name].open(this._3id, opts)
-        if (!await this.isAddressLinked()) this.linkAddress()
       } catch (e) {
         delete this.spaces[name]
         if (e.message.includes('User denied message signature.')) {
@@ -235,6 +274,11 @@ class Box extends BoxApi {
   async openThread (space, name, opts) {
     if (!this.spaces[space]) {
       this.spaces[space] = new Space(space, this.replicator)
+    }
+
+    if (this._ghostPinbot) {
+      const options = opts || {}
+      options.ghostPinbot = this._ghostPinbot
     }
     return this.spaces[space].joinThread(name, opts)
   }
@@ -396,20 +440,17 @@ class Box extends BoxApi {
     let proof = await this._readAddressLink(address)
 
     if (!proof) {
-      try {
-        if (!this._provider.is3idProvider) {
+      if (!this._provider.is3idProvider) {
+        try {
           proof = await createLink(this._3id.DID, address, this._provider)
-        } else if (this._provider.threeIdConnect && this._provider.migration) {
-          // during migration, need to link "managment" address, for account which derived, rather than creating general link proofs
-          proof = await this._3id.linkManagementAddress()
+        } catch (e) {
+          throw new Error('Link consent message must be signed before adding data, to link address to store', e)
         }
-      } catch (e) {
-        throw new Error('Link consent message must be signed before adding data, to link address to store', e)
-      }
-      try {
-        if (!this._provider.is3idProvider) await this._writeAddressLink(proof)
-      } catch (err) {
-        throw new Error('An error occured while publishing link:', err)
+        try {
+          await this._writeAddressLink(proof)
+        } catch (err) {
+          throw new Error('An error occured while publishing link:', err)
+        }
       }
     } else {
       // Send consentSignature to 3box-address-server to link profile with ethereum address
@@ -434,11 +475,11 @@ class Box extends BoxApi {
       const issuer = didJWT.decodeJWT(proofdid).payload.iss
       if (issuer.includes('muport')) {
         const jwt = { muport: proofdid }
-        await this.public.set('proof_did', await this._3id.signJWT(jwt), { noLink: true })
+        await this.public.set('proof_did', await this._3id.signJWT(jwt))
       }
     } else {
       // we can just sign an empty JWT as a proof that we own this DID
-      await this.public.set('proof_did', await this._3id.signJWT(), { noLink: true })
+      await this.public.set('proof_did', await this._3id.signJWT())
     }
   }
 
@@ -487,6 +528,10 @@ class Box extends BoxApi {
 
   async close () {
     if (!this._3id) throw new Error('close: auth required')
+    await this._3id.stopUpdatePolling()
+    if (this.ghostPinbotKeepAliveHandle) {
+      clearInterval(this.ghostPinbotKeepAliveHandle)
+    }
     await this.replicator.stop()
   }
 
@@ -519,7 +564,7 @@ class Box extends BoxApi {
    * @return    {IPFS}                           the ipfs instance
    */
   static async getIPFS (opts = {}) {
-    if (typeof window !== 'undefined') {
+    if (browserHuh) {
       globalIPFS = window.globalIPFS
       globalIPFSPromise = window.globalIPFSPromise
     }
@@ -527,14 +572,20 @@ class Box extends BoxApi {
     if (!globalIPFS && !globalIPFSPromise) {
       globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
     }
-    if (typeof window !== 'undefined') window.globalIPFSPromise = globalIPFSPromise
+    if (browserHuh) window.globalIPFSPromise = globalIPFSPromise
 
     if (!globalIPFS) globalIPFS = await globalIPFSPromise
-    if (typeof window !== 'undefined') window.globalIPFS = globalIPFS
+    if (browserHuh) window.globalIPFS = globalIPFS
 
     const ipfs = globalIPFS
     const pinningNode = opts.pinningNode || PINNING_NODE
-    ipfs.swarm.connect(pinningNode, () => {})
+    ipfs.swarm.connect(pinningNode)
+    if (opts.ghostPinbot) {
+      ipfs.swarm.connect(opts.ghostPinbot)
+    }
+    if (browserHuh && ipfs.libp2p) {
+      ipfs.libp2p.transportManager.listen(multiaddr(RENDEZVOUS_ADDRESS)).catch(console.warn)
+    }
     return ipfs
   }
 }
@@ -572,7 +623,6 @@ async function initIPFS (ipfs, iframeStore, ipfsOptions) {
       ipfsRepo = initIPFSRepo()
       ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
     }
-
     ipfs = await IPFS.create(ipfsOptions)
 
     if (ipfsRepo && typeof window !== 'undefined' && window.indexedDB) {

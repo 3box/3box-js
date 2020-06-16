@@ -7,30 +7,19 @@ jest.mock('../keyValueStore')
 
 describe('PublicStore', () => {
   let publicStore
-  const linkProfile = jest.fn()
 
   beforeAll(async () => {
-    publicStore = new PublicStore(STORE_NAME, linkProfile, replicatorMock)
+    publicStore = new PublicStore(STORE_NAME, replicatorMock)
   })
 
   it('should throw if not synced', async () => {
     expect(publicStore.all('key', 'value')).rejects.toThrow(/_load must/)
   })
 
-  it('should call linkProfile when set is called', async () => {
+  it('should set data correctly', async () => {
     await publicStore._load()
     let ret = await publicStore.set('key1', 'value1')
     expect(ret).toEqual(true)
-    expect(linkProfile).toHaveBeenCalledTimes(1)
-    expect(linkProfile).toHaveBeenCalledWith()
-  })
-
-  it('should not call linkProfile when noLink is true', async () => {
-    linkProfile.mockClear()
-    await publicStore._load()
-    let ret = await publicStore.set('key1', 'value1', { noLink: true })
-    expect(ret).toEqual(true)
-    expect(linkProfile).toHaveBeenCalledTimes(0)
   })
 
   it('should throw if key not given', async () => {

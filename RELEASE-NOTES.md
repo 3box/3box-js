@@ -1,5 +1,23 @@
 # Release Notes
 
+## v1.20.0 - 2020-06-15
+This release brings new IPFS features/performance in 0.44.0, and decreases bundled size by 1mb. Based on feedback from our first 3ID-Connect release, this brings a new more lightweight version and refactor. With these changes you need to pass a provider (as before) when creating or authenticating. The function get3idConnectProvider() is no longer available, when passing a provider we create a 3ID-Connect provider in the background. The recommended way to initialize a session is now as follows.
+
+```
+// On page load create
+const box = await Box.create()
+// Later authenticate user
+const spaces = ['myDapp']
+await box.auth(spaces, { address: '0x12345abcde', provider: ethProvider })
+```
+
+* feat: default to 3ID-Connect, pass an eth provider and 3id-connect will be created in background
+* feat: supported function for browser feature support detection
+* ref: pass a provider at box.auth instead of Box.create, so create can be called on page load.
+* chore: upgrade to ipfs 0.44.0, libp2p-webrtc
+* feat: ghostpinbot pass address
+* ref: link address on auth
+
 ## v1.19.0 - 2020-05-12
 * chore: upgrade did-jwt and did resolver libraries
 

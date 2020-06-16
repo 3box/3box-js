@@ -1,6 +1,7 @@
 const path = require('path')
 const EventEmitter = require('events')
 const merge = require('lodash.merge')
+const multiaddr = require('multiaddr')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
 const AccessControllers = require('orbit-db-access-controllers')
@@ -37,8 +38,8 @@ class Replicator {
   constructor (ipfs, opts) {
     this.events = new EventEmitter()
     this.ipfs = ipfs
-    this._pinningNode = opts.pinningNode || PINNING_NODE
-    this.ipfs.swarm.connect(this._pinningNode, () => {})
+    this._pinningNode = multiaddr(opts.pinningNode || PINNING_NODE)
+    this.ipfs.swarm.connect(this._pinningNode)
     this._stores = {}
     this._storePromises = {}
     // TODO - this should only be done in 3box-js. For use in
@@ -170,6 +171,10 @@ class Replicator {
 
   async addKVStore (name, pubkey, isSpace, did) {
     if (!this.rootstore) throw new Error('This method can only be called once before the replicator has started')
+    const storeAddr = Object.keys(this._stores).find(addr => addr.includes(name))
+    if (storeAddr) {
+      return this._stores[storeAddr]
+    }
     const orbitDbOpts = merge({}, this._orbitDbOpts, { accessController: { write: [pubkey] } })
     const store = await this._orbitdb.keyvalue(name, orbitDbOpts)
     const storeAddress = store.address.toString()
@@ -268,14 +273,14 @@ class Replicator {
   }
 
   get _pinningNodePeerId () {
-    return this._pinningNode.split('/').pop()
+    return this._pinningNode.getPeerId()
   }
 
   async ensureConnected (odbAddress) {
     const isThread = odbAddress.includes('thread')
     const roomPeers = await this.ipfs.pubsub.peers(odbAddress)
     if (!roomPeers.find(p => p === this._pinningNodePeerId)) {
-      this.ipfs.swarm.connect(this._pinningNode, () => {})
+      this.ipfs.swarm.connect(this._pinningNode)
       odbAddress = isThread ? odbAddress : this.rootstore.address.toString()
       this._publishDB({ odbAddress, isThread }, true)
     }

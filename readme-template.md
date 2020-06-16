@@ -54,19 +54,19 @@ console.log(profile)
 3Box allows applications to create, read, update, and delete public and private data stored in a user's 3Box. To enable this functionality, applications must first authenticate the user's 3Box by calling the `auth` method. This method prompts the user to authenticate (sign-in) to your dapp and returns a promise with a threeBox instance. You can only update (set, get, remove) data for users that have authenticated to and are currently interacting with your dapp. Below `ethereumProvider` refers to the object that you would get from `web3.currentProvider`, or `window.ethereum`.
 
 #### 1. Create a 3Box instance
-To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to openThreads and authenticate the user in any order. In order to create a 3Box session a `provider` needs to be passed. This can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)). It is now suggested to use the 3ID Connect Provider, which is a 3ID provider that wraps available `ethereum providers` and will manage/permission 3ID keys, authentication and blockchain account links inside an iframe. This will become the default soon and will overide passed `ethereum providers`. You can get the 3ID Connect Provider as follows.
+To create a 3Box session you call the `create` method. This creates an instance of the Box class which can be used to openThreads and authenticate the user in any order. This is best to call on page load, so it can begin initializing and connecting services like IPFS in background.
 
 ```js
-const provider = await Box.get3idConnectProvider()
-const box = await Box.create(provider)
+const box = await Box.create()
 ```
 
 #### 2. Authenticate user
-Calling the `auth` method will authenticate the user. If you want to authenticate the user to one or multiple spaces you can specify this here. If when you created the 3Box session you used an ethereum provider you need to pass an ethereum address to the `auth` method. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+Calling the `auth` method will authenticate the user. If you want to authenticate the user to one or multiple spaces you can specify this here. A provider needs to be passed, this can be an `ethereum provider` (from `web3.currentProvider`, or `window.ethereum`) or a `3ID Provider` (from [IdentityWallet](https://github.com/3box/identity-wallet-js)). If using an ethereum provider you need to pass an ethereum address to the `auth` method as well. If the user does not have an existing 3Box account, this method will automatically create one for them in the background.
+
 ```js
 const address = '0x12345abcde'
 const spaces = ['myDapp']
-await box.auth(spaces, { address })
+await box.auth(spaces, { address, provider })
 ```
 
 #### 3. Sync user's available 3Box data from the network
@@ -326,5 +326,8 @@ idUtils.verifyClaim(claim)
   .then(valid => console.info('details:', valid)
   .catch(err => console.error('claim verification failed:', err)
 ```
+
+## Maintainers
+[@oed](https://github.com/oed)
 
 ## <a name="api"></a> API Documentation
