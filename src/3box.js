@@ -602,7 +602,7 @@ function initIPFSRepo () {
     repoOpts = { storageBackends: { root: () => levelInstance } }
   }
 
-  const repo = new IPFSRepo('ipfs', repoOpts)
+  const repo = new IPFSRepo('level-js-ipfs', repoOpts)
 
   return {
     repo,
