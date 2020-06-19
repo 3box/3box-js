@@ -13,6 +13,7 @@ const start = async (address) => {
   console.log('syncing')
   await replicator.rootstoreSyncDone
   console.log('rootstore synced')
+  console.log(replicator.rootstore._oplog.length)
   await replicator.syncDone
   console.log('all syned')
 }

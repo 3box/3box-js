@@ -92,7 +92,7 @@ class Replicator {
       console.log('Connected!')
     } catch (err) {
       console.warn('There was an error connecting to: ', peerMultiAddr.toString(), '. retrying')
-      console.warn(err)
+      console.warn(err.message)
       this._establishConnection(peerMultiAddr)
     }
   }
@@ -129,7 +129,7 @@ class Replicator {
   async _joinPinningRoom (firstJoin) {
     if (!firstJoin && (await this.ipfs.pubsub.ls()).includes(PINNING_ROOM)) return
     this._pubsub.subscribe(PINNING_ROOM, (topic, data) => {
-       console.log('message', topic, data)
+      // console.log('message', topic, data)
       this.events.emit('pinning-room-message', topic, data)
     }, (topic, peer) => {
        console.log('peer', topic, peer)
@@ -339,12 +339,15 @@ class Replicator {
   }
 
   async _getNumEntries (odbAddress) {
+    console.log('gne')
     return new Promise((resolve, reject) => {
       const eventName = `has-${odbAddress}`
       this.events.on(eventName, data => {
+        console.log('eventName', eventName)
         this.events.removeAllListeners(eventName)
         resolve(data.numEntries)
       })
+      console.log(this._hasPubsubMsgs[odbAddress])
       if (this._hasPubsubMsgs[odbAddress]) {
         this.events.removeAllListeners(eventName)
         resolve(this._hasPubsubMsgs[odbAddress].numEntries)
@@ -355,7 +358,9 @@ class Replicator {
   async syncDB (dbInstance) {
     // TODO - syncDB is only relevant in 3box-js. Some different logic
     // is needed for syncing in 3box-pinning-node
+    console.log('alala')
     const numRemoteEntries = await this._getNumEntries(dbInstance.address.toString())
+    console.log('numRemoteEntries:', numRemoteEntries)
     const isNumber = typeof numRemoteEntries === 'number'
     if (isNumber && numRemoteEntries <= dbInstance._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
