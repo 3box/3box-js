@@ -39,7 +39,8 @@ class Replicator {
     this.events = new EventEmitter()
     this.ipfs = ipfs
     this._pinningNode = multiaddr(opts.pinningNode || PINNING_NODE)
-    this.ipfs.swarm.connect(this._pinningNode)
+    this._establishConnection(this._pinningNode)
+    //this.ipfs.swarm.connect(this._pinningNode)
     this._stores = {}
     this._storePromises = {}
     // TODO - this should only be done in 3box-js. For use in
@@ -84,6 +85,18 @@ class Replicator {
     })
   }
 
+  async _establishConnection(peerMultiAddr) {
+    console.log('Connecting to: ', peerMultiAddr.toString())
+    try {
+      await this.ipfs.swarm.connect(peerMultiAddr)
+      console.log('Connected!')
+    } catch (err) {
+      console.warn('There was an error connecting to: ', peerMultiAddr.toString(), '. retrying')
+      console.warn(err.message)
+      this._establishConnection(peerMultiAddr)
+    }
+  }
+
   _initPinningRoomFilter () {
     this._pinningRoomFilter = this.listStoreAddresses()
     // clear out any messages that are not relevant
@@ -119,7 +132,7 @@ class Replicator {
       // console.log('message', topic, data)
       this.events.emit('pinning-room-message', topic, data)
     }, (topic, peer) => {
-      // console.log('peer', topic, peer)
+       console.log('peer', topic, peer)
       this.events.emit('pinning-room-peer', topic, peer)
     })
   }
@@ -132,21 +145,33 @@ class Replicator {
 
   async start (rootstoreAddress, did, opts = {}) {
     this._did = did
+    console.log('a...')
     await this._joinPinningRoom(true)
+    console.log('b...')
     this._publishDB({ odbAddress: rootstoreAddress })
+    console.log('c...')
 
     this.rootstore = await this._orbitdb.feed(rootstoreAddress, this._orbitDbOpts)
+    console.log('d...')
     await this.rootstore.load()
+    console.log('e...')
     this.rootstoreSyncDone = this.syncDB(this.rootstore)
     const waitForSync = async () => {
       await this.rootstoreSyncDone
       const addressLinkPinPromise = this.getAddressLinks()
+      console.log('1....')
       const authDataPinPromise = this.getAuthData()
+      console.log('2....')
       this._initPinningRoomFilter()
+      console.log('3....')
       await this._loadStores(opts)
+      console.log('4....')
       await Promise.all(Object.keys(this._stores).map(addr => this.syncDB(this._stores[addr])))
+      console.log('5....')
       await addressLinkPinPromise
+      console.log('6....')
       await authDataPinPromise
+      console.log('7....')
     }
     this.syncDone = waitForSync()
   }
@@ -280,7 +305,8 @@ class Replicator {
     const isThread = odbAddress.includes('thread')
     const roomPeers = await this.ipfs.pubsub.peers(odbAddress)
     if (!roomPeers.find(p => p === this._pinningNodePeerId)) {
-      this.ipfs.swarm.connect(this._pinningNode)
+      //this.ipfs.swarm.connect(this._pinningNode)
+      this._establishConnection(this._pinningNode)
       odbAddress = isThread ? odbAddress : this.rootstore.address.toString()
       this._publishDB({ odbAddress, isThread }, true)
     }
@@ -313,12 +339,15 @@ class Replicator {
   }
 
   async _getNumEntries (odbAddress) {
+    console.log('gne')
     return new Promise((resolve, reject) => {
       const eventName = `has-${odbAddress}`
       this.events.on(eventName, data => {
+        console.log('eventName', eventName)
         this.events.removeAllListeners(eventName)
         resolve(data.numEntries)
       })
+      console.log(this._hasPubsubMsgs[odbAddress])
       if (this._hasPubsubMsgs[odbAddress]) {
         this.events.removeAllListeners(eventName)
         resolve(this._hasPubsubMsgs[odbAddress].numEntries)
@@ -329,7 +358,9 @@ class Replicator {
   async syncDB (dbInstance) {
     // TODO - syncDB is only relevant in 3box-js. Some different logic
     // is needed for syncing in 3box-pinning-node
+    console.log('alala')
     const numRemoteEntries = await this._getNumEntries(dbInstance.address.toString())
+    console.log('numRemoteEntries:', numRemoteEntries)
     const isNumber = typeof numRemoteEntries === 'number'
     if (isNumber && numRemoteEntries <= dbInstance._oplog.values.length) return Promise.resolve()
     await new Promise((resolve, reject) => {
