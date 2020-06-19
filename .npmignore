@@ -1,5 +1,6 @@
 coverage/
 tmp/
+tools/
 example/
 orbitdb/
 .circleci/
