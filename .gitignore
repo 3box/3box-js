@@ -8,3 +8,4 @@ tmp/
 yarn.lock
 orbitdb
 .idea
+example/build.js
