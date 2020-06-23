@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.20.1 - 2020-06-23
+* fix: bump libp2p-pubsub
+
 ## v1.20.0 - 2020-06-15
 This release brings new IPFS features/performance in 0.44.0, and decreases bundled size by 1mb. Based on feedback from our first 3ID-Connect release, this brings a new more lightweight version and refactor. With these changes you need to pass a provider (as before) when creating or authenticating. The function get3idConnectProvider() is no longer available, when passing a provider we create a 3ID-Connect provider in the background. The recommended way to initialize a session is now as follows.
 
