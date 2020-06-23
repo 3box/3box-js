@@ -60,7 +60,7 @@
     "ipfs-did-document": "^1.2.3",
     "ipfs-log": "^4.6.1",
     "ipfs-pubsub-room": "^2.0.1",
-    "ipfs-repo": "^2.0.1",
+    "ipfs-repo": "^3.0.3",
     "is-ipfs": "^1.0.3",
     "js-sha256": "^0.9.0",
     "lodash.merge": "^4.6.2",
