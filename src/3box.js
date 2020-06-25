@@ -583,7 +583,7 @@ class Box extends BoxApi {
     if (opts.ghostPinbot) {
       ipfs.swarm.connect(opts.ghostPinbot)
     }
-    if (browserHuh && ipfs.libp2p) {
+    if (browserHuh && ipfs.libp2p && !opts.disableRendezvous) {
       ipfs.libp2p.transportManager.listen(multiaddr(RENDEZVOUS_ADDRESS)).catch(console.warn)
     }
     return ipfs
