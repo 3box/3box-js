@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.20.1 - 2020-07-09
+Fixes getting verified accounts (getVerifiedAccounts)
+
+* fix: pass correct ipfs mock to resolve did
+
 ## v1.20.1 - 2020-06-23
 * fix: bump libp2p-pubsub
 
