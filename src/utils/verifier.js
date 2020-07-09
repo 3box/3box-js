@@ -11,13 +11,11 @@ const getHttpsResolver = require('https-did-resolver').default
 const PROFILE_SERVER_URL = config.profile_server_url
 
 // Mocks ipfs obj for 3id resolve, to resolve through api, until ipfs instance is available
-const ipfs = (didServerUrl) => {
-  return {
-    dag: {
-      get: async (cid) => {
-        const req = `${didServerUrl}/did-doc?cid=${encodeURIComponent(cid)}`
-        return utils.fetchJson(req)
-      }
+const ipfs = {
+  dag: {
+    get: async (cid) => {
+      const req = `${PROFILE_SERVER_URL}/did-doc?cid=${encodeURIComponent(cid)}`
+      return utils.fetchJson(req)
     }
   }
 }
