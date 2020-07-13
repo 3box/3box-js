@@ -70,6 +70,7 @@
     "orbit-db-cache": "^0.3.0",
     "orbit-db-identity-provider": "^0.3.0",
     "orbit-db-storage-adapter": "^0.5.3",
+    "p-timeout": "^3.2.0",
     "store": "^2.0.12",
     "tweetnacl": "^1.0.1",
     "tweetnacl-util": "^0.15.0"
