@@ -258,7 +258,7 @@ class Replicator {
         this.ipfs.pin.add(cid)
       } catch (e) { }
     }
-    return Promise.all(resolveLinks)
+    return resolveLinks
   }
 
   async getAuthData () {
