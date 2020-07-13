@@ -1,6 +1,7 @@
 const path = require('path')
 const EventEmitter = require('events')
 const merge = require('lodash.merge')
+const pTimeout = require('p-timeout')
 const multiaddr = require('multiaddr')
 const OrbitDB = require('orbit-db')
 const Pubsub = require('orbit-db-pubsub')
@@ -247,15 +248,17 @@ class Replicator {
   async getAddressLinks () {
     const entries = await this.rootstore.iterator({ limit: -1 }).collect()
     const linkEntries = entries.filter(e => e.payload.value.type === entryTypes.ADDRESS_LINK)
-    const resolveLinks = linkEntries.map(async entry => {
+    const resolveLinks = []
+
+    for (const entry of linkEntries) {
       const cid = entry.payload.value.data
-      // TODO handle missing ipfs obj??, timeouts?
-      const obj = (await this.ipfs.dag.get(cid)).value
-      this.ipfs.pin.add(cid)
-      obj.entry = entry
-      return obj
-    })
-    return Promise.all(resolveLinks)
+      try {
+        const dag = await pTimeout(this.ipfs.dag.get(cid), 2500)
+        resolveLinks.push(Object.assign(dag.value, { entry }))
+        this.ipfs.pin.add(cid)
+      } catch (e) { }
+    }
+    return resolveLinks
   }
 
   async getAuthData () {

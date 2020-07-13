@@ -501,12 +501,16 @@ describe('Confidential Thread', () => {
 
       // user1 add user2 as modes, wait for AC update
       let updatePromise = new Promise((resolve, reject) => {
-        threadUser2.onNewCapabilities(resolve)
+        threadUser2.onNewCapabilities(async () => {
+          const mods = await threadUser2.listModerators()
+          if (mods.includes(DID2)) resolve()
+        })
       })
 
       // user one adds user 2 as mod
       await threadUser1.addModerator(DID2)
       await updatePromise
+
       expect(await threadUser2.listModerators()).toEqual([DID1, DID2])
       expect(await threadUser1.listModerators()).toEqual([DID1, DID2])
 
