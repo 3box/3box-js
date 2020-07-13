@@ -49,7 +49,7 @@
     "3id-connect": "0.1.0",
     "3id-resolver": "^1.0.0",
     "@babel/runtime": "^7.4.5",
-    "@ethersproject/hdnode": "5.0.0-beta.137",
+    "@ethersproject/hdnode": "5.0.1",
     "@ethersproject/wallet": "5.0.0-beta.136",
     "did-jwt": "^4.2.0",
     "did-resolver": "^1.1.0",
