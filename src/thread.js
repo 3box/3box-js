@@ -19,7 +19,7 @@ class Thread {
   /**
    * Please use **space.joinThread** to get the instance of this class
    */
-  constructor (name, replicator, members, firstModerator, confidential, user, subscribe) {
+  constructor (name, replicator, members, firstModerator, confidential, user, subscribe, opts) {
     this._name = name
     this._replicator = replicator
     this._spaceName = name ? name.split('.')[2] : undefined
@@ -28,6 +28,7 @@ class Thread {
     this._members = Boolean(members)
     this._firstModerator = firstModerator
     this._user = user
+    this._opts = opts
 
     if (confidential) {
       this._confidential = true
@@ -254,7 +255,7 @@ class Thread {
             } catch (e) { }
             if (key !== null) resolve(key)
           })
-          setTimeout(() => resolve(null), 10000)
+          setTimeout(() => resolve(null), this._opts.accessTimeout || 10000)
         })
       }
       if (!encryptedKey) throw new Error(`_initConfidential:  no access for ${this._user.DID}`)

@@ -169,6 +169,7 @@ class Space {
    * @param     {Boolean}   opts.ghost              Enable ephemeral messaging via Ghost Thread
    * @param     {String}    opts.ghostPinbot        MultiAddress of a Ghost Pinbot node
    * @param     {Number}    opts.ghostBacklogLimit  The number of posts to maintain in the ghost backlog
+   * @param     {Number}    opts.accessTimeout      number of ms to load access control, until timeout and return
    * @param     {Array<Function>} opts.ghostFilters Array of functions for filtering messages
    *
    * @return    {Thread}                  An instance of the thread class for the joined thread
@@ -193,7 +194,7 @@ class Space {
         opts.firstModerator = this._3id.getSubDID(this._name)
       }
       const user = this._3id ? this.user : {}
-      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, opts.confidential, user, subscribeFn)
+      const thread = new Thread(namesTothreadName(this._name, name), this._replicator, opts.members, opts.firstModerator, opts.confidential, user, subscribeFn, opts)
       const address = await thread._getThreadAddress()
       if (this._activeThreads[address]) return this._activeThreads[address]
       await thread._load()
@@ -222,6 +223,7 @@ class Space {
    * @param     {String}    address                 The full address of the thread
    * @param     {Object}    opts                    Optional parameters
    * @param     {Boolean}   opts.noAutoSub          Disable auto subscription to the thread when posting to it (default false)
+   * @param     {Number}    opts.accessTimeout      number of ms to load access control, until timeout and return
    *
    * @return    {Thread}                            An instance of the thread class for the joined thread
    */
@@ -234,7 +236,7 @@ class Space {
     if (this._activeThreads[address]) return this._activeThreads[address]
     const subscribeFn = opts.noAutoSub ? () => {} : this.subscribeThread.bind(this)
     const user = this._3id ? this.user : {}
-    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, undefined, undefined, undefined, user, subscribeFn)
+    const thread = new Thread(namesTothreadName(this._name, threadName), this._replicator, undefined, undefined, undefined, user, subscribeFn, opts)
     await thread._load(address)
     if (this._3id) {
       await thread._setIdentity(await this._3id.getOdbId(this._name))
