@@ -1,5 +1,17 @@
 # Release Notes
 
+## v1.20.3 - 2020-07-13
+This release upgrades ipfs to 0.46.0, adds a fix that may allow some older accounts to be loaded/synced again, and downgrades libp2p-pubsub as temporary fix for connect/gossipsub errors.
+
+* fix: timeout adress links which dont resolve ipfs.dag.get
+* chore: up ipfs 0.46.0
+* fix: downgrade libp2p-pubsub, 0.4.7 throwing error
+
+## v1.20.2 - 2020-07-09
+Fixes getting verified accounts (getVerifiedAccounts)
+
+* fix: pass correct ipfs mock to resolve did
+
 ## v1.20.1 - 2020-06-23
 * fix: bump libp2p-pubsub
 
