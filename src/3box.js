@@ -246,7 +246,7 @@ class Box extends BoxApi {
         if (e.message.includes('User denied message signature.')) {
           throw new Error('User denied space consent.')
         } else {
-          throw new Error('An error occured while opening space: ', e.message)
+          throw new Error('An error occurred while opening space: ', e)
         }
       }
     } else if (opts.onSyncDone) {
