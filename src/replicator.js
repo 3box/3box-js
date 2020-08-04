@@ -101,9 +101,11 @@ class Replicator {
     // orbitdb/ipfs id which can change on page load
     const cachePath = path.join(opts.orbitPath || './orbitdb', '/cache')
     const levelDown = OdbStorage(null, {})
-    const cacheStorage = await levelDown.createStore(cachePath)
-    const cache = new OdbCache(cacheStorage)
+    const cacheProxy = opts.cacheProxy
+      ? await opts.cacheProxy(cachePath)
+      : await levelDown.createStore(cachePath)
 
+    const cache = new OdbCache(cacheProxy)
     const keystorePath = path.join(opts.orbitPath || './orbitdb', '/keystore')
     const keyStorage = await levelDown.createStore(keystorePath)
     const keystore = new OdbKeystore(keyStorage)

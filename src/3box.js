@@ -17,19 +17,25 @@ const IPFSRepo = require('ipfs-repo')
 const LevelStore = require('datastore-level')
 const didJWT = require('did-jwt')
 const { ThreeIdConnect } = require('3id-connect')
+const { IframeCache } = require('3box-shared-cache')
 
 const PINNING_NODE = config.pinning_node
 const ADDRESS_SERVER_URL = config.address_server_url
 const IPFS_OPTIONS = config.ipfs_options
 const RENDEZVOUS_ADDRESS = config.rendezvous_address
-const IFRAME_STORE_URL = 'https://connect.3box.io/v1/index.html'
+const THREEID_CONNECT_URL = config.threeid_connect_url
+const IFRAME_CACHE_URL = config.iframe_cache_url
 const supportAlert = 'This site uses local data storage to give you control of your data. Please enable web APIs like localstorage, indexxeddb, etc in your browser settings.'
 
-let globalIPFS, globalIPFSPromise, threeIdConnect
+let globalIPFS, globalIPFSPromise, threeIdConnect, iframeCacheService, cacheSupportedPromise
 
 const browserHuh = typeof window !== 'undefined' && typeof document !== 'undefined'
-if (browserHuh) require('./modernizr.js')
-if (browserHuh) threeIdConnect = new ThreeIdConnect(IFRAME_STORE_URL)
+if (browserHuh) {
+  require('./modernizr.js')
+  threeIdConnect = new ThreeIdConnect(THREEID_CONNECT_URL)
+  iframeCacheService = new IframeCache(IFRAME_CACHE_URL)
+  cacheSupportedPromise = iframeCacheService.connect()
+}
 /**
  * @extends BoxApi
  */
@@ -68,7 +74,17 @@ class Box extends BoxApi {
   }
 
   async _init (opts) {
-    this.replicator = await Replicator.create(this._ipfs, opts)
+    const replicatorOpts = { ...opts }
+
+    if (opts.iframeCache && iframeCacheService) {
+      const cacheSupported = await cacheSupportedPromise
+
+      if (cacheSupported) {
+        replicatorOpts.cacheProxy = iframeCacheService.getOrbitStorageProxyFactory()
+      }
+    }
+
+    this.replicator = await Replicator.create(this._ipfs, replicatorOpts)
 
     if (opts.ghostPinbot) {
       this._ghostPinbot = opts.ghostPinbot
@@ -125,10 +141,12 @@ class Box extends BoxApi {
    * @param     {String}            opts.addressServer      URL of the Address Server
    * @param     {String}            opts.ghostPinbot        MultiAddress of a Ghost Pinbot node
    * @param     {String}            opts.supportCheck       Gives browser alert if 3boxjs/ipfs not supported in browser env, defaults to true. You can also set to false to implement your own alert and call Box.support to check if supported.
+   * @param     {Boolean}           opts.iframeCache        Enable iframe cache for ipfs/orbit, defaults to true
    * @return    {Box}                                       the 3Box session instance
    */
   static async create (provider, opts = {}) {
     if (opts.supportCheck !== false && browserHuh) await this._supportAlert()
+    opts.iframeCache = typeof opts.iframeCache === 'boolean' ? opts.iframeCache : true
     const ipfs = await Box.getIPFS(opts)
     const box = new Box(provider, ipfs, opts)
     await box._setProvider(provider)
@@ -570,7 +588,7 @@ class Box extends BoxApi {
     }
 
     if (!globalIPFS && !globalIPFSPromise) {
-      globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions)
+      globalIPFSPromise = initIPFS(opts.ipfs, opts.iframeStore, opts.ipfsOptions, opts.iframeCache)
     }
     if (browserHuh) window.globalIPFSPromise = globalIPFSPromise
 
@@ -590,7 +608,7 @@ class Box extends BoxApi {
   }
 }
 
-function initIPFSRepo () {
+async function initIPFSRepo (iframeCache) {
   let repoOpts = {}
   let ipfsRootPath
 
@@ -599,7 +617,19 @@ function initIPFSRepo () {
     const sessionID = utils.randInt(10000)
     ipfsRootPath = 'ipfs/root/' + sessionID
     const levelInstance = new LevelStore(ipfsRootPath)
-    repoOpts = { storageBackends: { root: () => levelInstance } }
+
+    repoOpts = {
+      storageBackends: {
+        root: () => levelInstance
+      }
+    }
+
+    if (iframeCache && iframeCacheService) {
+      const cacheSupported = await cacheSupportedPromise
+      if (cacheSupported) {
+        repoOpts.storageBackends.blocks = iframeCacheService.getIpfsStorageProxy()
+      }
+    }
   }
 
   const repo = new IPFSRepo('ipfs', repoOpts)
@@ -610,17 +640,16 @@ function initIPFSRepo () {
   }
 }
 
-async function initIPFS (ipfs, iframeStore, ipfsOptions) {
-  // if (!ipfs && !ipfsProxy) throw new Error('No IPFS object configured and no default available for environment')
-  if (!!ipfs && iframeStore) console.warn('Warning: iframeStore true, orbit db cache in iframe, but the given ipfs object is being used, and may not be running in same iframe.')
+async function initIPFS (ipfs, iframeStore, ipfsOptions, iframeCache) {
+  if (!!ipfs && iframeCache) console.warn('Warning: Caching in iframe is true, but the given ipfs object that is being used may not be using the iframe cache')
   if (ipfs) {
     return ipfs
   } else {
-    // await iframeLoadedPromise
     // return ipfsProxy
     let ipfsRepo
     if (!ipfsOptions) {
-      ipfsRepo = initIPFSRepo()
+      if (ipfsOptions && iframeCache) console.warn('Warning: Caching in iframe is true, but received ipfs options which may not include the proper repo configuration for using the iframe cache')
+      ipfsRepo = await initIPFSRepo(iframeCache)
       ipfsOptions = Object.assign(IPFS_OPTIONS, { repo: ipfsRepo.repo })
     }
     ipfs = await IPFS.create(ipfsOptions)
