@@ -45,6 +45,7 @@
   "homepage": "https://github.com/3box/3box-js#readme",
   "dependencies": {
     "3box-orbitdb-plugins": "^2.1.2",
+    "3box-shared-cache": "^1.1.0",
     "3id-blockchain-utils": "^0.4.0",
     "3id-connect": "0.1.0",
     "3id-resolver": "^1.0.0",
@@ -63,6 +64,7 @@
     "ipfs-repo": "^3.0.2",
     "is-ipfs": "^1.0.3",
     "js-sha256": "^0.9.0",
+    "levelup": "^4.4.0",
     "libp2p-pubsub": "^0.4.6",
     "lodash.merge": "^4.6.2",
     "muport-did-resolver": "^1.0.2",
