@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.21.0 - 2020-08-06
+
+* feat: shared ipfs and orbitdb iframe cache for faster auth/openbox and syncs
+* fix: ledger support
+
 ## v1.20.3 - 2020-07-13
 This release upgrades ipfs to 0.46.0, adds a fix that may allow some older accounts to be loaded/synced again, and downgrades libp2p-pubsub as temporary fix for connect/gossipsub errors.
 
