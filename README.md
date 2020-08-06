@@ -614,6 +614,7 @@ Creates an instance of 3Box
 | opts.addressServer | <code>String</code> | URL of the Address Server |
 | opts.ghostPinbot | <code>String</code> | MultiAddress of a Ghost Pinbot node |
 | opts.supportCheck | <code>String</code> | Gives browser alert if 3boxjs/ipfs not supported in browser env, defaults to true. You can also set to false to implement your own alert and call Box.support to check if supported. |
+| opts.iframeCache | <code>Boolean</code> | Enable iframe cache for ipfs/orbit, defaults to true |
 
 <a name="Box.supported"></a>
 
