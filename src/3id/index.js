@@ -283,6 +283,8 @@ class ThreeId {
   }
 
   logout () {
+    this._rootDID = null
+    this._subDIDs = {}
     localstorage.remove(STORAGE_KEY + this.managementAddress)
     this.stopUpdatePolling()
   }

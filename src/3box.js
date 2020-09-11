@@ -48,6 +48,7 @@ class Box extends BoxApi {
     super()
     this._provider = provider
     this._ipfs = ipfs
+    this._opts = opts
     this._serverUrl = opts.addressServer || ADDRESS_SERVER_URL
     /**
      * @property {KeyValueStore} public         access the profile store of the users 3Box
@@ -560,10 +561,21 @@ class Box extends BoxApi {
    */
   async logout () {
     if (!this._3id) throw new Error('logout: auth required')
+
     await this.close()
     this._3id.logout()
-    const address = await this._3id.getAddress()
-    localstorage.remove('linkConsent_' + address)
+
+    delete this._3idEthAddress
+    delete this.replicator
+    delete this._3id
+
+    this.public = null
+    this.private = null
+    this.spaces = {}
+    this.syncDone = null
+    this.hasPublishedLink = {}
+
+    await this._init(this._opts)
   }
 
   /**
