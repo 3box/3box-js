@@ -1,4 +1,3 @@
-const localstorage = require('store')
 const IPFS = require('ipfs')
 const multiaddr = require('multiaddr')
 const { createLink, validateLink } = require('3id-blockchain-utils')
@@ -585,6 +584,7 @@ class Box extends BoxApi {
    * @return    {Boolean}                           true if the user is logged in
    */
   static isLoggedIn (address) {
+    console.warn('Box.isLoggedIn: function no longer supported, simply call auth and it will not prompt user again if they have already authenticated')
     return ThreeId.isLoggedIn(address)
   }
 

@@ -435,7 +435,6 @@ describe('3Box', () => {
     const box = await Box.openBox('0x12345', 'web3prov', boxOpts)
     await box.logout()
     expect(mocked3id.logoutFn).toHaveBeenCalledTimes(1)
-    return box.close()
   })
 
   it('should be logged out', async () => {
@@ -443,7 +442,6 @@ describe('3Box', () => {
     await box.logout()
     const isLoggedIn = Box.isLoggedIn('0xabcde')
     expect(isLoggedIn).toEqual(false)
-    return box.close()
   })
 
   it('should verify profiles correctly', async () => {
