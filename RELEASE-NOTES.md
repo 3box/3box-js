@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.22.0 - 2020-09-14
+
+* chore: upgrade orbit-db@0.25.1
+* fix: logout, clean up prior login state
+* chore: deprecate isLoggedIn, simply call auth, will return existing user if available
+* fix: another datastore path, resolves "key not found error"
+
 ## v1.21.0 - 2020-08-06
 
 * feat: shared ipfs and orbitdb iframe cache for faster auth/openbox and syncs
