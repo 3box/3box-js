@@ -630,9 +630,13 @@ async function initIPFSRepo (iframeCache) {
     ipfsRootPath = 'ipfs/root/' + sessionID
     const levelInstance = new LevelStore(ipfsRootPath)
 
+    const ipfsDatastorePath = 'ipfs/datastore' // path name level-js-ipfs/datastore
+    const levelDatastore = new LevelStore(ipfsDatastorePath)
+
     repoOpts = {
       storageBackends: {
-        root: () => levelInstance
+        root: () => levelInstance,
+        datastore: () => levelDatastore
       }
     }
 
