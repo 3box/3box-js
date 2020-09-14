@@ -1,6 +1,6 @@
 {
   "name": "3box",
-  "version": "1.21.0",
+  "version": "1.22.0",
   "description": "Interact with user data",
   "main": "lib/3box.js",
   "directories": {
@@ -59,7 +59,7 @@
     "https-did-resolver": "^1.0.0",
     "ipfs": "^0.46.0",
     "ipfs-did-document": "^1.2.3",
-    "ipfs-log": "^4.6.1",
+    "ipfs-log": "^4.6.5",
     "ipfs-pubsub-room": "^2.0.1",
     "ipfs-repo": "^3.0.2",
     "is-ipfs": "^1.0.3",
@@ -69,7 +69,7 @@
     "lodash.merge": "^4.6.2",
     "muport-did-resolver": "^1.0.2",
     "node-fetch": "^2.6.0",
-    "orbit-db": "^0.24.2",
+    "orbit-db": "^0.25.1",
     "orbit-db-cache": "^0.3.0",
     "orbit-db-identity-provider": "^0.3.0",
     "orbit-db-storage-adapter": "^0.5.3",
