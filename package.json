@@ -61,7 +61,7 @@
     "ipfs-did-document": "^1.2.3",
     "ipfs-log": "^4.6.5",
     "ipfs-pubsub-room": "^2.0.1",
-    "ipfs-repo": "^3.0.2",
+    "ipfs-repo": "^6.0.3",
     "is-ipfs": "^1.0.3",
     "js-sha256": "^0.9.0",
     "levelup": "^4.4.0",
