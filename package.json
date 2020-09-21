@@ -55,7 +55,7 @@
     "did-jwt": "^4.2.0",
     "did-resolver": "^1.1.0",
     "events": "^3.0.0",
-    "graphql-request": "^1.8.2",
+    "graphql-request": "^2.0.0",
     "https-did-resolver": "^1.0.0",
     "ipfs": "^0.46.0",
     "ipfs-did-document": "^1.2.3",
