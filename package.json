@@ -62,7 +62,7 @@
     "ipfs-log": "^4.6.5",
     "ipfs-pubsub-room": "^2.0.1",
     "ipfs-repo": "^3.0.2",
-    "is-ipfs": "^1.0.3",
+    "is-ipfs": "^2.0.0",
     "js-sha256": "^0.9.0",
     "levelup": "^4.4.0",
     "libp2p-pubsub": "^0.4.6",
