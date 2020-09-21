@@ -128,7 +128,7 @@ module.exports = {
 
   sha256Multihash: str => {
     const digest = Buffer.from(sha256.digest(str))
-    return Multihash.encode(digest, 'sha2-256').toString('hex')
+    return Buffer.from(Multihash.encode(digest, 'sha2-256')).toString('hex')
   },
   randInt: max => Math.floor(Math.random() * max),
   sha256,
