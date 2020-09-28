@@ -102,7 +102,9 @@ class Box extends BoxApi {
   async _load (opts = {}) {
     const address = opts.address || await this._3id.getAddress()
     const { rootStoreAddress, did } = address ? await this._getLinkedData(address) : {}
-    if (rootStoreAddress) {
+    // Check for ',' because a bug caused the incorrect rootstore to be linked.
+    // If so we create the correct one instead.
+    if (rootStoreAddress && !rootStoreAddress.includes(',')) {
       await this.replicator.start(rootStoreAddress, did, { profile: true })
       await this.replicator.rootstoreSyncDone
       const authData = await this.replicator.getAuthData()
