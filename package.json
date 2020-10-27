@@ -51,7 +51,7 @@
     "3id-resolver": "^1.0.0",
     "@babel/runtime": "^7.4.5",
     "@ethersproject/hdnode": "5.0.2",
-    "@ethersproject/wallet": "5.0.2",
+    "@ethersproject/wallet": "5.0.7",
     "did-jwt": "^4.2.0",
     "did-resolver": "^1.1.0",
     "events": "^3.0.0",
