@@ -311,7 +311,17 @@ function updateLinksData (box, address) {
       <br><b>LinkID: </b>${link.linkId}
       <br><b>Address: </b>${link.address}
       <br><b>Type: </b>${link.type}
+      <br><button id="unlink-${link.linkId}" type="button" class="btn btn-primary" disabled=true>Unlink this address</button>
       <br><br>`
+      box._3id.getAddress().then(addr => {
+        if (addr !== link.address) {
+          document.getElementById(`unlink-${link.linkId}`).disabled = false
+        }
+      })
+      document.getElementById(`unlink-${link.linkId}`).addEventListener('click', () => {
+        box.removeAddressLink(link.address)
+        console.log('unlinked address:', link.address)
+      })
     })
   })
 
