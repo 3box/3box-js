@@ -46,7 +46,7 @@
   "dependencies": {
     "3box-orbitdb-plugins": "^2.1.2",
     "3box-shared-cache": "^1.1.0",
-    "3id-blockchain-utils": "^0.4.1",
+    "3id-blockchain-utils": "^1.1.1",
     "3id-connect": "0.1.0",
     "3id-resolver": "^1.0.0",
     "@babel/runtime": "^7.4.5",
