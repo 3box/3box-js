@@ -30,6 +30,9 @@ bauth.addEventListener('click', (event) => {
       linkAddress.addEventListener('click', () => {
         box.linkAddress().then(() => { updateLinksData(box, addresses[0]) })
       })
+      unlinkAddress.addEventListener('click', () => {
+        unlinkAddressFn(box, addresses[0], addrToUnlink.value)
+      })
 
       setProfile.addEventListener('click', () => {
         box.public.set(prkey.value, prvalue.value).then(() => {
@@ -329,4 +332,11 @@ function updateLinksData (box, address) {
     addressLinked.innerHTML = result ? 'Yes' : 'No'
     linkAddress.style.display = 'block'
   })
+}
+
+function unlinkAddressFn (box, usedAddress, removeAddress) {
+  if (usedAddress !== removeAddress) {
+    console.log('unlinking', removeAddress)
+    box.removeAddressLink(removeAddress)
+  }
 }

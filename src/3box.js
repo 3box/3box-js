@@ -385,7 +385,7 @@ class Box extends BoxApi {
     if (!this._3id) throw new Error('removeAddressLink: auth required')
     address = address.toLowerCase()
     const linkExist = await this.isAddressLinked({ address })
-    if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
+    //if (!linkExist) throw new Error('removeAddressLink: link for given address does not exist')
     const payload = {
       address,
       type: 'delete-address-link'
