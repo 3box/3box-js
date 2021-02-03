@@ -8,7 +8,10 @@
 
 [Install](#install) | [Usage](#usage) | [Example](#example) | [Data Standards](#datastandards) | [API Docs](#api)
 
+
 # 3box-js
+> ⚠️ 3Box.js is slowly being phased out in favor of a new more decentralized system called IDX (https://idx.xyz) which is built on top of the Ceramic network. You can use 3Box.js for now, but be aware that support will be limited as Ceramic is moving closer to a mainnet release.
+
 
 This is a library which allows you to set, get, and remove private and public data associated with an ethereum account. It can be used to store identity data, user settings, etc. by dapps that use a web3 enabled browser. The data will be retrievable as long as the user has access to the private key for the used ethereum account. The data is encrypted and can not be read by any third party that the user hasn't authorized. There is one shared space for data which all authorized dapps access by default, then there are spaces which dapps have to request explicit consent to access.
 
