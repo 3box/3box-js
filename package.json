@@ -69,7 +69,7 @@
     "lodash.merge": "^4.6.2",
     "muport-did-resolver": "^1.0.2",
     "node-fetch": "^2.6.0",
-    "orbit-db": "^0.25.1",
+    "orbit-db": "^0.26.1",
     "orbit-db-cache": "^0.3.0",
     "orbit-db-identity-provider": "^0.3.0",
     "orbit-db-storage-adapter": "^0.5.3",
