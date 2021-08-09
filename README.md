@@ -1,5 +1,6 @@
-# ⚠️ ⚠️ This project is no longer supported ⚠️ ⚠️ 
+# ⚠️ ⚠️ Deprecated in favor of Ceramic ⚠️ ⚠️ 
 > 3box.js and related tools built by 3Box Labs are deprecated and no loger supported. Developers are encurraged to build with https://ceramic.network which is a more secure and decentralized protocol for sovereign data.
+
 
 [Install](#install) | [Usage](#usage) | [Example](#example) | [Data Standards](#datastandards) | [API Docs](#api)
 
